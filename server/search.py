@@ -27,7 +27,7 @@ def window(w):
 def pick_dests(q,month):
     """Zwraca kierunki do sprawdzenia i uwagi. Klimat decyduje przy wyborze stylu."""
     t=q.get('dest',{});mode=t.get('mode','city');notes=[]
-    style=t.get('style')
+    style=t.get('style') if mode!='city' else None
     if mode=='city':
         ds=[geo.BYID[i] for i in t.get('ids',[]) if i in geo.BYID]
         if not ds: raise ValueError('Nie znam tego miejsca')
@@ -201,7 +201,8 @@ def build(c,rt,checked,q,drive,mode,cfg,A,C,adest,lat,lon,month,best):
         h=int(lh[11:13])
         if h<4 or lh[:10]<L['dep'][:10]: warn.append(f"Wylot o {L['dep'][11:]}: z domu trzeba wyjechać o {lh[11:]}"+(' poprzedniego dnia.' if lh[:10]<L['dep'][:10] else '.'))
         if res['flight']['out'].get('selfTransfer') or res['flight']['back'].get('selfTransfer'): warn.append('Przesiadka na osobnych biletach: spóźnienie pierwszego lotu to Twoje ryzyko.')
-    s,why=climate.fit(d,month,(q.get('dest') or {}).get('style') or 'city')
+    dq=q.get('dest') or {}
+    s,why=climate.fit(d,month,(dq.get('style') if dq.get('mode')!='city' else None) or 'city')
     res['climate']={'month':climate.month(d,month),'score':s,'why':why}
     res['warnings']=warn
     res['links']=links.flight_links(o,dd,c['dep'],c['ret'],A,C,carr)

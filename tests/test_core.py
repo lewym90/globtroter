@@ -71,4 +71,20 @@ class Cluster(unittest.TestCase):
         g=plan.cluster(it,(41.9,12.5),3);self.assertEqual(sum(len(x) for x in g),9)
     def test_order_visits_all(self):
         it=[{'lat':1,'lon':1},{'lat':0.1,'lon':0.1}];self.assertEqual(plan.order(it,(0,0))[0]['lat'],0.1)
+class Dest(unittest.TestCase):
+    def test_city_ignores_style(self):
+        geo.BYID['x']={'id':'x','name':'X','cc':'IT','air':['FCO'],'tags':['city'],'climate':{'tmax':[12]*12,'tmin':[5]*12,'rain':[1]*12}}
+        ds,notes=search.pick_dests({'dest':{'mode':'city','ids':['x'],'style':'beach'}},2);self.assertEqual(notes,[]);self.assertEqual(len(ds),1)
+class Food(unittest.TestCase):
+    D=lambda self:[{'stops':[{'meal':'lunch','lat':41.9,'lon':12.5},{'name':'X','lat':41.9,'lon':12.5}]}]
+    def test_source_down_no_invented_names(self):
+        o=plan.restaurants;plan.restaurants=lambda *a:None
+        try:
+            d=self.D();self.assertFalse(plan.attach_food(d));self.assertNotIn('options',d[0]['stops'][0]);self.assertIn('google.com/maps',d[0]['stops'][0]['mapSearch'])
+        finally: plan.restaurants=o
+    def test_near_only(self):
+        o=plan.restaurants;plan.restaurants=lambda *a:[{'n':'Blisko','cuisine':'pizza','lat':41.901,'lon':12.5,'hours':None,'web':None,'s':1},{'n':'Daleko','cuisine':'x','lat':42.2,'lon':12.5,'hours':None,'web':None,'s':9}]
+        try:
+            d=self.D();plan.attach_food(d);self.assertEqual([x['name'] for x in d[0]['stops'][0]['options']],['Blisko'])
+        finally: plan.restaurants=o
 if __name__=='__main__': unittest.main()

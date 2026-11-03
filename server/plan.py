@@ -5,6 +5,7 @@ from urllib.parse import quote,urlencode
 import access,countries,geo,net,search
 ATTR=geo.load('attractions.json',{})
 DUR={'museum':120,'church':40,'palace':90,'castle':90,'monument':25,'square':25,'park':60,'sight':45,'ruins':90,'bridge':20,'beach':150,'zoo':150,'street':40,'nature':120,'theatre':30,'food':60}
+LATE={'museum','ruins','palace','castle','zoo'}
 LABEL={'museum':'Muzeum','church':'Świątynia','palace':'Pałac','castle':'Zamek','monument':'Pomnik','square':'Plac','park':'Park','sight':'Zabytek','ruins':'Ruiny','bridge':'Most','beach':'Plaża','zoo':'Zoo','street':'Ulica','nature':'Przyroda','theatre':'Teatr','food':'Targ'}
 def t(iso): return dt.datetime.fromisoformat(iso)
 def hm(d): return d.strftime('%H:%M')
@@ -51,19 +52,20 @@ def holidays(cc,a,b):
                 if a<=h['date']<=b and h.get('global',True): res.append({'date':h['date'],'name':h.get('localName') or h['name']})
         except Exception: pass
     return res
-def restaurants(lat,lon):
-    """Lokale z OpenStreetMap. Dziala na zywo; gdy zrodlo milczy, dajemy link do mapy, nie wymyslamy nazw."""
-    q=f'[out:json][timeout:18];(nwr["amenity"~"restaurant|cafe"]["name"]["cuisine"](around:1200,{lat},{lon}););out center tags 60;'
+def restaurants(lat,lon,radius=3000):
+    """Lokale z OpenStreetMap, jedno zapytanie na caly wyjazd. Gdy zrodlo milczy, zwraca None:
+    wtedy dajemy link do mapy, nigdy wymyslonych nazw."""
+    q=f'[out:json][timeout:15];nwr["amenity"="restaurant"]["name"]["cuisine"](around:{int(radius)},{lat},{lon});out center tags 400;'
     for host in('overpass-api.de','overpass.kumi.systems'):
         try:
-            r=net.fetch_json(f'https://{host}/api/interpreter?data='+quote(q),ttl=14*86400,tries=1,timeout=22)
+            r=net.fetch_json(f'https://{host}/api/interpreter?data='+quote(q),ttl=14*86400,tries=1,timeout=16)
             out=[]
             for e in r.get('elements',[]):
                 g=e.get('center') or e;tg=e.get('tags',{})
-                if 'lat' not in g: continue
+                if 'lat' not in g or tg.get('disused') or tg.get('opening_hours')=='off': continue
                 score=sum(1 for k in('website','opening_hours','phone','contact:website','wheelchair','outdoor_seating') if k in tg)
-                out.append({'n':tg['name'],'cuisine':tg.get('cuisine','').replace(';',', ').replace('_',' '),'lat':g['lat'],'lon':g['lon'],'hours':tg.get('opening_hours'),'web':tg.get('website') or tg.get('contact:website'),'s':score,'cafe':tg.get('amenity')=='cafe'})
-            return sorted(out,key=lambda x:-x['s'])
+                out.append({'n':tg['name'],'cuisine':tg.get('cuisine','').replace(';',', ').replace('_',' '),'lat':g['lat'],'lon':g['lon'],'hours':tg.get('opening_hours'),'web':tg.get('website') or tg.get('contact:website'),'s':score})
+            return out
         except Exception: continue
     return None
 def cluster(items,center,k):
@@ -115,28 +117,34 @@ def schedule_days(d,opt,hotel,prefs):
                 walk=min(walk,45)
                 if mins+need+walk>min(limit,avail): continue
                 if mon and x['t']=='museum': continue
+                if x['t'] in LATE and add(cur,walk).hour>=15: continue
                 cur=add(cur,walk)
                 if not any(s.get('meal') for s in stops) and cur.hour>=13 and avail>240:
                     stops.append({'meal':'lunch','time':hm(cur),'lat':x['lat'],'lon':x['lon'],'min':60});cur=add(cur,60)
                 stops.append({'time':hm(cur),'name':x['n'][0].upper()+x['n'][1:],'type':LABEL.get(x['t'],'Zabytek'),'kind':x['t'],'min':need,'lat':x['lat'],'lon':x['lon'],'img':x.get('img'),'web':x.get('web'),'map':place(x['n'],x['lat'],x['lon']),'walk':walk,'q':x['q']})
                 used.add(x['q']);cur=add(cur,need);mins+=need+walk
+            if stops and avail>240 and not any(s.get('meal') for s in stops):
+                ls=[s for s in stops if not s.get('meal')][-1]
+                stops.append({'meal':'lunch','time':hm(max(cur,dt.datetime.combine(day,dt.time(13,30)))),'lat':ls['lat'],'lon':ls['lon'],'min':60})
             if stops and kind!='departure':
                 last_s=[s for s in stops if not s.get('meal')]
                 if last_s: stops.append({'meal':'dinner','time':hm(max(cur,dt.datetime.combine(day,dt.time(19,0)))),'lat':last_s[-1]['lat'],'lon':last_s[-1]['lon'],'min':90})
         days.append({'date':day.isoformat(),'kind':kind,'stops':stops})
     return days
 def attach_food(days):
-    used=set();ok=None
-    for dy in days:
-        for s in dy['stops']:
-            if not s.get('meal'): continue
-            r=restaurants(s['lat'],s['lon'])
-            if r is None: ok=False
-            pick=[x for x in (r or []) if x['n'] not in used and not x['cafe']]
-            s['options']=[{'name':x['n'],'cuisine':x['cuisine'],'hours':x['hours'],'web':x['web'],'map':place(x['n'],x['lat'],x['lon'])} for x in pick[:3]]
-            for x in pick[:3]: used.add(x['n'])
-            s['mapSearch']='https://www.google.com/maps/search/restauracje/@%s,%s,16z'%(s['lat'],s['lon'])
-    return ok
+    meals=[s for dy in days for s in dy['stops'] if s.get('meal')]
+    for s in meals: s['mapSearch']='https://www.google.com/maps/search/restauracje/@%s,%s,16z'%(s['lat'],s['lon'])
+    if not meals: return True
+    c=(sum(s['lat'] for s in meals)/len(meals),sum(s['lon'] for s in meals)/len(meals))
+    rad=min(6000,max(1500,1000*max(geo.km(c[0],c[1],s['lat'],s['lon']) for s in meals)+800))
+    R=restaurants(round(c[0],3),round(c[1],3),round(rad,-2))
+    if R is None: return False
+    used=set()
+    for s in meals:
+        near=sorted([x for x in R if x['n'] not in used and geo.km(s['lat'],s['lon'],x['lat'],x['lon'])<.9],key=lambda x:(-x['s'],geo.km(s['lat'],s['lon'],x['lat'],x['lon'])))[:3]
+        s['options']=[{'name':x['n'],'cuisine':x['cuisine'],'hours':x['hours'],'web':x['web'],'map':place(x['n'],x['lat'],x['lon'])} for x in near]
+        used.update(x['n'] for x in near)
+    return True
 def build(body):
     o=body['option'];h=body['hotel'];home=body['home'];prefs=body.get('prefs') or {}
     if not o.get('flight'): raise ValueError('Ten wariant nie ma potwierdzonych lotów. Wybierz potwierdzony.')
@@ -151,7 +159,7 @@ def build(body):
     leave=add(dep,-(buf+extra+road))
     H=(h['lat'],h['lon']);hmap=gmaps((da['lat'],da['lon']),H)
     tl=[];e=lambda **k:tl.append(k)
-    e(at=leave.isoformat(timespec='minutes'),title='Wyjazd z domu',text=f"{home.get('label','Dom')} → {oa['city']}. {o['drive']['km']} km, około {span(road)} z zapasem na korki.",sure='est',icon='car',map=gmaps((home['lat'],home['lon']),(oa['lat'],oa['lon']),'driving' if mode!='public' else 'transit'))
+    e(at=leave.isoformat(timespec='minutes'),title='Wyjazd z domu',text=f"{home.get('label','Dom')} → {search.aname(o['from'])}. {o['drive']['km']} km, około {span(road)} z zapasem na korki.",sure='est',icon='car',map=gmaps((home['lat'],home['lon']),(oa['lat'],oa['lon']),'driving' if mode!='public' else 'transit'))
     if mode=='car': e(at=add(dep,-(buf+extra)).isoformat(timespec='minutes'),title='Parking',text=f"Zostawiasz auto. Rezerwacja online zwykle jest tańsza.",sure='est',icon='park')
     e(at=add(dep,-buf).isoformat(timespec='minutes'),title='Lotnisko',text=f"{oa['name']}. Nadanie bagażu, kontrola bezpieczeństwa"+('' if sch else ', kontrola paszportowa')+'.',sure='est',icon='door')
     e(at=add(dep,-30).isoformat(timespec='minutes'),title='Bramka',text='Bramki zwykle zamykają się 20–30 minut przed odlotem. Numer bramki sprawdź na tablicy.',sure='est',icon='gate')

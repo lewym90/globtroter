@@ -14,7 +14,6 @@ def hotel_links(name,city,ci,co,A,C,rooms=1):
     return {'Booking.com':'https://www.booking.com/searchresults.pl.html?'+urlencode({'ss':q,'checkin':ci,'checkout':co,'group_adults':A,'group_children':C,'no_rooms':rooms,'selected_currency':'PLN'}),
       'Agoda.com':'https://www.agoda.com/pl-pl/search?'+urlencode({'textToSearch':q,'checkIn':ci,'checkOut':co,'adults':A,'children':C,'rooms':rooms}),
       'Trip.com':'https://pl.trip.com/hotels/list?'+urlencode({'keyword':q,'checkin':ci,'checkout':co,'adult':A,'children':C,'crn':rooms}),
-      'Vio.com':'https://www.vio.com/?'+urlencode({'q':q}),
       'Expedia':'https://www.expedia.pl/Hotel-Search?'+urlencode({'destination':q,'startDate':ci,'endDate':co,'adults':A}),
       'Hotels.com':'https://pl.hotels.com/Hotel-Search?'+urlencode({'destination':q,'startDate':ci,'endDate':co,'adults':A}),
       'Google':'https://www.google.com/travel/search?'+urlencode({'q':f'{q} {ci} {co}','hl':'pl','curr':'PLN'})}

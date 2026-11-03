@@ -518,6 +518,6 @@ function viewPlan() {
   try { await data(); } catch { toast('Nie udało się wczytać bazy miejsc. Sprawdź internet.'); }
   const job = load('job', null);
   if (job && Date.now() - job.t < 3e6) { S.q = job.q; viewSearch(job.id); }
-  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   window.__gt = { S, viewResults, viewOption, viewPlan, VERSION };
 })();
