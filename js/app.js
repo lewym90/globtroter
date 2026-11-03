@@ -2,13 +2,15 @@ import { scene, themeOf, landmarkOf } from './scene.js';
 import { flapRow } from './flap.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '2.2.0';
+const VERSION = '2.3.0';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
 const backdrop = $('#backdrop');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const url = (u) => (/^https?:\/\//.test(u || '') ? esc(u) : '#');
+const osob = (n) => (n === 1 ? 'osoba' : n < 5 ? 'osoby' : 'osób');
+const osobD = (n) => (n === 1 ? 'osoby' : 'osób');
 const zl = (n) => Math.round(n).toLocaleString('pl-PL').replace(/,/g, ' ') + ' zł';
 const MONTHS = ['styczeń', 'luty', 'marzec', 'kwiecień', 'maj', 'czerwiec', 'lipiec', 'sierpień', 'wrzesień', 'październik', 'listopad', 'grudzień'];
 const MONTHS_G = ['stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca', 'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia'];
@@ -507,7 +509,7 @@ function viewResults() {
   ${!top.length ? `<div class="note info"><b>Na ten termin nie ma lotów z Twoich lotnisk.</b><p class="mute">Spróbuj szerszego terminu albo większego zasięgu lotnisk.</p></div>` : ''}
   ${top.map((o, i) => `<article class="card"><button data-o="${o.id}" style="display:block;width:100%;text-align:left">${posterOf(o, `<span class="pr">${zl(o.hotelEst ? o.perPersonAll : o.perPerson)}<small style="font:600 12px var(--body)"> /os. ${o.hotelEst ? 'z noclegiem' : 'bez noclegu'}</small></span>`)}
     <div class="in"><p><b>${dateL(o.dep)} – ${dateL(o.ret)}</b>, ${o.nights} nocy, z ${esc(o.fromGen)}</p>
-    <p class="mute">${o.climate?.score != null ? esc(o.climate.why) + '. ' : ''}</p><p>${o.hotelEst ? `<b>Razem około ${zl(o.totalWithHotel)}</b> dla ${o.pax.adults + o.pax.children} ${o.pax.adults + o.pax.children > 1 ? 'osób' : 'osoby'}: loty i dojazd ${zl(o.total)}, nocleg około ${zl(o.hotelEst.total)}.` : `<b>Loty i dojazd ${zl(o.total)}.</b> Tej ceny brakuje noclegu: nie udało się teraz pobrać cen hoteli.`}</p>
+    <p class="mute">${o.climate?.score != null ? esc(o.climate.why) + '. ' : ''}</p><p>${o.hotelEst ? `<b>Razem około ${zl(o.totalWithHotel)}</b> dla ${o.pax.adults + o.pax.children} ${osobD(o.pax.adults + o.pax.children)}: loty i dojazd ${zl(o.total)}, nocleg około ${zl(o.hotelEst.total)}.` : `<b>Loty i dojazd ${zl(o.total)}.</b> Tej ceny brakuje noclegu: nie udało się teraz pobrać cen hoteli.`}</p>
     ${o.insight ? `<p class="warn" style="color:var(--deep)">${esc(o.insight)}</p>` : ''}</div></button></article>`).join('')}
   <p class="foot">Ceny sprawdzone dziś o ${esc(ago)}. Linie zmieniają je często, ostateczną zobaczysz przy zakupie.</p></section>`;
   $('#b').onclick = () => { S.step = STEPS.length - 1; viewWizard(); };
@@ -552,7 +554,7 @@ function viewOption() {
   const n = o.pax.adults + o.pax.children;
   app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>${esc(o.dest.name)}</h2></div>
   <section class="page"><article class="card">${posterOf(o)}
-   <div class="in"><p class="big">${zl(o.hotelEst ? o.totalWithHotel : o.total)}</p><p class="mute">${o.hotelEst ? `cały wyjazd bez jedzenia na miejscu, ${n} ${n > 1 ? 'osób' : 'osoba'}, ${zl(o.perPersonAll)} na osobę` : `loty i dojazd, bez noclegu, ${n} ${n > 1 ? 'osób' : 'osoba'}`}</p>
+   <div class="in"><p class="big">${zl(o.hotelEst ? o.totalWithHotel : o.total)}</p><p class="mute">${o.hotelEst ? `cały wyjazd bez jedzenia na miejscu, ${n} ${osob(n)}, ${zl(o.perPersonAll)} na osobę` : `loty i dojazd, bez noclegu, ${n} ${osob(n)}`}</p>
     <div style="margin-top:10px">
     <div class="kv"><span>Bilety</span><span>${zl(o.tickets)} <span class="sure ${o.verified ? 'fact' : 'est'}">${o.verified ? 'sprawdzone' : 'z kalendarza'}</span></span></div>
     ${o.access.items.map((i) => `<div class="kv"><span>${esc(i.label)}</span><span>${zl(i.pln)} <span class="sure est">szacunek</span></span></div>`).join('')}
@@ -565,13 +567,13 @@ function viewOption() {
     ${o.leaveHome ? `<p style="margin-top:12px"><b>Z domu wyjeżdżasz ${dateL(o.leaveHome)} o ${timeL(o.leaveHome)}.</b></p>` : ''}
     <div class="acts">${o.flight ? `<button class="btn" id="hot">Wybierz nocleg</button>` : '<p class="warn">Nie potwierdziliśmy lotów na ten termin. Dotknij innego dnia w kalendarzu poniżej.</p>'}</div></div>
    ${calendar(o)}
-   ${cmp?.length > 1 ? `<div class="in"><h3 class="big" style="font-size:32px">Z którego lotniska</h3><p class="mute">Cały wyjazd: bilety, dojazd, parking i nocleg. Pozycje „około” to cena z rozpoznania rynku.</p>${insight ? `<div class="insight">${esc(insight)}</div>` : ''}
+   ${cmp?.length > 1 ? `<div class="in"><h3 class="big" style="font-size:32px">Z którego lotniska</h3><p class="mute">Bilety, bagaż i dojazd dla ${n} ${osob(n)}, ${o.compareNights || others[0].nights} nocy, w najtańszym terminie z każdego lotniska. Noclegu tu nie liczymy, bo nie zależy od lotniska. „Około” to cena wstępna.</p>${insight ? `<div class="insight">${esc(insight)}</div>` : ''}
     <div class="bars">${cmp.map((c) => {
       if (c.state === 'none') return `<div class="cmp mute"><div class="t"><span>${esc(c.city)} ${c.from}, ${c.km} km</span><span>brak lotów w sprawdzonych dniach</span></div></div>`;
-      const inner = `<div class="t"><span>${esc(c.city)} ${c.from}, ${c.km} km</span><span>${c.state === 'estimate' ? 'około ' : ''}${zl(c.total)}</span></div><div class="tr" style="width:${(c.total / max) * 100}%"><i class="a" style="flex:${c.tickets}"></i><i class="b" style="flex:${c.access}"></i><i class="c" style="flex:${c.hotel || 0}"></i></div>`;
+      const inner = `<div class="t"><span>${esc(c.city)} ${c.from}, ${c.km} km${c.dep ? `<small class="mute" style="display:block;font-weight:500">${dateL(c.dep)} – ${dateL(c.ret)}</small>` : ''}</span><span>${c.state === 'estimate' ? 'około ' : ''}${zl(c.total)}</span></div><div class="tr" style="width:${(c.total / max) * 100}%"><i class="a" style="flex:${c.tickets}"></i><i class="b" style="flex:${c.access}"></i></div>`;
       return c.optionId ? `<button class="cmp" data-c="${c.optionId}">${inner}</button>` : `<div class="cmp">${inner}</div>`;
     }).join('')}</div>
-    <div class="legend"><span><i style="background:var(--deep)"></i>bilety</span><span><i style="background:var(--coral)"></i>dojazd</span><span><i style="background:var(--lagoon)"></i>nocleg</span></div></div>` : ''}
+    <div class="legend"><span><i style="background:var(--deep)"></i>bilety</span><span><i style="background:var(--coral)"></i>dojazd i bagaż</span></div></div>` : ''}
    <div class="in"><h3 class="big" style="font-size:32px">Kup bilety</h3><p class="mute">Otwierają się z wypełnionymi datami. Sprawdź cenę przed zapłatą.</p><div class="linkset">${o.links.map((l) => `<a class="btn line small" href="${url(l.url)}" target="_blank" rel="noopener">${esc(l.site)}</a>`).join('')}</div></div>
   </article></section>`;
   $('#b').onclick = viewResults;

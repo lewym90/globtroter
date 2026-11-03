@@ -159,6 +159,21 @@ class Merge(unittest.TestCase):
             self.assertEqual(len(r['hotels']),2);h=[x for x in r['hotels'] if x['key']=='x'][0]
             self.assertTrue(h['breakfast']);self.assertEqual(h['bestTotal'],600);self.assertEqual(h['amen'],['basen'])
         finally: hotels.search_xotelo,hotels.search_google=ox,og
+class Compare(unittest.TestCase):
+    def opt(self,fr,n,total,hotel,id_):
+        return {'id':id_,'dest':{'id':'bcn'},'from':fr,'nights':n,'drive':{'km':300,'min':200},'tickets':total-200,'access':{'total':200},'bags':0,'total':total,'dep':'2027-05-11','ret':'2027-05-18','verified':True,'hotelEst':{'total':hotel},'totalWithHotel':total+hotel}
+    def run_(self,o,best={},codes=[]):
+        geo.BYID['bcn']={'id':'bcn','air':['BCN'],'cc':'ES'};geo.AIRPORTS.setdefault('KRK',{'city':'Krakow'});geo.AIRPORTS.setdefault('WMI',{'city':'Modlin'})
+        search.compare_airports(o,best,{},'car',{},2,codes,51,22)
+    def test_two_options_same_airport_keeps_cheaper(self):
+        a=self.opt('KRK',7,1668,4985,'a');b=self.opt('KRK',7,6000,5772,'b');self.run_([a,b])
+        c=a['compare'];self.assertEqual(len(c),1);self.assertEqual(c[0]['total'],1668)
+    def test_other_stay_length_ignored(self):
+        a=self.opt('KRK',7,1668,4985,'a');b=self.opt('WMI',5,900,9000,'b');self.run_([a,b])
+        self.assertEqual([r['from'] for r in a['compare']],['KRK'])
+    def test_no_negative_and_hotel_excluded(self):
+        a=self.opt('KRK',7,1668,1000,'a');b=self.opt('WMI',7,1200,4000,'b');self.run_([a,b])
+        self.assertEqual(a['compare'][0]['from'],'WMI');self.assertNotIn('-',a['insight']);self.assertIn('468 zł',a['insight'])
 class Food(unittest.TestCase):
     D=lambda self:[{'stops':[{'meal':'lunch','lat':41.9,'lon':12.5},{'name':'X','lat':41.9,'lon':12.5}]}]
     def test_source_down_no_invented_names(self):
