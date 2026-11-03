@@ -1,0 +1,128 @@
+Rzym	Rome	IT	FCO,CIA	city,culture,food
+Mediolan	Milan	IT	MXP,BGY,LIN	city,shopping,food
+Wenecja	Venice	IT	VCE,TSF	city,culture,romance
+Florencja	Florence	IT	FLR,PSA,BLQ	city,culture,food
+Neapol	Naples	IT	NAP	city,food,culture
+Bolonia	Bologna	IT	BLQ	city,food
+Turyn	Turin	IT	TRN	city,food
+Palermo	Palermo	IT	PMO	city,beach,food
+Katania	Catania	IT	CTA	beach,city,nature
+Bari	Bari	IT	BRI	beach,city
+Sardynia (Cagliari)	Cagliari	IT	CAG	beach,nature
+Sardynia (Olbia)	Olbia	IT	OLB	beach,nature
+Rimini	Rimini	IT	RMI,BLQ	beach,family
+Cortina d'Ampezzo	Cortina d'Ampezzo	IT	VCE,TSF	ski,nature
+Livigno	Livigno	IT	BGY,MXP	ski
+Barcelona	Barcelona	ES	BCN,GRO	city,beach,culture,party
+Madryt	Madrid	ES	MAD	city,culture,food
+Sewilla	Seville	ES	SVQ	city,culture
+Walencja	Valencia	ES	VLC	city,beach,food
+Malaga	Málaga	ES	AGP	beach,city
+Alicante	Alicante	ES	ALC	beach,family
+Bilbao	Bilbao	ES	BIO	city,food
+Grenada	Granada	ES	GRX,AGP	city,culture
+Palma de Mallorca	Palma de Mallorca	ES	PMI	beach,family,party
+Ibiza	Ibiza	ES	IBZ	beach,party
+Teneryfa	Santa Cruz de Tenerife	ES	TFS,TFN	beach,nature,family
+Gran Canaria	Las Palmas de Gran Canaria	ES	LPA	beach,nature,family
+Lanzarote	Arrecife	ES	ACE	beach,nature
+Fuerteventura	Puerto del Rosario	ES	FUE	beach,nature
+Lizbona	Lisbon	PT	LIS	city,culture,food
+Porto	Porto	PT	OPO	city,food,culture
+Faro (Algarve)	Faro	PT	FAO	beach,nature
+Madera (Funchal)	Funchal	PT	FNC	nature,beach
+Ponta Delgada (Azory)	Ponta Delgada	PT	PDL	nature
+Paryż	Paris	FR	CDG,ORY,BVA	city,culture,romance
+Nicea	Nice	FR	NCE	beach,city,romance
+Marsylia	Marseille	FR	MRS	city,beach
+Lyon	Lyon	FR	LYS	city,food
+Tuluza	Toulouse	FR	TLS	city
+Bordeaux	Bordeaux	FR	BOD	city,food
+Chamonix	Chamonix-Mont-Blanc	FR	GVA	ski,nature
+Ajaccio (Korsyka)	Ajaccio	FR	AJA	beach,nature
+Londyn	London	GB	LHR,LGW,STN,LTN	city,culture,shopping
+Edynburg	Edinburgh	GB	EDI	city,culture
+Manchester	Manchester	GB	MAN	city
+Liverpool	Liverpool	GB	LPL	city
+Dublin	Dublin	IE	DUB	city,culture
+Reykjavík	Reykjavík	IS	KEF	nature
+Amsterdam	Amsterdam	NL	AMS,EIN	city,culture,party
+Bruksela	Brussels	BE	BRU,CRL	city,food
+Brugia	Bruges	BE	BRU,CRL	city,romance
+Berlin	Berlin	DE	BER	city,culture,party
+Monachium	Munich	DE	MUC,MMX	city,food
+Hamburg	Hamburg	DE	HAM	city
+Frankfurt	Frankfurt	DE	FRA	city
+Kolonia	Cologne	DE	CGN	city
+Zurych	Zurich	CH	ZRH	city,nature
+Genewa	Geneva	CH	GVA	city,nature
+Interlaken	Interlaken	CH	ZRH,BSL	nature,ski
+Zermatt	Zermatt	CH	GVA	ski,nature
+Wiedeń	Vienna	AT	VIE	city,culture
+Salzburg	Salzburg	AT	SZG,MUC	city,ski
+Innsbruck	Innsbruck	AT	INN,MUC	ski,nature
+Praga	Prague	CZ	PRG	city,culture,party
+Budapeszt	Budapest	HU	BUD	city,culture,party
+Bratysława	Bratislava	SK	BTS,VIE	city
+Lublana	Ljubljana	SI	LJU,VCE	city,nature
+Split	Split	HR	SPU	beach,city
+Dubrownik	Dubrovnik	HR	DBV	beach,city,culture
+Zadar	Zadar	HR	ZAD	beach
+Makarska	Makarska	HR	SPU	beach,family
+Hvar	Hvar	HR	SPU	beach,party
+Rovinj	Rovinj	HR	PUY	beach,romance
+Pula	Pula	HR	PUY	beach,culture
+Rijeka	Rijeka	HR	RJK	beach,city
+Zagrzeb	Zagreb	HR	ZAG	city
+Kotor	Kotor	ME	TIV,TGD	beach,nature
+Budva	Budva	ME	TIV,TGD	beach,party
+Sarajewo	Sarajevo	BA	SJJ	city,culture
+Belgrad	Belgrade	RS	BEG	city,party
+Tirana	Tirana	AL	TIA	city
+Saranda	Sarandë	AL	CFU,TIA	beach
+Skopje	Skopje	MK	SKP	city
+Ochryda	Ohrid	MK	OHD,SKP	nature,culture
+Ateny	Athens	GR	ATH	city,culture,beach
+Saloniki	Thessaloniki	GR	SKG	city,beach,food
+Santoryn	Thira	GR	JTR	beach,romance
+Mykonos	Mykonos	GR	JMK	beach,party
+Kreta (Heraklion)	Heraklion	GR	HER	beach,family,culture
+Kreta (Chania)	Chania	GR	CHQ	beach,nature
+Rodos	Rhodes	GR	RHO	beach,family,culture
+Korfu	Corfu	GR	CFU	beach,family
+Kos	Kos	GR	KGS	beach,family
+Zakynthos	Zakynthos	GR	ZTH	beach,nature
+Kefalonia	Argostoli	GR	EFL	beach,nature
+Larnaka	Larnaca	CY	LCA	beach,family
+Pafos	Paphos	CY	PFO	beach,family
+Valletta	Valletta	MT	MLA	city,beach,culture
+Stambuł	Istanbul	TR	IST,SAW	city,culture,food
+Antalya	Antalya	TR	AYT	beach,family
+Bodrum	Bodrum	TR	BJV	beach,party
+Warna	Varna	BG	VAR	beach,family
+Burgas	Burgas	BG	BOJ	beach,family
+Sofia	Sofia	BG	SOF	city
+Bansko	Bansko	BG	SOF	ski
+Bukareszt	Bucharest	RO	OTP	city
+Kluż-Napoka	Cluj-Napoca	RO	CLJ	city
+Kiszyniów	Chișinău	MD	RMO	city
+Oslo	Oslo	NO	OSL	city,nature
+Bergen	Bergen	NO	BGO	nature,city
+Tromsø	Tromsø	NO	TOS	nature
+Sztokholm	Stockholm	SE	ARN,NYO	city,culture
+Göteborg	Gothenburg	SE	GOT	city
+Kopenhaga	Copenhagen	DK	CPH	city,culture,food
+Helsinki	Helsinki	FI	HEL	city
+Rovaniemi	Rovaniemi	FI	RVN	nature,family
+Tallinn	Tallinn	EE	TLL	city,culture
+Ryga	Riga	LV	RIX	city,culture
+Wilno	Vilnius	LT	VNO	city,culture
+Kraków	Kraków	PL	KRK	city,culture
+Gdańsk	Gdańsk	PL	GDN	city,beach
+Wrocław	Wrocław	PL	WRO	city
+Zakopane	Zakopane	PL	KRK	ski,nature
+Kutaisi	Kutaisi	GE	KUT	city,nature
+Tbilisi	Tbilisi	GE	TBS	city,food,culture
+Batumi	Batumi	GE	BUS	beach,city
+Marrakesz	Marrakesh	MA	RAK	city,culture
+Agadir	Agadir	MA	AGA	beach

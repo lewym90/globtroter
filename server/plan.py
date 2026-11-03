@@ -1,0 +1,196 @@
+"""Kompendium wyjazdu: od wyjscia z domu do powrotu. Kazda godzina jest wyliczona z danych,
+kazda pozycja ma poziom pewnosci: fact (rezerwacja, rozklad), est (szacunek), check (sprawdz)."""
+import datetime as dt,math
+from urllib.parse import quote,urlencode
+import access,countries,geo,net,search
+ATTR=geo.load('attractions.json',{})
+DUR={'museum':120,'church':40,'palace':90,'castle':90,'monument':25,'square':25,'park':60,'sight':45,'ruins':90,'bridge':20,'beach':150,'zoo':150,'street':40,'nature':120,'theatre':30,'food':60}
+LABEL={'museum':'Muzeum','church':'Świątynia','palace':'Pałac','castle':'Zamek','monument':'Pomnik','square':'Plac','park':'Park','sight':'Zabytek','ruins':'Ruiny','bridge':'Most','beach':'Plaża','zoo':'Zoo','street':'Ulica','nature':'Przyroda','theatre':'Teatr','food':'Targ'}
+def t(iso): return dt.datetime.fromisoformat(iso)
+def hm(d): return d.strftime('%H:%M')
+def span(m):
+    h,n=divmod(int(m),60)
+    return (f'{h} h ' if h else '')+(f'{n} min' if n or not h else '')
+def przes(n): return 'bez przesiadek' if n==0 else ('1 przesiadka' if n==1 else f'{n} przesiadki' if n<5 else f'{n} przesiadek')
+def add(d,m): return d+dt.timedelta(minutes=m)
+def gmaps(a,b,mode='transit'):
+    return 'https://www.google.com/maps/dir/?'+urlencode({'api':1,'origin':f'{a[0]},{a[1]}','destination':f'{b[0]},{b[1]}','travelmode':mode})
+def place(n,lat,lon): return 'https://www.google.com/maps/search/?'+urlencode({'api':1,'query':f'{n} {lat},{lon}'})
+def transit(a,b,when):
+    """Transitous. Rozklady dzialaja dla najblizszych tygodni, wiec dalszy termin liczymy na ten sam dzien tygodnia."""
+    today=dt.date.today();d=when;sample=False
+    if (d.date()-today).days>21:
+        k=(d.date()-today).days%7;base=today+dt.timedelta(days=7+k);d=dt.datetime.combine(base,d.time());sample=True
+    url='https://api.transitous.org/api/v1/plan?'+urlencode({'fromPlace':f'{a[0]},{a[1]}','toPlace':f'{b[0]},{b[1]}','time':d.astimezone(dt.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),'numItineraries':3})
+    try:
+        r=net.fetch_json(url,ttl=86400,tries=2,timeout=25)
+        its=sorted(r.get('itineraries') or [],key=lambda i:(i.get('duration',9e9)+600*i.get('transfers',0)))
+        if not its: return None
+        i=its[0];legs=[]
+        for l in i['legs']:
+            if l['mode']=='WALK' and l.get('duration',0)<120: continue
+            legs.append({'mode':l['mode'],'line':l.get('routeShortName') or l.get('tripShortName') or '', 'from':l['from'].get('name'),'to':l['to'].get('name'),'min':round(l.get('duration',0)/60),'headsign':l.get('headsign')})
+        return {'min':round(i['duration']/60),'transfers':i.get('transfers',0),'legs':legs,'sample':sample}
+    except Exception: return None
+def weather(d,ci,co):
+    """Prognoza do 14 dni; dalej srednie klimatyczne z wyraznym oznaczeniem."""
+    a=dt.date.fromisoformat(ci);b=dt.date.fromisoformat(co);out={}
+    if (b-dt.date.today()).days<=14:
+        try:
+            r=net.fetch_json(f"https://api.open-meteo.com/v1/forecast?latitude={d['lat']}&longitude={d['lon']}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code&timezone=auto&forecast_days=16",ttl=3*3600)
+            x=r['daily']
+            for i,day in enumerate(x['time']):
+                if ci<=day<=co: out[day]={'tmax':x['temperature_2m_max'][i],'tmin':x['temperature_2m_min'][i],'rain':x['precipitation_probability_max'][i],'code':x['weather_code'][i],'kind':'forecast'}
+        except Exception: pass
+    return out
+def holidays(cc,a,b):
+    res=[]
+    for y in sorted({a[:4],b[:4]}):
+        try:
+            for h in net.fetch_json(f'https://date.nager.at/api/v3/PublicHolidays/{y}/{cc}',ttl=30*86400):
+                if a<=h['date']<=b and h.get('global',True): res.append({'date':h['date'],'name':h.get('localName') or h['name']})
+        except Exception: pass
+    return res
+def restaurants(lat,lon):
+    """Lokale z OpenStreetMap. Dziala na zywo; gdy zrodlo milczy, dajemy link do mapy, nie wymyslamy nazw."""
+    q=f'[out:json][timeout:18];(nwr["amenity"~"restaurant|cafe"]["name"]["cuisine"](around:1200,{lat},{lon}););out center tags 60;'
+    for host in('overpass-api.de','overpass.kumi.systems'):
+        try:
+            r=net.fetch_json(f'https://{host}/api/interpreter?data='+quote(q),ttl=14*86400,tries=1,timeout=22)
+            out=[]
+            for e in r.get('elements',[]):
+                g=e.get('center') or e;tg=e.get('tags',{})
+                if 'lat' not in g: continue
+                score=sum(1 for k in('website','opening_hours','phone','contact:website','wheelchair','outdoor_seating') if k in tg)
+                out.append({'n':tg['name'],'cuisine':tg.get('cuisine','').replace(';',', ').replace('_',' '),'lat':g['lat'],'lon':g['lon'],'hours':tg.get('opening_hours'),'web':tg.get('website') or tg.get('contact:website'),'s':score,'cafe':tg.get('amenity')=='cafe'})
+            return sorted(out,key=lambda x:-x['s'])
+        except Exception: continue
+    return None
+def cluster(items,center,k):
+    """Grupuje atrakcje w dni: k-srednich na wspolrzednych, potem najkrotsza kolejnosc."""
+    if not items: return [[] for _ in range(k)]
+    seeds=sorted(items,key=lambda x:-x['l'])[:k]
+    cs=[(s['lat'],s['lon']) for s in seeds]
+    while len(cs)<k: cs.append(cs[0])
+    for _ in range(10):
+        g=[[] for _ in range(k)]
+        for it in items:
+            i=min(range(k),key=lambda j:geo.km(it['lat'],it['lon'],*cs[j]));g[i].append(it)
+        cs=[(sum(x['lat'] for x in q)/len(q),sum(x['lon'] for x in q)/len(q)) if q else cs[i] for i,q in enumerate(g)]
+    return g
+def order(st,start):
+    res=[];cur=start;left=list(st)
+    while left:
+        n=min(left,key=lambda x:geo.km(cur[0],cur[1],x['lat'],x['lon']));left.remove(n);res.append(n);cur=(n['lat'],n['lon'])
+    return res
+def schedule_days(d,opt,hotel,prefs):
+    """Plan dni. Pierwszy i ostatni dzien licza sie z godzin lotow."""
+    A=ATTR.get(d['id'],[])
+    style=prefs.get('pace','normal');limit={'slow':300,'normal':420,'fast':540}[style]
+    arr=t(opt['flight']['out']['legs'][-1]['arr']);dep=t(opt['flight']['back']['legs'][0]['dep'])
+    H=(hotel['lat'],hotel['lon'])
+    first=arr.date();last=dep.date();nd=(last-first).days+1
+    pool=sorted(A,key=lambda x:-x['l'])[:max(8,nd*5)]
+    interest=set(prefs.get('interests') or [])
+    if interest: pool.sort(key=lambda x:(0 if x['t'] in interest else 1,-x['l']))
+    days=[];groups=cluster(pool,H,max(1,nd));
+    groups.sort(key=lambda g:-len(g))
+    used=set();g_i=0
+    for i in range(nd):
+        day=first+dt.timedelta(days=i)
+        start=dt.datetime.combine(day,dt.time(9,30));end=dt.datetime.combine(day,dt.time(20,0));kind='full'
+        if i==0:
+            start=max(start,add(arr,150));kind='arrival'
+        if i==nd-1:
+            end=min(end,add(dep,-300));kind='departure' if nd>1 else 'arrival'
+        avail=(end-start).total_seconds()/60
+        stops=[]
+        if avail>=60:
+            g=[x for x in groups[g_i%len(groups)] if x['q'] not in used] if groups else []
+            g_i+=1
+            cur=start;mins=0
+            mon=day.weekday()==0
+            for x in order(g,H):
+                need=DUR.get(x['t'],45);walk=round(geo.km(H[0],H[1],x['lat'],x['lon'])/4.5*60) if not stops else round(geo.km(stops[-1]['lat'],stops[-1]['lon'],x['lat'],x['lon'])/4.5*60)
+                walk=min(walk,45)
+                if mins+need+walk>min(limit,avail): continue
+                if mon and x['t']=='museum': continue
+                cur=add(cur,walk)
+                if not any(s.get('meal') for s in stops) and cur.hour>=13 and avail>240:
+                    stops.append({'meal':'lunch','time':hm(cur),'lat':x['lat'],'lon':x['lon'],'min':60});cur=add(cur,60)
+                stops.append({'time':hm(cur),'name':x['n'][0].upper()+x['n'][1:],'type':LABEL.get(x['t'],'Zabytek'),'kind':x['t'],'min':need,'lat':x['lat'],'lon':x['lon'],'img':x.get('img'),'web':x.get('web'),'map':place(x['n'],x['lat'],x['lon']),'walk':walk,'q':x['q']})
+                used.add(x['q']);cur=add(cur,need);mins+=need+walk
+            if stops and kind!='departure':
+                last_s=[s for s in stops if not s.get('meal')]
+                if last_s: stops.append({'meal':'dinner','time':hm(max(cur,dt.datetime.combine(day,dt.time(19,0)))),'lat':last_s[-1]['lat'],'lon':last_s[-1]['lon'],'min':90})
+        days.append({'date':day.isoformat(),'kind':kind,'stops':stops})
+    return days
+def attach_food(days):
+    used=set();ok=None
+    for dy in days:
+        for s in dy['stops']:
+            if not s.get('meal'): continue
+            r=restaurants(s['lat'],s['lon'])
+            if r is None: ok=False
+            pick=[x for x in (r or []) if x['n'] not in used and not x['cafe']]
+            s['options']=[{'name':x['n'],'cuisine':x['cuisine'],'hours':x['hours'],'web':x['web'],'map':place(x['n'],x['lat'],x['lon'])} for x in pick[:3]]
+            for x in pick[:3]: used.add(x['n'])
+            s['mapSearch']='https://www.google.com/maps/search/restauracje/@%s,%s,16z'%(s['lat'],s['lon'])
+    return ok
+def build(body):
+    o=body['option'];h=body['hotel'];home=body['home'];prefs=body.get('prefs') or {}
+    if not o.get('flight'): raise ValueError('Ten wariant nie ma potwierdzonych lotów. Wybierz potwierdzony.')
+    d=geo.BYID[o['dest']['id']];F=o['flight'];mode=o['access']['mode']
+    outL=F['out']['legs'];backL=F['back']['legs']
+    dep=t(outL[0]['dep']);arr=t(outL[-1]['arr']);bdep=t(backL[0]['dep']);barr=t(backL[-1]['arr'])
+    AP=geo.AIRPORTS;oa=AP[o['from']];da=AP[o['to']]
+    sch=d['cc'] not in search.NONSCH
+    buf=120 if sch else 150
+    road=round(o['drive']['min']*1.15)+20
+    extra=25 if mode=='car' else 10
+    leave=add(dep,-(buf+extra+road))
+    H=(h['lat'],h['lon']);hmap=gmaps((da['lat'],da['lon']),H)
+    tl=[];e=lambda **k:tl.append(k)
+    e(at=leave.isoformat(timespec='minutes'),title='Wyjazd z domu',text=f"{home.get('label','Dom')} → {oa['city']}. {o['drive']['km']} km, około {span(road)} z zapasem na korki.",sure='est',icon='car',map=gmaps((home['lat'],home['lon']),(oa['lat'],oa['lon']),'driving' if mode!='public' else 'transit'))
+    if mode=='car': e(at=add(dep,-(buf+extra)).isoformat(timespec='minutes'),title='Parking',text=f"Zostawiasz auto. Rezerwacja online zwykle jest tańsza.",sure='est',icon='park')
+    e(at=add(dep,-buf).isoformat(timespec='minutes'),title='Lotnisko',text=f"{oa['name']}. Nadanie bagażu, kontrola bezpieczeństwa"+('' if sch else ', kontrola paszportowa')+'.',sure='est',icon='door')
+    e(at=add(dep,-30).isoformat(timespec='minutes'),title='Bramka',text='Bramki zwykle zamykają się 20–30 minut przed odlotem. Numer bramki sprawdź na tablicy.',sure='est',icon='gate')
+    for l in outL:
+        e(at=l['dep'],title=f"Wylot {l['airline']} {l['no']}",text=f"{l['airlineName']}, {AP.get(l['from'],{}).get('city',l['from'])} → {AP.get(l['to'],{}).get('city',l['to'])}, ląduje o {l['arr'][11:]} czasu lokalnego.",sure='fact',icon='plane')
+    tr=transit((da['lat'],da['lon']),H,add(arr,45))
+    ta=add(arr,35 if sch else 55)
+    trm=tr['min'] if tr else round(geo.km(da['lat'],da['lon'],H[0],H[1])*1.4/30*60)+25
+    e(at=ta.isoformat(timespec='minutes'),title='Z lotniska do hotelu',text=(f"Około {span(tr['min'])} komunikacją, {przes(tr['transfers'])}." if tr else 'Nie mamy rozkładu dla tej trasy, sprawdź połączenie na mapie.'),legs=(tr or {}).get('legs'),sample=(tr or {}).get('sample'),sure='fact' if tr and not tr['sample'] else 'est',icon='bus',map=hmap)
+    e(at=add(ta,trm).isoformat(timespec='minutes'),title=f"Hotel: {h['name']}",text='Zameldowanie zwykle od 14:00–15:00. Sprawdź godzinę w potwierdzeniu.',sure='check',icon='bed',map=place(h['name'],H[0],H[1]))
+    rt=[]
+    r2=transit(H,(da['lat'],da['lon']),add(bdep,-(buf+180)))
+    rm=r2['min'] if r2 else trm
+    lh=add(bdep,-(buf+rm+30))
+    rt.append(dict(at=lh.isoformat(timespec='minutes'),title='Wyjście z hotelu',text=f"Około {span(rm)} na lotnisko, w tym 30 min zapasu.",legs=(r2 or {}).get('legs'),sure='est',icon='bus',map=gmaps(H,(da['lat'],da['lon']))))
+    rt.append(dict(at=add(bdep,-buf).isoformat(timespec='minutes'),title='Lotnisko',text=da['name'],sure='est',icon='door'))
+    for l in backL:
+        rt.append(dict(at=l['dep'],title=f"Powrót {l['airline']} {l['no']}",text=f"{l['airlineName']}, ląduje o {l['arr'][11:]}.",sure='fact',icon='plane'))
+    rt.append(dict(at=add(barr,road+40).isoformat(timespec='minutes'),title='W domu',text=(f"Około {span(road)} jazdy po odebraniu auta." if mode=='car' else f"Około {span(road)} drogi z lotniska."),sure='est',icon='home'))
+    days=schedule_days(d,o,h,prefs)
+    wx=weather(d,o['dep'],o['ret'])
+    m=int(o['dep'][5:7]);cl=(d.get('climate') or {})
+    for dy in days:
+        if dy['date'] in wx: dy['weather']=wx[dy['date']]
+    food=attach_food(days)
+    from climate import month as cm
+    c=countries.info(d['cc']);hol=holidays(d['cc'],o['dep'],o['ret'])
+    rate=None
+    if c and c['currency']!='PLN':
+        try: rate=net.fx(c['currency'])
+        except Exception: pass
+    if c: c['rate']=rate
+    bags=(F['out']['legs'][0]['airline'] in search.LCC)
+    check=[{'t':f"{c['docs'] if c else 'Dokument tożsamości'} ważny przez cały wyjazd",'d':-30},{'t':'Sprawdź wymogi wjazdu w MSZ','d':-14,'url':(c or {}).get('msz')}]
+    if c and c['ekuz']: check.append({'t':'Karta EKUZ','d':-14,'url':'https://www.nfz.gov.pl/dla-pacjenta/nasze-zdrowie-w-europie/'})
+    check+=[{'t':'Ubezpieczenie turystyczne','d':-14},{'t':'Rezerwacja parkingu','d':-7} if mode=='car' else {'t':'Bilety na dojazd','d':-7},{'t':'Odprawa online: zwykle 24–48 h przed lotem','d':-2},{'t':'Pobierz karty pokładowe','d':-1},{'t':'Ładowarka i powerbank w bagażu podręcznym','d':-1}]
+    if bags: check.insert(2,{'t':'Dokup bagaż u linii. Na lotnisku jest dużo drożej','d':-7})
+    if c and 'C' not in c['plugs']: check.append({'t':f"Adapter do gniazdek {c['plugs']}",'d':-3})
+    cost=[{'label':'Bilety','pln':o['tickets'],'sure':'fact' if o['verified'] else 'est'}]+[{'label':i['label'],'pln':i['pln'],'sure':'est'} for i in o['access']['items']]
+    if o.get('bags'): cost.append({'label':'Bagaż (szacunek)','pln':o['bags'],'sure':'est'})
+    cost.append({'label':f"Nocleg: {h['name']}",'pln':h['bestTotal'],'sure':'fact'})
+    return {'title':f"{d['name']}: {o['nights']} nocy",'dest':{k:d.get(k) for k in('id','name','cc','lat','lon')},'option':o,'hotel':h,'home':home,'timeline':tl,'return':rt,'days':days,'climate':cm(d,m),'climateSource':cl.get('station'),'country':c,'holidays':hol,'checklist':sorted(check,key=lambda x:x['d']),'cost':cost,'total':sum(x['pln'] for x in cost),'foodOk':food is not False,'at':dt.datetime.now().isoformat(timespec='minutes')}

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+<defs>
+<linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a1f54"/><stop offset=".42" stop-color="#3a2a8c"/><stop offset=".68" stop-color="#f4533a"/><stop offset=".86" stop-color="#ffb627"/></linearGradient>
+<linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1c4"/><stop offset="1" stop-color="#ffb627"/></linearGradient>
+<linearGradient id="w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0e6f9e"/><stop offset="1" stop-color="#0a1f54"/></linearGradient>
+<clipPath id="c"><circle cx="512" cy="560" r="300"/></clipPath>
+</defs>
+<rect width="1024" height="1024" fill="url(#s)"/>
+<g fill="#ffb627" opacity=".13">
+<path d="M512 560L1612 560L1595 751Z"/><path d="M512 560L1546 936L1465 1110Z"/><path d="M512 560L1355 1267L1219 1403Z"/><path d="M512 560L1062 1513L888 1594Z"/><path d="M512 560L703 1643L512 1660Z"/><path d="M512 560L321 1643L136 1594Z"/><path d="M512 560L-38 1513L-195 1403Z"/><path d="M512 560L-331 1267L-441 1110Z"/><path d="M512 560L-522 936L-571 751Z"/><path d="M512 560L-588 560L-571 369Z"/><path d="M512 560L-522 184L-441 10Z"/><path d="M512 560L-331 -147L-195 -283Z"/><path d="M512 560L-38 -393L136 -474Z"/><path d="M512 560L321 -523L512 -540Z"/><path d="M512 560L703 -523L888 -474Z"/><path d="M512 560L1062 -393L1219 -283Z"/><path d="M512 560L1355 -147L1465 10Z"/><path d="M512 560L1546 184L1595 369Z"/>
+</g>
+<circle cx="512" cy="560" r="300" fill="url(#g)"/>
+<g clip-path="url(#c)" fill="none" stroke="#f4533a" stroke-width="13" opacity=".62">
+<ellipse cx="512" cy="560" rx="115" ry="300"/><ellipse cx="512" cy="560" rx="225" ry="300"/><path d="M512 260v600"/>
+<path d="M212 560h600M250 410q262 70 524 0M250 710q262 -70 524 0"/>
+</g>
+<rect y="770" width="1024" height="254" fill="url(#w)"/>
+<g fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="11" stroke-linecap="round"><path d="M120 830q70 -26 140 0t140 0"/><path d="M620 860q70 -26 140 0t140 0"/><path d="M300 925q70 -26 140 0t140 0"/></g>
+<path d="M110 700C300 640 560 420 800 210" fill="none" stroke="#fff" stroke-width="13" stroke-dasharray="4 34" stroke-linecap="round"/>
+<g transform="translate(822 190) rotate(-41) scale(5.3)" fill="#fff"><path d="M30 0 8-4-6-24h-8l6 19-16 1-7-9h-6l3 13-3 13h6l7-9 16 1-6 19h8L8 4 30 0Q36 0 30 0Z" transform="rotate(0)"/></g>
+</svg>
