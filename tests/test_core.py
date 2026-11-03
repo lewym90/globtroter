@@ -81,6 +81,22 @@ class Season(unittest.TestCase):
         g=lambda n,m,st:climate.fit(B[n],m,st)[0]
         self.assertGreaterEqual(g('Teneryfa',2,'beach'),.55);self.assertLess(g('Gdańsk',2,'beach'),.2);self.assertLess(g('Split',2,'beach'),.55)
         self.assertGreaterEqual(g('Split',7,'beach'),.8);self.assertGreaterEqual(g('Chamonix',2,'ski'),.5);self.assertLess(g('Chamonix',7,'ski'),.1)
+class Confirm(unittest.TestCase):
+    def fl(self,o,d,day,p): return {'price':p,'stops':0,'min':120,'legs':[{'airline':'FR','no':'1','from':o,'to':d,'dep':day+'T06:10','arr':day+'T09:00','min':170}]}
+    def setUp(self): self.r,self.o=flights.roundtrip,flights.oneway
+    def tearDown(self): flights.roundtrip,flights.oneway=self.r,self.o
+    def C(self): return {'o':'WMI','d':'BCN','dep':'2027-03-06','ret':'2027-03-13','one':250,'grid':[{'dep':'2027-03-06','ret':'2027-03-13','price':250},{'dep':'2027-03-09','ret':'2027-03-16','price':300}]}
+    def test_falls_back_to_separate(self):
+        flights.roundtrip=lambda *a,**k:([],0)
+        flights.oneway=lambda o,d,day,*a,**k:([self.fl(o[0],d[0],day,200 if o[0]=='WMI' else 150)],0)
+        r,_=search.confirm(self.C(),2,0,None);self.assertEqual(r[0]['total'],350);self.assertTrue(r[0]['separate'])
+    def test_next_date(self):
+        flights.roundtrip=lambda o,d,dep,ret,*a,**k:([],0) if dep=='2027-03-06' else ([{'total':700,'out':self.fl(o,d,dep,700),'back':self.fl(d,o,ret,700)}],0)
+        flights.oneway=lambda *a,**k:([],0)
+        c=self.C();r,_=search.confirm(c,2,0,None);self.assertEqual(c['dep'],'2027-03-09');self.assertEqual(r[0]['total'],700)
+    def test_nothing_is_empty(self):
+        flights.roundtrip=lambda *a,**k:([],0);flights.oneway=lambda *a,**k:([],0)
+        self.assertEqual(search.confirm(self.C(),2,0,None)[0],[])
 class Food(unittest.TestCase):
     D=lambda self:[{'stops':[{'meal':'lunch','lat':41.9,'lon':12.5},{'name':'X','lat':41.9,'lon':12.5}]}]
     def test_source_down_no_invented_names(self):

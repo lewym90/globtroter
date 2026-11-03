@@ -153,13 +153,13 @@ def run(job,q):
             step(f"Potwierdzam loty {c['o']} → {c['d']}",.85+.12*i/max(1,len(tocheck)))
             rt=None;checked=None
             try:
-                r,age=flights.roundtrip(c['o'],c['d'],c['dep'],c['ret'],A,C,5,st)
+                r,age=confirm(c,A,C,st)
                 stat['ok']+=1
                 if r: rt=prefer(r,q);checked=time.time()-age
             except flights.Unavailable: stat['failed']+=1
             o=build(c,rt,checked,q,drive,mode,cfg,A,C,adest,lat,lon,month,best)
             opts.append(o)
-        opts.sort(key=lambda o:(o['hotelEst'] is None,o['totalWithHotel']))
+        opts.sort(key=lambda o:(not o['verified'],o['hotelEst'] is None,o['totalWithHotel']))
         compare_airports(opts,best,drive,mode,cfg,P,codes,lat,lon)
         step('Gotowe',1)
         job.update(state='done',result={'options':opts,'notes':notes,'coverage':stat,'empty':not opts,'month':month,'at':time.time(),
@@ -169,6 +169,16 @@ def run(job,q):
         job.update(state='error',error='Google Flights chwilowo nie odpowiada. Nie wiemy, jakie są ceny, więc niczego nie pokazujemy. Spróbuj za kilka minut.',retry=True)
     except Exception as e:
         import logging;logging.exception('search');job.update(state='error',error='Wyszukiwanie przerwane przez błąd serwera. Spróbuj ponownie.',retry=True)
+def confirm(c,A,C,st):
+    """Potwierdza konkretne loty: w obie strony, potem osobno, potem nastepna najtansza data."""
+    for x in [{'dep':c['dep'],'ret':c['ret'],'price':c['one']}]+sorted([g for g in c['grid'] if g['dep']!=c['dep']],key=lambda g:g['price'])[:2]:
+        r,age=flights.roundtrip(c['o'],c['d'],x['dep'],x['ret'],A,C,5,st)
+        if not r: r=flights.separate(c['o'],c['d'],x['dep'],x['ret'],A,C,st);age=0
+        if r:
+            if x['dep']!=c['dep']:
+                c.update(dep=x['dep'],ret=x['ret'],one=x['price']);c.pop('hotelEst',None)
+            return r,age
+    return [],0
 def prefer(r,q):
     """Uwzglednia godziny: najpierw loty nie wczesniej niz wskazana godzina."""
     h=q.get('earliest')
@@ -188,6 +198,7 @@ def build(c,rt,checked,q,drive,mode,cfg,A,C,adest,lat,lon,month,best):
     bag=q.get('bags') or {}
     if rt:
         f=rt[0];res.update(tickets=f['total'],flight=f,alternatives=rt[1:],verified=True,checkedAt=checked)
+        if f.get('separate'): warn.append('Cena to dwa osobne bilety w jedną stronę. Przy zakupie sprawdź, czy w obie strony nie wyjdzie taniej.')
     else:
         res.update(tickets=c['one']*P,flight=None,alternatives=[],verified=False,checkedAt=None)
         warn.append('Nie udało się potwierdzić konkretnych lotów. To cena z kalendarza dla jednej osoby razy liczba osób.')
@@ -238,7 +249,7 @@ def compare_airports(opts,best,drive,mode,cfg,P,codes,lat,lon):
     for o in opts: by.setdefault(o['dest']['id'],[]).append(o)
     for did,lst in by.items():
         full=lambda o:o['total']+(o['hotelEst']['total'] if o.get('hotelEst') else 0)
-        lst.sort(key=lambda o:(o.get('hotelEst') is None,full(o)))
+        lst.sort(key=lambda o:(not o['verified'],o.get('hotelEst') is None,full(o)))
         d=geo.BYID[did];rows={}
         days=lst[0]['nights']+1
         stay=lst[0]['hotelEst']['total'] if lst[0].get('hotelEst') else 0
@@ -275,6 +286,7 @@ def recheck(body):
     drive={o['from']:o['drive']}
     mode=(q.get('transport') or {}).get('mode','car')
     r,age=flights.roundtrip(o['from'],o['to'],dep,ret,A,C,5,0 if q.get('direct') else None)
+    if not r: r=flights.separate(o['from'],o['to'],dep,ret,A,C,0 if q.get('direct') else None);age=0
     r=prefer(r,q)
     if not r: raise ValueError('Na ten termin nie ma już tego połączenia. Wybierz inny dzień.')
     grid=o.get('calendar') or []

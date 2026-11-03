@@ -414,7 +414,7 @@ function viewOption() {
     ${o.climate?.month?.tmax != null ? `<p class="hint">Średnio w tym miesiącu: ${Math.round(o.climate.month.tmin)}–${Math.round(o.climate.month.tmax)}°C${o.climate.month.sea != null ? `, morze ${Math.round(o.climate.month.sea)}°C` : ''}${o.climate.month.rain != null ? `, opady ${Math.round(o.climate.month.rain)} mm` : ''}.</p>` : ''}
     ${o.flight ? passHtml(o.flight.out, 'Tam') + passHtml(o.flight.back, 'Z powrotem') : ''}
     ${o.leaveHome ? `<p style="margin-top:12px"><b>Z domu wyjeżdżasz ${dateL(o.leaveHome)} o ${timeL(o.leaveHome)}.</b></p>` : ''}
-    <div class="acts">${o.flight ? `<button class="btn" id="hot">Wybierz nocleg</button>` : ''}</div></div>
+    <div class="acts">${o.flight ? `<button class="btn" id="hot">Wybierz nocleg</button>` : '<p class="warn">Nie potwierdziliśmy lotów na ten termin. Dotknij innego dnia w kalendarzu poniżej.</p>'}</div></div>
    ${calendar(o)}
    ${cmp?.length > 1 ? `<div class="in"><h3 class="big" style="font-size:32px">Z którego lotniska</h3><p class="mute">Cały wyjazd: bilety, dojazd, parking i nocleg. Pozycje „około” to cena z rozpoznania rynku.</p>${insight ? `<div class="insight">${esc(insight)}</div>` : ''}
     <div class="bars">${cmp.map((c) => {
