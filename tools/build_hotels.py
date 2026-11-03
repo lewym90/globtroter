@@ -5,8 +5,8 @@ import json,os,sys,time,urllib.request
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAX_AGE=25*86400;BUDGET=float(os.environ.get('BUDGET_S','1500'))
 KEEP=('name','key','accommodation_type','url','review_summary','price_ranges','geo','image','merchandising_labels')
-def page(ta,sort):
-    u=f'https://data.xotelo.com/api/list?location_key=g{ta}&limit=50&offset=0&sort={sort}'
+def page(ta,sort,lim=50):
+    u=f'https://data.xotelo.com/api/list?location_key=g{ta}&limit={lim}&offset=0&sort={sort}'
     try:
         j=json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'User-Agent':'Globtroter/1.0'}),timeout=25))
         return (j.get('result') or {}).get('list') or []
@@ -24,8 +24,9 @@ def main():
             except Exception: pass
         if time.time()-t0>BUDGET: break
         seen={}
-        for s in('best_value','popularity','best_value'):
-            for h in page(d['ta'],s): seen.setdefault(h['key'],{k:h.get(k) for k in KEEP})
+        for s,lim in(('best_value',50),('popularity',50),('best_value',30),('popularity',40),('best_value',20)):
+            for h in page(d['ta'],s,lim): seen.setdefault(h['key'],{k:h.get(k) for k in KEEP})
+            if len(seen)>=30: break
             time.sleep(1)
         if len(seen)>=5:
             json.dump({'t':int(time.time()),'r':list(seen.values())},open(p,'w',encoding='utf8'),ensure_ascii=False,separators=(',',':'))

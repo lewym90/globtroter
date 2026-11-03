@@ -7,6 +7,7 @@ on:
     - cron: '23 */3 * * *'
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: food
   cancel-in-progress: false
@@ -17,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Pobierz restauracje
-        run: python3 tools/build_food.py
+        run: python3 tools/build_food.py | tee food.log
         env:
           BUDGET_S: '1500'
       - name: Zapisz
@@ -29,3 +30,10 @@ jobs:
           git commit -qm 'Restauracje z OpenStreetMap'
           git pull -q --rebase origin main || true
           git push -q || true
+      - name: Kolejny przebieg, gdy czegos brakuje i cos przybylo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          N=$(ls data/food | wc -l)
+          OK=$(grep -oE 'zapisane [0-9]+' food.log | grep -oE '[0-9]+' || echo 0)
+          if [ "$N" -lt 128 ] && [ "${OK:-0}" -gt 0 ]; then sleep 120; gh workflow run food.yml --ref main || true; fi
