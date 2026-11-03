@@ -121,5 +121,12 @@ def roundtrip(o,d,dep,ret,adults=1,children=0,top=5,stops=None):
         if valid_flight(a,[o],[d],dep) and valid_flight(b,[d],[o],ret):
             out.append({'total':total,'out':a,'back':b})
     out.sort(key=lambda g:g['total'])
-    store.put(key,out,3*3600)
+    if out: store.put(key,out,3*3600)
     return out,0
+def separate(o,d,dep,ret,adults=1,children=0,stops=None):
+    """Zapas: dwa bilety w jedna strone. U tanich linii to ta sama cena co w obie strony."""
+    a,_=oneway([o],[d],dep,adults,children,stops)
+    b,_=oneway([d],[o],ret,adults,children,stops)
+    if not a or not b: return []
+    pa=min(a,key=lambda x:x['price']);pb=min(b,key=lambda x:x['price'])
+    return [{'total':pa['price']+pb['price'],'out':dict(pa),'back':dict(pb),'separate':True}]
