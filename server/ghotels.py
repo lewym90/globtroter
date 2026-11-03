@@ -1,6 +1,6 @@
 """Drugie zrodlo hoteli: strona Google Hotels. Dane sa wbudowane w strone jako struktura JSON.
 Zwraca tylko rekordy zgodne z podanymi datami i lezace przy celu. Awaria to None, nigdy zgadywanie."""
-import datetime as dt,json,logging,re,threading,time
+import datetime as dt,html,json,logging,re,threading,time
 from urllib.parse import quote
 import geo,net,store
 log=logging.getLogger('ghotels')
@@ -47,33 +47,71 @@ def parse(r,ci,co):
         except Exception: pass
         return {'name':name,'lat':pos[0],'lon':pos[1],'stars':(r[3][1] if r[3] and len(r[3])>1 else None),'kind':(r[3][0] if r[3] else None),'rating':rate[0] if rate else None,'reviews':rate[1] if rate else 0,'image':img,'night':night,'total':total or night*n,'currency':cur,'id':r[20] if len(r)>20 else None}
     except Exception: return None
-def search(d,ci,co):
-    """Lista hoteli dla celu i dat, ceny w PLN. None = zrodlo nie odpowiedzialo."""
-    k=f'gh:{d["id"]}:{ci}:{co}'
-    v,_=store.get(k)
-    if v is not None: return v
+AMEN={'Free breakfast':'śniadanie w cenie','Free Wi-Fi':'darmowe Wi-Fi','Free parking':'darmowy parking','Parking ($)':'parking płatny','Parking':'parking','Outdoor pool':'basen','Indoor pool':'basen','Pool':'basen','Hot tub':'jacuzzi','Spa':'spa','Beach access':'przy plaży','Fitness center':'siłownia','Air conditioning':'klimatyzacja','Restaurant':'restauracja','Bar':'bar','Kid-friendly':'dla dzieci','Pet-friendly':'ze zwierzętami','Airport shuttle':'transfer z lotniska','Accessible':'dla niepełnosprawnych'}
+def amenities(text):
+    """Udogodnienia z tekstu dla czytnikow ekranu: nazwa hotelu -> lista."""
+    out={}
+    for m in re.finditer(r'Amenities for ([^<]+?), an? [^<:]*?\.?: ([^<]+?)\s*<',text):
+        out[html.unescape(m.group(1)).strip()]=[x.strip() for x in html.unescape(m.group(2)).split(',') if x.strip()]
+    return out
+def _breakfast(L):
+    if 'Free breakfast' in L: return 'free'
+    if 'Breakfast' in L or 'Breakfast ($)' in L: return 'paid'
+    return None
+COOK={'SOCS':'CAISHAgCEhJnd3NfMjAyNjEwMjktMF9SQzIaAmVuIAEaBgiA_LyaBg','CONSENT':'YES+cb.20260101-00-p0.en+FX+000'}
+last={}
+def fetch(q):
+    """Jedno zapytanie. Zwraca (rekordy, udogodnienia) albo None."""
     if _blocked[0]>time.time(): return None
-    name=ALIAS.get(d['en'],d['en'])
-    url='https://www.google.com/travel/search?q='+quote(query(name,ci,co))+'&hl=en&gl=pl&curr=PLN'
-    try:
-        from curl_cffi import requests
-        with _l:
-            w=_last[0]+3-time.time()
-            if w>0: time.sleep(w)
-            _last[0]=time.time()
-            res=requests.get(url,impersonate='chrome',timeout=25)
-        if res.status_code==429: _blocked[0]=time.time()+600
-        if res.status_code!=200: log.warning('gh %s',res.status_code);return None
-        out=[]
-        for r in records(res.text):
-            h=parse(r,ci,co)
-            if not h: continue
-            if geo.km(d['lat'],d['lon'],h['lat'],h['lon'])>90: continue
-            k2=net.fx(h['currency'])
-            h['nightPln']=round(h['night']*k2);h['totalPln']=round(h['total']*k2)
-            out.append(h)
-        seen={};[seen.setdefault(h['name'],h) for h in out];out=list(seen.values())
-        if out: store.put(k,out,4*3600)
-        return out or None
-    except Exception as e:
-        log.warning('gh blad %s',str(e)[:120]);return None
+    url='https://www.google.com/travel/search?q='+quote(q)+'&hl=en&gl=pl&curr=PLN'
+    from curl_cffi import requests
+    with _l:
+        w=_last[0]+2.5-time.time()
+        if w>0: time.sleep(w)
+        _last[0]=time.time()
+        res=requests.get(url,impersonate='chrome',timeout=25,cookies=COOK)
+    last.update(status=res.status_code,url=str(res.url)[:140],size=len(res.text),q=q,t=int(time.time()))
+    if res.status_code==429: _blocked[0]=time.time()+600
+    if res.status_code!=200: return None
+    R=records(res.text)
+    last['records']=len(R)
+    return R,amenities(res.text)
+def collect(d,q,ci,co,seen):
+    f=fetch(q)
+    if not f: return False
+    for r in f[0]:
+        h=parse(r,ci,co)
+        if not h or h['name'] in seen: continue
+        if geo.km(d['lat'],d['lon'],h['lat'],h['lon'])>90: continue
+        k=net.fx(h['currency']);h['nightPln']=round(h['night']*k);h['totalPln']=round(h['total']*k)
+        L=f[1].get(h['name'],[]);h['amen']=[AMEN[x] for x in L if x in AMEN];h['breakfast']=_breakfast(L)
+        seen[h['name']]=h
+    return True
+def search(d,ci,co):
+    """Szybka lista (jedno zapytanie), np. do szacunku noclegu. None = zrodlo nie odpowiedzialo."""
+    k=f'gh2:{d["id"]}:{ci}:{co}'
+    v,_=store.get(k)
+    if v: return v
+    n=ALIAS.get(d['en'],d['en']);seen={}
+    try: collect(d,query(n,ci,co),ci,co,seen)
+    except Exception as e: log.warning('gh %s',str(e)[:120]);last['error']=str(e)[:160];return None
+    out=list(seen.values())
+    if out: store.put(k,out,4*3600)
+    return out or None
+KINDS=['hotels in %s','hotels with free breakfast in %s','4 star hotels in %s','3 star hotels in %s','5 star hotels in %s','cheap hotels in %s','best hotels in %s city center','family hotels in %s','boutique hotels in %s','resorts in %s']
+def deep(d,ci,co):
+    """Duza lista: wiele rodzajow zapytan, bez duplikatow."""
+    k=f'gh3:{d["id"]}:{ci}:{co}'
+    v,_=store.get(k)
+    if v: return v
+    n=ALIAS.get(d['en'],d['en']);seen={h['name']:h for h in (store.get(f'gh2:{d["id"]}:{ci}:{co}')[0] or [])}
+    a,b=dt.date.fromisoformat(ci),dt.date.fromisoformat(co)
+    for i,kind in enumerate(KINDS):
+        try:
+            q=query('X',ci,co).replace('hotels in X',kind%n)
+            if not collect(d,q,ci,co,seen): break
+        except Exception as e:
+            log.warning('gh %s',str(e)[:120]);last['error']=str(e)[:160];break
+    out=list(seen.values())
+    if len(out)>=5: store.put(k,out,4*3600)
+    return out or None

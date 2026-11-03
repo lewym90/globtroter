@@ -1,6 +1,6 @@
 """Hotele: lista i ceny z wielu stron (Xotelo, dane TripAdvisora). Ceny zawsze z czasem sprawdzenia.
 Xotelo podaje srednia cene za noc pokoju; pobieramy w EUR i przeliczamy po kursie NBP."""
-import datetime as dt,math,threading,time
+import datetime as dt,logging,math,re,threading,time,unicodedata
 from concurrent.futures import ThreadPoolExecutor
 import geo,ghotels,links,net,store
 API='https://data.xotelo.com/api'
@@ -61,25 +61,26 @@ def _est_google(d,ci,co,A,C):
     return {'night':night,'rooms':R,'total':night*n*R,'est':True,'samples':len(v)}
 def search_google(d,ci,co,A,C,budget,pref,minrating,kind):
     """Ranking z Google Hotels: gdy Xotelo nie ma listy albo cen dla tego miasta."""
-    L=ghotels.search(d,ci,co)
+    L=ghotels.deep(d,ci,co)
     if not L: return None
     R=rooms_for(A,C);N=(dt.date.fromisoformat(co)-dt.date.fromisoformat(ci)).days
     L=[h for h in L if (h['reviews'] or 0)>=20] or L
+    if pref!='cheap': L=[h for h in L if not re.search(r'hostel|dorm|backpack',h['name'],re.I) and (h.get('stars') or 2)>=2] or L
     if minrating: L=[h for h in L if (h['rating'] or 0)>=float(minrating)] or L
     lo=min(h['nightPln'] for h in L);hi=max(h['nightPln'] for h in L)
     res=[]
     for h in L:
-        x={'review_summary':{'rating':h['rating'],'count':h['reviews']},'geo':{'latitude':h['lat'],'longitude':h['lon']},'_value':1-(h['nightPln']-lo)/max(1,hi-lo),'_breakfast':False,'_city':'city' in d['tags']}
+        x={'review_summary':{'rating':h['rating'],'count':h['reviews']},'geo':{'latitude':h['lat'],'longitude':h['lon']},'_value':1-(h['nightPln']-lo)/max(1,hi-lo),'_breakfast':h.get('breakfast')=='free','_city':'city' in d['tags']}
         s,dist=score(x,pref,(d['lat'],d['lon']))
         total=h['nightPln']*N*R;lk=links.hotel_links(h['name'],d['en'],ci,co,A,C,R)
         why=[]
-        if h.get('stars'): why.append(f"{h['stars']} gwiazdki" if h['stars']<5 else '5 gwiazdek')
+        if h.get('breakfast')=='free': why.append('śniadanie w cenie')
         if (h['rating'] or 0)>=4.7: why.append('wyjątkowo wysoka ocena gości')
         if 'city' in d['tags'] and dist<1.5: why.append('w samym centrum')
-        res.append({'key':h.get('id') or h['name'],'name':h['name'],'type':h.get('kind'),'rating':h['rating'],'reviews':h['reviews'],'image':h['image'],'url':lk['Google'],'lat':h['lat'],'lon':h['lon'],'distKm':round(dist,1) if 'city' in d['tags'] else None,'breakfast':False,'score':s,
+        res.append({'key':h.get('id') or h['name'],'name':h['name'],'type':h.get('kind'),'rating':h['rating'],'reviews':h['reviews'],'image':h['image'],'url':lk['Google'],'lat':h['lat'],'lon':h['lon'],'distKm':round(dist,1) if 'city' in d['tags'] else None,'breakfast':h.get('breakfast')=='free','breakfastPaid':h.get('breakfast')=='paid','stars':h.get('stars'),'amen':h.get('amen') or [],'score':s,
           'prices':[{'site':'Najtaniej w Google Hotels','night':h['nightPln'],'total':total,'url':lk['Google']}],'compare':[{'site':k,'url':lk[k]} for k in('Booking.com','Agoda.com','Trip.com')],'bestNight':h['nightPln'],'bestTotal':total,'overBudget':bool(budget and total>budget),'why':why,'google':lk['Google']})
     res.sort(key=lambda x:(x['overBudget'],-x['score']))
-    return {'hotels':res,'nights':N,'rooms':R,'checkedAt':time.time(),'note':'Cena z Google Hotels, ceny na poszczególnych stronach mogą się różnić. Śniadania to źródło nie podaje.','source':'google'}
+    return {'hotels':res,'nights':N,'rooms':R,'checkedAt':time.time(),'source':'google'}
 def score(h,pref,center):
     """Punkty 0-100. Wagi zaleza od priorytetu."""
     rs=h.get('review_summary') or {};rt=rs.get('rating') or 0;n=rs.get('count') or 0
@@ -90,16 +91,12 @@ def score(h,pref,center):
     near=max(0,1-dist/8) if h.get('_city',True) else .5
     v=h.get('_value',.5)
     return round(100*(w[0]*(q*.8+trust*.2)+w[1]*v+w[2]*near+w[3]*(1 if h.get('_breakfast') else 0))),dist
-def search(did,ci,co,A,C,budget=None,pref='balanced',minrating=0,kind='all',breakfast=False):
-    d=geo.BYID.get(did)
-    if not d: raise ValueError('Nie znam tego miejsca')
+def search_xotelo(d,ci,co,A,C,budget=None,pref='balanced',minrating=0,kind='all',breakfast=False):
     R=rooms_for(A,C)
     a,b=dt.date.fromisoformat(ci),dt.date.fromisoformat(co);N=(b-a).days
     if N<1: raise ValueError('Wymeldowanie musi być po zameldowaniu')
-    G=lambda:search_google(d,ci,co,A,C,budget,pref,minrating,kind)
-    down={'hotels':[],'sourceDown':True,'fallback':links.hotel_links('hotele',d['en'],ci,co,A,C,R)}
     try: L=list(_list(d))
-    except net.SourceDown: return G() or down
+    except net.SourceDown: return None
     if kind!='all': L=[h for h in L if (h.get('accommodation_type') or '').lower()==kind]
     if minrating: L=[h for h in L if ((h.get('review_summary') or {}).get('rating') or 0)>=float(minrating)]
     if breakfast: L=[h for h in L if 'Breakfast included' in (h.get('merchandising_labels') or [])]
@@ -117,7 +114,7 @@ def search(did,ci,co,A,C,budget=None,pref='balanced',minrating=0,kind='all',brea
         sr={x['name']:round(x['rate']*eur) for x in r if x.get('rate') and x['rate']>0}
         if not sr: continue
         h['_min']=min(sr.values());h['_rates']=sr;ok.append(h)
-    if not ok: return G() or {'hotels':[],'noOffers':len(top)>0,'fallback':links.hotel_links('hotele',d['en'],ci,co,A,C,R)}
+    if not ok: return None
     lo=min(h['_min'] for h in ok);hi=max(h['_min'] for h in ok)
     for h in ok: h['_value']=1-(h['_min']-lo)/max(1,hi-lo)
     res=[]
@@ -140,3 +137,35 @@ def search(did,ci,co,A,C,budget=None,pref='balanced',minrating=0,kind='all',brea
 def _safe(k,ci,co):
     try: return _rates(k,ci,co)
     except Exception: return None
+def _norm(n):
+    return re.sub(r'[^a-z0-9]','',unicodedata.normalize('NFKD',n.lower()).encode('ascii','ignore').decode())[:18]
+def search(did,ci,co,A,C,budget=None,pref='balanced',minrating=0,kind='all',breakfast=False):
+    """Dwa niezalezne zrodla naraz, wynik laczony bez duplikatow."""
+    d=geo.BYID.get(did)
+    if not d: raise ValueError('Nie znam tego miejsca')
+    if (dt.date.fromisoformat(co)-dt.date.fromisoformat(ci)).days<1: raise ValueError('Wymeldowanie musi być po zameldowaniu')
+    with ThreadPoolExecutor(2) as ex:
+        fx_=ex.submit(lambda:search_xotelo(d,ci,co,A,C,budget,pref,minrating,kind,False) if d.get('ta') else None)
+        fg=ex.submit(search_google,d,ci,co,A,C,budget,pref,minrating,kind)
+        def res(f):
+            try: return f.result()
+            except Exception as e: logging.warning('hotele %s',str(e)[:120]);return None
+        x,g=res(fx_),res(fg)
+    R=rooms_for(A,C)
+    if not x and not g: return {'hotels':[],'sourceDown':True,'fallback':links.hotel_links('hotele',d['en'],ci,co,A,C,R)}
+    gs={_norm(h['name']):h for h in (g or {}).get('hotels',[])}
+    out=[]
+    for h in (x or {}).get('hotels',[]):
+        m=gs.pop(_norm(h['name']),None)
+        if m:
+            h['amen']=m['amen'];h['stars']=m.get('stars');h['breakfast']=h['breakfast'] or m['breakfast'];h['breakfastPaid']=m['breakfastPaid'] and not h['breakfast']
+            if m['bestTotal']<h['bestTotal']:
+                h['prices'].insert(0,m['prices'][0]);h['bestTotal']=m['bestTotal'];h['bestNight']=m['bestNight']
+        else: h.setdefault('amen',[]);h.setdefault('breakfastPaid',False)
+        out.append(h)
+    out+=list(gs.values())
+    if pref!='cheap': out=[h for h in out if not re.search(r'hostel|dorm|backpack',h['name'],re.I) and (h.get('stars') or 2)>=2] or out
+    if breakfast: out=[h for h in out if h['breakfast']] or out
+    out.sort(key=lambda h:(h['overBudget'],-h['score']))
+    return {'hotels':out,'nights':(x or g)['nights'],'rooms':R,'checkedAt':time.time(),'sources':[n for n,v in (('Xotelo',x),('Google Hotels',g)) if v],
+      'note':'Cena za pokój. Lokalny podatek turystyczny może dojść na miejscu. Śniadanie sprawdź przy rezerwacji, bo zależy też od wybranej oferty.'}

@@ -5,7 +5,7 @@ from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import parse_qs,urlsplit
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 import flights,geo,hotels,net,plan,search,store
-VERSION='1.1.0'
+VERSION='1.2.0'
 ALLOW={'https://lewym90.github.io','http://localhost:8000','http://127.0.0.1:8000'}
 class H(BaseHTTPRequestHandler):
     server_version='Globtroter'
@@ -32,6 +32,10 @@ class H(BaseHTTPRequestHandler):
                 return self.out(200,j)
             if p=='/api/hotels':
                 return self.out(200,hotels.search(q['dest'],q['in'],q['out'],int(q.get('adults',2)),int(q.get('children',0)),int(q['budget']) if q.get('budget') else None,q.get('pref','balanced'),q.get('minRating',0),q.get('kind','all'),q.get('breakfast')=='1'))
+            if p=='/api/diag':
+                import ghotels
+                d=geo.BYID.get(q.get('dest','hvar'));r=ghotels.search(d,q.get('in','2027-06-10'),q.get('out','2027-06-17'))
+                return self.out(200,{'found':len(r or []),'last':ghotels.last})
             if p=='/api/fx': return self.out(200,{'USD':net.fx('USD'),'EUR':net.fx('EUR')})
             self.out(404,{'error':'Nie ma takiej ścieżki'})
         except ValueError as e: self.out(400,{'error':str(e)})

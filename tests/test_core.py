@@ -118,7 +118,7 @@ class HotelList(unittest.TestCase):
         def no(*a,**k): raise hotels.net.SourceDown('x')
         hotels.net.fetch_json=no;hotels._page=lambda *a:None
         geo.BYID['y']={'id':'y','en':'Y','ta':'1','tags':['city'],'lat':1,'lon':1}
-        hotels.ghotels.search=lambda *a:None;r=hotels.search('y','2027-05-05','2027-05-12',2,0);self.assertTrue(r['sourceDown']);self.assertTrue(r['fallback'])
+        hotels.ghotels.deep=lambda *a:None;r=hotels.search('y','2027-05-05','2027-05-12',2,0);self.assertTrue(r['sourceDown']);self.assertTrue(r['fallback'])
 class GoogleHotels(unittest.TestCase):
     def rec(self,a=(2027,6,10),b=(2027,6,17),offer=True):
         r=[None]*27;r[1]='Senses';r[2]=[[43.14,16.37]];r[3]=['Hotel 5-gwiazdkowy',5];r[7]=[[4.5,1000]];r[20]='abc'
@@ -136,6 +136,24 @@ class GoogleHotels(unittest.TestCase):
     def test_query_dates(self):
         import ghotels
         self.assertEqual(ghotels.query('Hvar','2026-12-28','2027-01-04'),'hotels in Hvar from December 28 2026 to January 4 2027')
+class Amen(unittest.TestCase):
+    def test_parse(self):
+        import ghotels
+        a=ghotels.amenities('<div class="x">  Amenities for Hotel Park, a 4-star hotel.: Free breakfast, Free Wi-Fi, Outdoor pool,  <div>')
+        self.assertEqual(a['Hotel Park'][:2],['Free breakfast','Free Wi-Fi']);self.assertEqual(ghotels._breakfast(a['Hotel Park']),'free')
+        self.assertEqual(ghotels._breakfast(['Breakfast']),'paid');self.assertIsNone(ghotels._breakfast(['Bar']))
+class Merge(unittest.TestCase):
+    def test_no_duplicates_and_breakfast_joined(self):
+        ox,og=hotels.search_xotelo,hotels.search_google
+        base=dict(score=50,overBudget=False,prices=[{'site':'Agoda.com','night':100,'total':700,'url':'u'}],bestTotal=700,bestNight=100,breakfast=False)
+        hotels.search_xotelo=lambda *a,**k:{'hotels':[dict(base,name='Hotel Park',key='x',prices=list(base['prices']))],'nights':7}
+        hotels.search_google=lambda *a,**k:{'hotels':[dict(base,name='HOTEL PARK!',key='g',breakfast=True,breakfastPaid=False,amen=['basen'],bestTotal=600,bestNight=86,prices=[{'site':'G','night':86,'total':600,'url':'u'}]),dict(base,name='Inny',key='h',breakfastPaid=False,amen=[])],'nights':7}
+        try:
+            geo.BYID['z']={'id':'z','en':'Z','ta':'1','tags':['city'],'lat':1,'lon':1}
+            r=hotels.search('z','2027-06-10','2027-06-17',2,0)
+            self.assertEqual(len(r['hotels']),2);h=[x for x in r['hotels'] if x['key']=='x'][0]
+            self.assertTrue(h['breakfast']);self.assertEqual(h['bestTotal'],600);self.assertEqual(h['amen'],['basen'])
+        finally: hotels.search_xotelo,hotels.search_google=ox,og
 class Food(unittest.TestCase):
     D=lambda self:[{'stops':[{'meal':'lunch','lat':41.9,'lon':12.5},{'name':'X','lat':41.9,'lon':12.5}]}]
     def test_source_down_no_invented_names(self):

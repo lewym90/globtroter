@@ -2,7 +2,7 @@ import { scene, themeOf, landmarkOf } from './scene.js';
 import { flapRow } from './flap.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '1.2.0';
+const VERSION = '1.3.0';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -446,26 +446,53 @@ async function recheck(dep, ret) {
 /* ---------- Hotele ---------- */
 async function viewHotels() {
   const o = S.option; const s = S.q.stay;
-  app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Noclegi: ${esc(o.dest.name)}</h2></div><section class="page"><div class="card"><div class="in"><p>Porównuję ceny na kilku stronach dla najlepszych hoteli.</p><div class="spin"></div></div></div></section>`;
+  app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Noclegi: ${esc(o.dest.name)}</h2></div><section class="page"><div class="card"><div class="in"><p>Zbieram hotele z dwóch źródeł i porównuję ceny. To potrwa około pół minuty.</p><div class="spin"></div></div></div></section>`;
   $('#b').onclick = viewOption;
   const P = new URLSearchParams({ dest: o.dest.id, in: o.dep, out: o.ret, adults: o.pax.adults, children: o.pax.children, pref: s.pref, minRating: s.minRating, breakfast: s.breakfast ? 1 : 0 });
   if (s.budget) P.set('budget', s.budget);
   try {
     const r = await api('/api/hotels?' + P);
     S.hotels = r;
-    const L = r.hotels;
-    app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Noclegi: ${esc(o.dest.name)}</h2></div><section class="page">
-    ${!L.length ? `<div class="note"><b>${r.sourceDown ? 'Ranking hoteli jest chwilowo niedostępny.' : 'Nie mamy pewnych cen dla tych kryteriów.'}</b><p class="mute">${r.sourceDown ? 'Źródło listy hoteli nie odpowiada. Znajdź nocleg na stronach poniżej, a plan podróży ułożymy i tak.' : 'Złagodź wymagania albo sprawdź oferty bezpośrednio.'}</p><div class="linkset">${Object.entries(r.fallback || {}).slice(0, 4).map(([k, v]) => `<a class="btn line small" href="${url(v)}" target="_blank" rel="noopener">${esc(k)}</a>`).join('')}</div><div class="acts"><button class="btn" id="noh">Ułóż plan bez wybranego hotelu</button></div></div>` : ''}
-    ${L.map((h, i) => `<article class="card hot">${i === 0 && !h.overBudget ? '<span class="badge">Nasz wybór</span>' : ''}${h.image ? `<img src="${url(h.image)}" alt="${esc(h.name)}" loading="lazy" referrerpolicy="no-referrer">` : ''}
-    <div class="in"><h3>${esc(h.name)}</h3><p><span class="stars">${String(h.rating ?? '').replace('.', ',')} / 5</span> <span class="mute">${(h.reviews || 0).toLocaleString('pl-PL')} opinii${h.distKm != null ? `, ${String(h.distKm).replace('.', ',')} km od centrum` : ''}</span></p>
-    ${h.why.length ? `<p class="mute">${esc(h.why.join(', '))}.</p>` : ''}${h.overBudget ? '<p class="warn">Ponad Twój budżet.</p>' : ''}
+    S.hf = S.hf || { breakfast: !!s.breakfast, sort: 'best', pool: false, stars: 0, limit: 12 };
+    const list = () => {
+      const f = S.hf;
+      let v = r.hotels.filter((h) => (!f.breakfast || h.breakfast) && (!f.pool || (h.amen || []).includes('basen')) && (!f.stars || (h.stars || 0) >= f.stars));
+      if (f.sort === 'cheap') v = [...v].sort((a, c) => a.bestTotal - c.bestTotal);
+      if (f.sort === 'rate') v = [...v].sort((a, c) => (c.rating || 0) - (a.rating || 0) || (c.reviews || 0) - (a.reviews || 0));
+      return v;
+    };
+    const card = (h, i) => `<article class="card hot">${i === 0 && S.hf.sort === 'best' && !h.overBudget ? '<span class="badge">Nasz wybór</span>' : ''}${h.image ? `<img src="${url(h.image)}" alt="${esc(h.name)}" loading="lazy" referrerpolicy="no-referrer">` : ''}
+    <div class="in"><h3>${esc(h.name)}</h3><p>${h.rating ? `<span class="stars">${String(h.rating).replace('.', ',')} / 5</span> ` : ''}<span class="mute">${(h.reviews || 0).toLocaleString('pl-PL')} opinii${h.stars ? `, ${h.stars}★` : ''}${h.distKm != null ? `, ${String(h.distKm).replace('.', ',')} km od centrum` : ''}</span></p>
+    <p>${h.breakfast ? '<span class="sure fact">śniadanie w cenie</span>' : h.breakfastPaid ? '<span class="sure est">śniadanie płatne</span>' : '<span class="sure check">śniadanie: brak danych</span>'}</p>
+    ${h.amen?.filter((a) => a !== 'śniadanie w cenie').length ? `<p class="mute" style="font-size:14px">${esc(h.amen.filter((a) => a !== 'śniadanie w cenie').slice(0, 6).join(', '))}</p>` : ''}
+    ${h.overBudget ? '<p class="warn">Ponad Twój budżet.</p>' : ''}
     <div class="pricelist">${h.prices.map((p, j) => `<a class="pl ${j === 0 ? 'best' : ''}" href="${url(p.url)}" target="_blank" rel="noopener"><span>${esc(p.site)}</span><span>${zl(p.total)}</span></a>`).join('')}</div>
     ${h.compare?.length ? `<p class="hint">Sprawdź cenę także tutaj:</p><div class="linkset">${h.compare.map((c) => `<a class="btn line small" href="${url(c.url)}" target="_blank" rel="noopener">${esc(c.site)}</a>`).join('')}</div>` : ''}
-    <div class="acts"><button class="btn" data-h="${i}">Wybieram ten hotel</button></div></div></article>`).join('')}
-    ${L.length ? `<p class="foot">${r.rooms} ${r.rooms > 1 ? 'pokoje' : 'pokój'}, ${r.nights} nocy. ${esc(r.note)} Link otwiera wyszukiwanie tego hotelu z datami. Dane: ${r.source === 'google' ? 'Google Hotels' : 'TripAdvisor przez Xotelo'}.</p>` : ''}</section>`;
-    $('#b').onclick = viewOption;
-    $$('[data-h]').forEach((b) => { b.onclick = () => buildPlan(L[+b.dataset.h]); });
-    const nh = $('#noh'); if (nh) nh.onclick = () => buildPlan({ name: 'centrum: ' + o.dest.name, lat: o.dest.lat, lon: o.dest.lon, bestTotal: 0 });
+    <div class="acts"><button class="btn" data-h="${esc(h.key)}">Wybieram ten hotel</button></div></div></article>`;
+    const draw = () => {
+      const v = list(); const f = S.hf; const L = r.hotels;
+      const y = app.scrollTop;
+      app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Noclegi: ${esc(o.dest.name)}</h2></div><section class="page">
+      ${!L.length ? `<div class="note"><b>${r.sourceDown ? 'Ceny hoteli są chwilowo niedostępne.' : 'Nie mamy pewnych cen dla tych kryteriów.'}</b><p class="mute">${r.sourceDown ? 'Oba źródła nie odpowiadają. Znajdź nocleg na stronach poniżej, a plan podróży ułożymy i tak.' : 'Złagodź wymagania albo sprawdź oferty bezpośrednio.'}</p><div class="linkset">${Object.entries(r.fallback || {}).slice(0, 4).map(([k, c]) => `<a class="btn line small" href="${url(c)}" target="_blank" rel="noopener">${esc(k)}</a>`).join('')}</div><div class="acts"><button class="btn" id="noh">Ułóż plan bez wybranego hotelu</button></div></div>` : `
+      <div class="note info"><b>${v.length} z ${L.length} hoteli, ${L.filter((h) => h.breakfast).length} ze śniadaniem w cenie</b>
+        <div class="chips" style="margin-top:8px">
+        <button class="chip" data-f="breakfast" aria-pressed="${f.breakfast}">Śniadanie w cenie</button><button class="chip" data-f="pool" aria-pressed="${f.pool}">Basen</button>
+        ${[3, 4, 5].map((n) => `<button class="chip" data-st="${n}" aria-pressed="${f.stars === n}">${n}★${n < 5 ? '+' : ''}</button>`).join('')}</div>
+        <div class="seg" style="margin-top:8px">${[['best', 'Polecane'], ['cheap', 'Najtaniej'], ['rate', 'Oceny']].map(([k, l]) => `<button data-so="${k}" aria-pressed="${f.sort === k}">${l}</button>`).join('')}</div></div>`}
+      ${v.slice(0, f.limit).map(card).join('')}
+      ${v.length > f.limit ? '<button class="btn ghost" id="more">Pokaż więcej hoteli</button>' : ''}
+      ${L.length && !v.length ? '<div class="note"><b>Żaden hotel nie spełnia tych filtrów.</b></div>' : ''}
+      ${L.length ? `<p class="foot">${r.rooms} ${r.rooms > 1 ? 'pokoje' : 'pokój'}, ${r.nights} nocy. ${esc(r.note || '')} Źródła: ${esc((r.sources || []).join(', '))}.</p>` : ''}</section>`;
+      $('#b').onclick = viewOption;
+      $$('[data-f]').forEach((b) => { b.onclick = () => { f[b.dataset.f] = !f[b.dataset.f]; f.limit = 12; draw(); }; });
+      $$('[data-st]').forEach((b) => { b.onclick = () => { const n = +b.dataset.st; f.stars = f.stars === n ? 0 : n; f.limit = 12; draw(); }; });
+      $$('[data-so]').forEach((b) => { b.onclick = () => { f.sort = b.dataset.so; f.limit = 12; draw(); }; });
+      const m = $('#more'); if (m) m.onclick = () => { f.limit += 12; draw(); };
+      $$('[data-h]').forEach((b) => { b.onclick = () => buildPlan(L.find((h) => String(h.key) === b.dataset.h)); });
+      const nh = $('#noh'); if (nh) nh.onclick = () => buildPlan({ name: 'centrum: ' + o.dest.name, lat: o.dest.lat, lon: o.dest.lon, bestTotal: 0 });
+      app.scrollTop = y;
+    };
+    draw();
     app.scrollTop = 0;
   } catch (e) {
     app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Noclegi</h2></div><section class="page"><div class="note"><b>${esc(e.message)}</b><div class="acts"><button class="btn" id="r">Spróbuj ponownie</button></div></div></section>`;
