@@ -27,7 +27,7 @@ Wyszukiwanie ma trzy kroki, żeby jak najmniej pytać Google:
 | Dane | Źródło | Uwaga |
 |---|---|---|
 | Loty i kalendarz cen | Google Flights przez bibliotekę `fli` | Nieoficjalne, może się zepsuć |
-| Hotele | Xotelo (dane TripAdvisora) | Średnia cena za noc pokoju |
+| Hotele | Xotelo (dane TripAdvisora) i Google Hotels, łączone bez duplikatów | Nieoficjalne, cena za pokój |
 | Dojazd autem | OSRM | Serwer publiczny |
 | Komunikacja | Transitous | Darmowe, społecznościowe |
 | Restauracje | OpenStreetMap, budowane przez GitHub Actions (`data/food/`) | Z linkiem do mapy jako zapas |
@@ -36,6 +36,8 @@ Wyszukiwanie ma trzy kroki, żeby jak najmniej pytać Google:
 | Atrakcje | Wikidata (CC0), zdjęcia Wikimedia | |
 | Lotniska | OurAirports (domena publiczna) | |
 | Kursy | NBP | |
+
+Zdjęcia kierunków pochodzą z Wikimedia Commons, startowe (`photos/hero/`) zmieniają się codziennie o 8:00. Mapa lotnicza: Esri przez Leaflet.
 
 Ceny parkingów i dopłaty za bagaż to szacunki z `server/access.py` i `server/search.py`, użytkownik może wpisać własną cenę parkingu.
 

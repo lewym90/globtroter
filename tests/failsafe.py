@@ -12,12 +12,7 @@ async def main():
         # 1 serwer niedostepny
         await pg.route('http://127.0.0.1:8796/**',lambda r:r.abort())
         await pg.evaluate("""()=>{const S=window.__gt.S;S.q.origin={lat:51,lon:22,label:'X'};}""")
-        await pg.evaluate("document.querySelector('#go').click()");await pg.wait_for_timeout(300)
-        for i in range(7):
-            await pg.click('#next') if await pg.locator('#next').is_enabled() else None
-            await pg.wait_for_timeout(120)
-            if i==1 and await pg.locator('#next').count():
-                pass
+        await pg.evaluate("()=>{const S=window.__gt.S;S.q.dest={mode:'style',style:'beach',ids:[],countries:[]}}");await pg.evaluate("document.querySelector('#go').click()")
         await pg.wait_for_timeout(1200)
         t=await pg.inner_text('#app');print('SERWER PADL:',t[:140].replace('\n',' | '))
         await pg.unroute('http://127.0.0.1:8796/**')
@@ -27,12 +22,12 @@ async def main():
         await pg.reload();await pg.wait_for_timeout(1500)
         await c.set_offline(True)
         await pg.reload();await pg.wait_for_timeout(2000)
-        print('OFFLINE START:',(await pg.inner_text('#app'))[:80].replace('\n',' | '))
-        await pg.click('[data-trip]');await pg.wait_for_timeout(600)
-        for t in('dni','koszty','lista','info','droga'):
+        print('OFFLINE START:',(await pg.inner_text('#app'))[:70].replace('\n',' | '))
+        await pg.click('[data-nav=trips]');await pg.wait_for_timeout(300);await pg.click('[data-trip]');await pg.wait_for_timeout(600)
+        for t in('loty','noc','dni','bud','sum'):
             await pg.click(f'[data-t={t}]');await pg.wait_for_timeout(150)
-        print('OFFLINE PLAN:',(await pg.inner_text('#body'))[:120].replace('\n',' | '))
-        await pg.click('[data-t=lista]');await pg.click('[data-ck="0"]');await pg.reload();await pg.wait_for_timeout(1000);await pg.click('[data-trip]');await pg.click('[data-t=lista]')
+        print('OFFLINE PLAN:',(await pg.inner_text('.pbody'))[:120].replace('\n',' | '))
+        await pg.click('[data-pn=d]');await pg.wait_for_timeout(200);await pg.click('[data-ck="0"]');await pg.reload();await pg.wait_for_timeout(1000);await pg.click('[data-nav=trips]');await pg.click('[data-trip]');await pg.wait_for_timeout(300);await pg.click('[data-pn=d]')
         print('LISTA ZAPAMIETANA:',await pg.is_checked('[data-ck="0"]'))
         await c.set_offline(False)
         print('bledy',errs[:5]);await b.close()
