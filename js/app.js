@@ -2,7 +2,7 @@ import { scene, themeOf, landmarkOf } from './scene.js';
 import { flapRow } from './flap.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '1.1.0';
+const VERSION = '1.1.1';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -515,20 +515,6 @@ function viewPlan() {
   $('#del').onclick = () => { save('trips', load('trips', []).filter((x) => x.option.id !== o.id)); viewHome(); };
 }
 
-// iOS potrafi dać aplikacji z ekranu początkowego krótszy obszar niż fizyczny ekran: na dole zostaje pusty pas.
-// Mierzymy lukę i rozciągamy interfejs do samego dołu, tak jak w Kalendarzu. Tylko po instalacji na ekranie początkowym.
-function fitScreen() {
-  const root = document.documentElement;
-  const standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
-  const vv = window.visualViewport ? Math.round(visualViewport.height) : 0;
-  const inner = Math.max(innerHeight, vv, root.clientHeight);
-  const d = Math.max(screen.height, screen.width) - inner;
-  root.style.setProperty('--gap', (standalone && innerHeight > innerWidth && d > 4 && d < 140 ? d : 0) + 'px');
-}
-fitScreen();
-addEventListener('resize', fitScreen);
-addEventListener('orientationchange', () => setTimeout(fitScreen, 300));
-
 // Aktualizacje: kod idzie zawsze najpierw z sieci (sw.js), a przy powrocie do aplikacji sprawdzamy, czy na serwerze jest coś nowszego.
 let stamp = '';
 async function currentStamp() {
@@ -551,7 +537,7 @@ async function checkForUpdate() {
 }
 function startUpdates() {
   checkForUpdate();
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { fitScreen(); checkForUpdate(); swReg?.update().catch(() => {}); } });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { checkForUpdate(); swReg?.update().catch(() => {}); } });
   addEventListener('pageshow', (e) => { if (e.persisted) checkForUpdate(); });
   if (!('serviceWorker' in navigator)) return;
   const had = !!navigator.serviceWorker.controller;

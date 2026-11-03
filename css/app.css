@@ -10,7 +10,7 @@
   color-scheme:light;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;overflow:hidden;background:var(--night);color:var(--ink);font:400 16px/1.5 var(--body);-webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
+html,body{margin:0;height:100%;background:var(--night);color:var(--ink);font:400 16px/1.5 var(--body);-webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
 h1,h2,h3,p{margin:0}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer;background:none;border:0;padding:0}
@@ -18,11 +18,15 @@ a{color:inherit}
 :focus-visible{outline:3px solid var(--sun);outline-offset:2px;border-radius:6px}
 [hidden]{display:none!important}
 
-#backdrop{position:fixed;inset:0;bottom:calc(-1*var(--gap,0px));overflow:hidden;background:var(--night)}
+#backdrop{position:fixed;inset:0;overflow:hidden;background:var(--night)}
 #backdrop .scene{position:absolute;inset:0;width:100%;height:100%;transition:opacity .9s ease}
 .scene{display:block}
 .wiz{position:relative}
-#app{position:fixed;inset:0;bottom:calc(-1*var(--gap,0px));max-width:560px;margin:0 auto;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+#app{position:fixed;inset:0;max-width:560px;margin:0 auto;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+
+/* iOS (aplikacja z ekranu początkowego) skraca okno o ok. 62 pt, jeśli sam dokument nie jest przewijalny.
+   Niewidoczny dystans czyni dokument przewijalnym, a interfejs (position: fixed) i tak się nie rusza. Jak w Kalendarzu. */
+#docspacer{position:absolute;top:0;left:0;width:1px;height:calc(100vh + 120px);height:calc(100lvh + 120px);visibility:hidden;pointer-events:none}
 
 /* Scena na żywo: oszczędnie, tylko to, co naprawdę się rusza */
 .is-live .sc-rays{animation:spin 120s linear infinite}
@@ -215,4 +219,4 @@ input:focus,select:focus{outline:0;border-color:var(--deep)}
 .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--deep);border-radius:50%;animation:spin .9s linear infinite;margin:18px auto}
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.sc-jet{display:none}}
 @media (min-width:700px){.sheet{border-radius:28px;margin-bottom:24px}}
-@media print{#backdrop,.topbar,.tabs,.acts{display:none}html,body{overflow:visible;height:auto;background:#fff}#app{position:static;overflow:visible}.cover{height:200px}}
+@media print{#backdrop,.topbar,.tabs,.acts{display:none}html,body{height:auto;background:#fff}#app{position:static;overflow:visible}#docspacer{display:none}.cover{height:200px}}
