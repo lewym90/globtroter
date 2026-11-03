@@ -2,7 +2,7 @@ import { scene, themeOf, landmarkOf } from './scene.js';
 import { flapRow } from './flap.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '2.0.0';
+const VERSION = '2.1.0';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -154,41 +154,26 @@ function viewHome() {
   if (S.reloadLater) { S.reloadLater = false; freshReload(); }
   const h = heroNow();
   setBackdrop({ photo: h?.src, dim: true });
-  const s = S.q;
-  const field = (id, ic, lab, val, cls = '') => `<button class="fld ${cls}" id="${id}">${ic}<span><small>${lab}</small><b>${esc(val)}</b></span>${cls.includes('wide') ? SV('<path d="M6 9l6 6 6-6"/>', 'class="chev"') : ''}</button>`;
-  const soon = load('trips', []).find((t) => t.option.dep >= new Date().toISOString().slice(0, 10));
-  app.innerHTML = `<section class="home">
+  const trips = load('trips', []);
+  const soon = trips.find((t) => t.option.dep >= new Date().toISOString().slice(0, 10));
+  const last = load('last', null);
+  app.innerHTML = `<section class="home classic">
     <header class="hd"><img src="icons/logo-96.png" alt="" width="56" height="56"><div><strong>Globtroter</strong><span>Twój kompleksowy plan podróży</span></div>
       <button class="ico" id="bell" aria-label="Najbliższa podróż">${I.bell}${soon ? '<i></i>' : ''}</button><button class="ico" id="burger" aria-label="Menu">${I.menu}</button></header>
     <div class="headline"><h1>Zaplanuj idealne wakacje od <em>A do Z</em></h1>
-      <p>Loty · Noclegi · Plan zwiedzania · Gastronomia · Logistyka</p></div>
+      <p>Najtańszy termin, lotnisko, nocleg i plan każdej godziny. Od Twoich drzwi i z powrotem.</p></div>
     <div class="form">
-      ${field('f-dest', I.pin, 'Dokąd chcesz lecieć?', destLabel(), 'wide')}
-      <div class="two">${field('f-when', I.cal, 'Kiedy?', whenLabel())}${field('f-pax', I.people, 'Ile osób?', paxLabel())}</div>
-      <div class="two">${field('f-bud', I.filter, 'Budżet na nocleg', `do ${zl(s.stay.budget)}`)}${field('f-std', I.bed, 'Standard noclegu', stayLabel())}</div>
-      <button class="cta" id="go">${I.search}Zaplanuj podróż</button>
-      <p class="from"><button id="f-from">${I.pin}Start: ${esc(s.origin?.label || 'ustaw miejsce wyjazdu')}</button><button id="f-more">Więcej opcji</button></p>
-      ${load('last', null) && Date.now() - load('last').t < 6 * 36e5 ? '<button class="lastr" id="lastr">Wróć do ostatnich wyników</button>' : ''}
+      ${trips.slice(0, 3).map((t, i) => `<button class="lastr" data-trip="${i}">${esc(t.dest.name)}, ${dateL(t.option.dep)}</button>`).join('')}
+      ${last && Date.now() - last.t < 6 * 36e5 ? '<button class="lastr" id="lastr">Wróć do ostatnich wyników</button>' : ''}
+      <button class="cta" id="go">${I.search}Zaplanuj wyjazd</button>
     </div>
-    <div class="feats">${[['insp', I.plane, 'Najlepsze<br>loty'], ['insp', I.bed, 'Sprawdzone<br>noclegi'], ['trips', I.cal, 'Szczegółowy<br>plan dnia'], ['insp', I.pin, 'Zwiedzanie<br>i atrakcje']].map(([k, ic, l]) => `<button data-nav="${k}"><i>${ic}</i><span>${l}</span></button>`).join('')}</div>
     ${h ? `<p class="credit">${esc(h.n)}. Zdjęcie: <a href="https://commons.wikimedia.org/wiki/File:${encodeURIComponent(h.f)}" target="_blank" rel="noopener">Wikimedia Commons</a></p>` : ''}
   </section>${tabbar('home')}`;
-  const need = (fn) => () => { fn(); };
-  $('#f-dest').onclick = need(() => openStep(1));
-  $('#f-when').onclick = need(() => openStep(2));
-  $('#f-pax').onclick = need(() => openStep(3));
-  $('#f-bud').onclick = $('#f-std').onclick = need(() => openStep(5));
-  $('#f-from').onclick = need(() => openStep(0));
-  $('#f-more').onclick = () => { S.step = 0; viewWizard(); };
+  $('#go').onclick = () => { S.step = 0; viewWizard(); };
   $('#bell').onclick = () => (soon ? viewTrips() : toast('Nie masz jeszcze zaplanowanej podróży.'));
   $('#burger').onclick = viewProfile;
-  $('#go').onclick = () => {
-    const t = S.q.dest;
-    if ((t.mode === 'city' && !t.ids.length) || (t.mode === 'country' && !t.countries.length) || (t.mode === 'style' && !t.style)) return openStep(1);
-    if (!S.q.origin) return openStep(0, () => { if (S.q.origin) viewSearch(); else viewHome(); });
-    viewSearch();
-  };
   const lr = $('#lastr'); if (lr) lr.onclick = () => { const l = load('last'); S.result = l.result; S.q = l.q; viewResults(); };
+  $$('[data-trip]').forEach((b) => { b.onclick = () => { S.plan = load('trips', [])[+b.dataset.trip]; S.tab = 'sum'; viewPlan(); }; });
   bindNav();
   app.scrollTop = 0;
 }
@@ -214,7 +199,7 @@ function destCard(d, m) {
 }
 function bindDest() {
   $$('[data-h2]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); toggleFav(b.dataset.h2); b.classList.toggle('on'); }; });
-  $$('[data-dest]').forEach((b) => { b.onclick = () => { S.q.dest = { mode: 'city', ids: [b.dataset.dest], countries: [], style: null }; save('prefs', S.q); viewHome(); }; });
+  $$('[data-dest]').forEach((b) => { b.onclick = () => { S.q.dest = { mode: 'city', ids: [b.dataset.dest], countries: [], style: null }; save('prefs', S.q); S.step = S.q.origin ? 2 : 0; viewWizard(); }; });
 }
 function viewInspire() {
   const m = S.q.when.mode === 'month' ? S.q.when.month : new Date().getMonth() + 1;
@@ -273,7 +258,7 @@ const next = () => { save('prefs', { ...S.q, origin: S.q.origin }); if (S.modal)
 function stepFrom(el) {
   const q = S.q;
   const draw = () => {
-    const near = q.origin ? S.airports.map((a) => ({ ...a, d: km(q.origin.lat, q.origin.lon, a.lat, a.lon) }))
+    const near = q.origin ? S.airports.filter((a) => !['BY', 'RU', 'UA'].includes(a.cc)).map((a) => ({ ...a, d: km(q.origin.lat, q.origin.lon, a.lat, a.lon) }))
       .filter((a) => (a.cc === 'PL' && a.d < Math.max(q.radius, 700)) || (a.d < q.radius && a.large)).sort((a, b) => a.d - b.d).slice(0, 16) : [];
     el.innerHTML = `<h1>Skąd startujesz?</h1><p class="sub">Porównamy wszystkie lotniska w zasięgu, razem z dojazdem i parkingiem.</p>
     <div class="field"><button class="btn line" id="gps">Użyj mojej lokalizacji</button></div>

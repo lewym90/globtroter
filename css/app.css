@@ -402,3 +402,7 @@ input:focus,select:focus{outline:0;border-color:var(--deep)}
 .bdp.strong:after{background:linear-gradient(180deg,#0b1a33e8,#0b1a33d9 40%,#0b1a33f5)}
 .tabbar{background:#0b1a33}
 .phead h2{font-size:20px}
+
+.classic .headline{margin-top:auto}
+.classic .headline p{font-size:16px;line-height:1.35;max-width:32ch;margin-top:10px}
+.classic .form{margin-top:12px}
