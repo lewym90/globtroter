@@ -211,6 +211,7 @@ def build(c,rt,checked,q,drive,mode,cfg,A,C,adest,lat,lon,month,best):
     res['tickets']=round(res['tickets']);res['total']=res['tickets']+acc['total']+bags
     res['totalWithHotel']=res['total']+(res['hotelEst']['total'] if res['hotelEst'] else 0)
     res['perPerson']=round(res['total']/P)
+    res['perPersonAll']=round(res['totalWithHotel']/P)
     if res['flight']:
         L=res['flight']['out']['legs'][0];lh,buf=leave_home(L['dep'],drv,mode,d['cc'] not in NONSCH)
         res['leaveHome']=lh;res['airportBuffer']=buf
@@ -252,9 +253,10 @@ def compare_airports(opts,best,drive,mode,cfg,P,codes,lat,lon):
         lst.sort(key=lambda o:(not o['verified'],o.get('hotelEst') is None,full(o)))
         d=geo.BYID[did];rows={}
         days=lst[0]['nights']+1
-        stay=lst[0]['hotelEst']['total'] if lst[0].get('hotelEst') else 0
+        stay=next((o['hotelEst']['total'] for o in lst if o.get('hotelEst')),0)
+        full=lambda o:o['total']+(o['hotelEst']['total'] if o.get('hotelEst') else stay)
         for o in lst:
-            rows[o['from']]={'from':o['from'],'city':aname(o['from']),'km':o['drive']['km'],'min':o['drive']['min'],'tickets':round(o['tickets']),'access':o['access']['total'],'hotel':o['hotelEst']['total'] if o.get('hotelEst') else 0,'total':round(full(o)),'dep':o['dep'],'ret':o['ret'],'verified':o['verified'],'optionId':o['id'],'state':'verified'}
+            rows[o['from']]={'from':o['from'],'city':aname(o['from']),'km':o['drive']['km'],'min':o['drive']['min'],'tickets':round(o['tickets']),'access':o['access']['total'],'hotel':o['hotelEst']['total'] if o.get('hotelEst') else stay,'total':round(full(o)),'dep':o['dep'],'ret':o['ret'],'verified':o['verified'],'optionId':o['id'],'state':'verified'}
         for c in codes:
             if c in rows: continue
             ps=[best[k]['price'] for k in best if k[0]==c and k[1] in d['air']]
@@ -270,11 +272,17 @@ def compare_airports(opts,best,drive,mode,cfg,P,codes,lat,lon):
         priced=[r for r in R if r['state']!='none']
         near=min(priced,key=lambda r:r['km'])
         w=next(r for r in R if r['from']==win['from'])
+        what='licząc bilety, dojazd, parking i nocleg' if stay else 'licząc bilety, dojazd i parking'
+        cheaper=[r for r in priced if r['state']=='estimate' and r['total']<w['total']]
         if near is not w and w['total']<near['total']:
-            win['insight']=f"Opłaca się jechać dalej. Z {agen(w['from'])} ({w['km']} km) wychodzi {near['total']-w['total']} zł taniej niż z {agen(near['from'])} ({near['km']} km), licząc bilety, dojazd, parking i nocleg."
+            win['insight']=f"Opłaca się jechać dalej. Z {agen(w['from'])} ({w['km']} km) wychodzi {near['total']-w['total']} zł taniej niż z {agen(near['from'])} ({near['km']} km), {what}."
         elif near is w and len(priced)>1:
             n2=next(r for r in priced if r is not w)
-            win['insight']=f"Najbliższe lotnisko z lotami jest też najtańsze w sumie. Kolejne, {aname(n2['from'])}, wychodzi {n2['total']-w['total']} zł drożej."
+            if n2['total']>w['total']:
+                win['insight']=f"Najbliższe lotnisko z lotami jest też najtańsze w sumie. Kolejne, {aname(n2['from'])}, wychodzi {n2['total']-w['total']} zł drożej."
+        if cheaper:
+            c=min(cheaper,key=lambda r:r['total'])
+            win['insight']=f"{aname(c['from'])} może wyjść około {w['total']-c['total']} zł taniej, ale to wstępna cena bez potwierdzonych lotów. Sprawdź ją w linkach przed zakupem."
 def recheck(body):
     """Uzytkownik dotknal dnia w kalendarzu: potwierdzamy loty na ten termin."""
     o,dep,ret,q=body['option'],body['dep'],body['ret'],body.get('q') or {}

@@ -1,0 +1,31 @@
+name: Lista hoteli
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/hotels.yml','tools/build_hotels.py']
+  schedule:
+    - cron: '17 */4 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: hotels
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pobierz liste hoteli
+        run: python3 tools/build_hotels.py
+        env:
+          BUDGET_S: '1500'
+      - name: Zapisz
+        run: |
+          git config user.name 'globtroter-bot'
+          git config user.email 'globtroter-bot@users.noreply.github.com'
+          git add data/hotels
+          git diff --cached --quiet && exit 0
+          git commit -qm 'Lista hoteli'
+          git pull -q --rebase origin main || true
+          git push -q || true

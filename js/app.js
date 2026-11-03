@@ -2,7 +2,7 @@ import { scene, themeOf, landmarkOf } from './scene.js';
 import { flapRow } from './flap.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '1.0.1';
+const VERSION = '1.0.4';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -356,9 +356,9 @@ function viewResults() {
   ${(R.notes || []).map((n) => `<div class="note"><b>${esc(n.text)}</b>${n.alternatives?.length ? `<p class="mute">Ciepło jest wtedy tutaj: ${n.alternatives.map((a) => `${esc(a.name)}${a.fit?.tmax != null ? ` (${Math.round(a.fit.tmax)}°C)` : ''}`).join(', ')}.</p><div class="chips" style="margin-top:8px">${n.alternatives.map((a) => `<button class="chip" data-alt="${a.id}">${esc(a.name)}</button>`).join('')}</div>` : ''}</div>`).join('')}
   ${R.partial ? '<div class="note"><b>Część zapytań nie przeszła.</b><p class="mute">Mogą istnieć tańsze opcje, których nie widzimy. Pokazujemy tylko to, co udało się sprawdzić.</p></div>' : ''}
   ${!top.length ? `<div class="note info"><b>Na ten termin nie ma lotów z Twoich lotnisk.</b><p class="mute">Spróbuj szerszego terminu albo większego zasięgu lotnisk.</p></div>` : ''}
-  ${top.map((o, i) => `<article class="card"><button data-o="${o.id}" style="display:block;width:100%;text-align:left">${posterOf(o, `<span class="pr">${zl(o.perPerson)}<small style="font:600 12px var(--body)"> /os.</small></span>`)}
+  ${top.map((o, i) => `<article class="card"><button data-o="${o.id}" style="display:block;width:100%;text-align:left">${posterOf(o, `<span class="pr">${zl(o.hotelEst ? o.perPersonAll : o.perPerson)}<small style="font:600 12px var(--body)"> /os. ${o.hotelEst ? 'z noclegiem' : 'bez noclegu'}</small></span>`)}
     <div class="in"><p><b>${dateL(o.dep)} – ${dateL(o.ret)}</b>, ${o.nights} nocy, z ${esc(o.fromGen)}</p>
-    <p class="mute">${o.climate?.score != null ? esc(o.climate.why) + '. ' : ''}${o.hotelEst ? `Z noclegiem około ${zl(o.totalWithHotel)}.` : 'Bez ceny noclegu, mogą być zamknięte po sezonie.'}</p>
+    <p class="mute">${o.climate?.score != null ? esc(o.climate.why) + '. ' : ''}</p><p>${o.hotelEst ? `<b>Razem około ${zl(o.totalWithHotel)}</b> dla ${o.pax.adults + o.pax.children} ${o.pax.adults + o.pax.children > 1 ? 'osób' : 'osoby'}: loty i dojazd ${zl(o.total)}, nocleg około ${zl(o.hotelEst.total)}.` : `<b>Loty i dojazd ${zl(o.total)}.</b> Tej ceny brakuje noclegu: nie udało się teraz pobrać cen hoteli.`}</p>
     ${o.insight ? `<p class="warn" style="color:var(--deep)">${esc(o.insight)}</p>` : ''}</div></button></article>`).join('')}
   <p class="foot">Ceny sprawdzone dziś o ${esc(ago)}. Linie zmieniają je często, ostateczną zobaczysz przy zakupie.</p></section>`;
   $('#b').onclick = () => { S.step = STEPS.length - 1; viewWizard(); };
@@ -403,12 +403,12 @@ function viewOption() {
   const n = o.pax.adults + o.pax.children;
   app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>${esc(o.dest.name)}</h2></div>
   <section class="page"><article class="card">${posterOf(o)}
-   <div class="in"><p class="big">${zl(o.total)}</p><p class="mute">loty i dojazd dla ${n} ${n > 1 ? 'osób' : 'osoby'}, ${zl(o.perPerson)} na osobę${o.hotelEst ? `. Z noclegiem około ${zl(o.totalWithHotel)}` : ''}</p>
+   <div class="in"><p class="big">${zl(o.hotelEst ? o.totalWithHotel : o.total)}</p><p class="mute">${o.hotelEst ? `cały wyjazd bez jedzenia na miejscu, ${n} ${n > 1 ? 'osób' : 'osoba'}, ${zl(o.perPersonAll)} na osobę` : `loty i dojazd, bez noclegu, ${n} ${n > 1 ? 'osób' : 'osoba'}`}</p>
     <div style="margin-top:10px">
     <div class="kv"><span>Bilety</span><span>${zl(o.tickets)} <span class="sure ${o.verified ? 'fact' : 'est'}">${o.verified ? 'sprawdzone' : 'z kalendarza'}</span></span></div>
     ${o.access.items.map((i) => `<div class="kv"><span>${esc(i.label)}</span><span>${zl(i.pln)} <span class="sure est">szacunek</span></span></div>`).join('')}
     ${o.bags ? `<div class="kv"><span>Bagaż</span><span>${zl(o.bags)} <span class="sure est">szacunek</span></span></div>` : ''}
-    ${o.hotelEst ? `<div class="kv"><span>Nocleg, ${o.nights} nocy</span><span>około ${zl(o.hotelEst.total)} <span class="sure est">szacunek</span></span></div>` : `<div class="kv"><span>Nocleg</span><span class="sure check">brak cen na ten termin</span></div>`}</div>
+    ${o.hotelEst ? `<div class="kv"><span>Nocleg, ${o.nights} nocy</span><span>około ${zl(o.hotelEst.total)} <span class="sure est">szacunek</span></span></div>` : `<div class="kv"><span>Nocleg</span><span class="sure check">nie pobrano cen</span></div>`}</div>
     ${o.bagNote ? `<p class="hint">${esc(o.bagNote)}</p>` : ''}
     ${(o.warnings || []).map((w) => `<p class="warn">${esc(w)}</p>`).join('')}
     ${o.climate?.month?.tmax != null ? `<p class="hint">Średnio w tym miesiącu: ${Math.round(o.climate.month.tmin)}–${Math.round(o.climate.month.tmax)}°C${o.climate.month.sea != null ? `, morze ${Math.round(o.climate.month.sea)}°C` : ''}${o.climate.month.rain != null ? `, opady ${Math.round(o.climate.month.rain)} mm` : ''}.</p>` : ''}
@@ -454,7 +454,7 @@ async function viewHotels() {
     S.hotels = r;
     const L = r.hotels;
     app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Noclegi: ${esc(o.dest.name)}</h2></div><section class="page">
-    ${!L.length ? `<div class="note"><b>Nie mamy pewnych cen dla tych kryteriów.</b><p class="mute">Złagodź wymagania albo sprawdź oferty bezpośrednio.</p><div class="linkset">${Object.entries(r.fallback || {}).slice(0, 4).map(([k, v]) => `<a class="btn line small" href="${url(v)}" target="_blank" rel="noopener">${esc(k)}</a>`).join('')}</div></div>` : ''}
+    ${!L.length ? `<div class="note"><b>${r.sourceDown ? 'Ranking hoteli jest chwilowo niedostępny.' : 'Nie mamy pewnych cen dla tych kryteriów.'}</b><p class="mute">${r.sourceDown ? 'Źródło listy hoteli nie odpowiada. Znajdź nocleg na stronach poniżej, a plan podróży ułożymy i tak.' : 'Złagodź wymagania albo sprawdź oferty bezpośrednio.'}</p><div class="linkset">${Object.entries(r.fallback || {}).slice(0, 4).map(([k, v]) => `<a class="btn line small" href="${url(v)}" target="_blank" rel="noopener">${esc(k)}</a>`).join('')}</div><div class="acts"><button class="btn" id="noh">Ułóż plan bez wybranego hotelu</button></div></div>` : ''}
     ${L.map((h, i) => `<article class="card hot">${i === 0 && !h.overBudget ? '<span class="badge">Nasz wybór</span>' : ''}${h.image ? `<img src="${url(h.image)}" alt="${esc(h.name)}" loading="lazy" referrerpolicy="no-referrer">` : ''}
     <div class="in"><h3>${esc(h.name)}</h3><p><span class="stars">${String(h.rating ?? '').replace('.', ',')} / 5</span> <span class="mute">${(h.reviews || 0).toLocaleString('pl-PL')} opinii${h.distKm != null ? `, ${String(h.distKm).replace('.', ',')} km od centrum` : ''}</span></p>
     ${h.why.length ? `<p class="mute">${esc(h.why.join(', '))}.</p>` : ''}${h.overBudget ? '<p class="warn">Ponad Twój budżet.</p>' : ''}
@@ -463,6 +463,7 @@ async function viewHotels() {
     ${L.length ? `<p class="foot">${r.rooms} ${r.rooms > 1 ? 'pokoje' : 'pokój'}, ${r.nights} nocy. ${esc(r.note)} Link otwiera wyszukiwanie tego hotelu z datami. Dane: TripAdvisor przez Xotelo.</p>` : ''}</section>`;
     $('#b').onclick = viewOption;
     $$('[data-h]').forEach((b) => { b.onclick = () => buildPlan(L[+b.dataset.h]); });
+    const nh = $('#noh'); if (nh) nh.onclick = () => buildPlan({ name: 'centrum: ' + o.dest.name, lat: o.dest.lat, lon: o.dest.lon, bestTotal: 0 });
     scrollTo(0, 0);
   } catch (e) {
     app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Noclegi</h2></div><section class="page"><div class="note"><b>${esc(e.message)}</b><div class="acts"><button class="btn" id="r">Spróbuj ponownie</button></div></div></section>`;
@@ -518,6 +519,10 @@ function viewPlan() {
   try { await data(); } catch { toast('Nie udało się wczytać bazy miejsc. Sprawdź internet.'); }
   const job = load('job', null);
   if (job && Date.now() - job.t < 3e6) { S.q = job.q; viewSearch(job.id); }
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  if ('serviceWorker' in navigator) {
+    const had = !!navigator.serviceWorker.controller; let done = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (had && !done && !$('.board-wrap')) { done = true; location.reload(); } });
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
   window.__gt = { S, viewResults, viewOption, viewPlan, VERSION };
 })();

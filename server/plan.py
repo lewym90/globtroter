@@ -157,7 +157,7 @@ def build(body):
     ta=add(arr,35 if sch else 55)
     trm=tr['min'] if tr else round(geo.km(da['lat'],da['lon'],H[0],H[1])*1.4/30*60)+25
     e(at=ta.isoformat(timespec='minutes'),title='Z lotniska do hotelu',text=(f"Około {span(tr['min'])} komunikacją, {przes(tr['transfers'])}." if tr else 'Nie mamy rozkładu dla tej trasy, sprawdź połączenie na mapie.'),legs=(tr or {}).get('legs'),sample=(tr or {}).get('sample'),sure='fact' if tr and not tr['sample'] else 'est',icon='bus',map=hmap)
-    e(at=add(ta,trm).isoformat(timespec='minutes'),title=f"Hotel: {h['name']}",text='Zameldowanie zwykle od 14:00–15:00. Sprawdź godzinę w potwierdzeniu.',sure='check',icon='bed',map=place(h['name'],H[0],H[1]))
+    e(at=add(ta,trm).isoformat(timespec='minutes'),title=(f"Hotel: {h['name']}" if h.get('bestTotal') else 'Twój nocleg'),text='Zameldowanie zwykle od 14:00–15:00. Sprawdź godzinę w potwierdzeniu.',sure='check',icon='bed',map=place(h['name'],H[0],H[1]))
     rt=[]
     r2=transit(H,(da['lat'],da['lon']),add(bdep,-(buf+180)))
     rm=r2['min'] if r2 else trm
@@ -188,5 +188,6 @@ def build(body):
     if c and 'C' not in c['plugs']: check.append({'t':f"Adapter do gniazdek {c['plugs']}",'d':-3})
     cost=[{'label':'Bilety','pln':o['tickets'],'sure':'fact' if o['verified'] else 'est'}]+[{'label':i['label'],'pln':i['pln'],'sure':'est'} for i in o['access']['items']]
     if o.get('bags'): cost.append({'label':'Bagaż (szacunek)','pln':o['bags'],'sure':'est'})
-    cost.append({'label':f"Nocleg: {h['name']}",'pln':h['bestTotal'],'sure':'fact'})
+    if h.get('bestTotal'): cost.append({'label':f"Nocleg: {h['name']}",'pln':h['bestTotal'],'sure':'fact'})
+    elif o.get('hotelEst'): cost.append({'label':'Nocleg','pln':o['hotelEst']['total'],'sure':'est'})
     return {'title':f"{d['name']}: {o['nights']} nocy",'dest':{k:d.get(k) for k in('id','name','cc','lat','lon')},'option':o,'hotel':h,'home':home,'timeline':tl,'return':rt,'days':days,'climate':cm(d,m),'climateSource':cl.get('station'),'country':c,'holidays':hol,'checklist':sorted(check,key=lambda x:x['d']),'cost':cost,'total':sum(x['pln'] for x in cost),'foodOk':food is not False,'at':dt.datetime.now().isoformat(timespec='minutes')}

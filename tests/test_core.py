@@ -102,6 +102,23 @@ class FoodParse(unittest.TestCase):
         sys.path.insert(0,os.path.join(os.path.dirname(__file__),'..','tools'));import build_food as b
         L=b.parse({'elements':[{'lat':1,'lon':2,'tags':{'name':'A','cuisine':'pizza;italian','website':'http://a.pl','opening_hours':'Mo 10:00'}},{'type':'way','center':{'lat':3,'lon':4},'tags':{'name':'B'}},{'lat':1,'lon':2,'tags':{'name':'A'}},{'lat':1,'lon':2,'tags':{'cuisine':'x'}},{'lat':1,'lon':2,'tags':{'name':'Zamk','opening_hours':'off'}}]})
         self.assertEqual([x['n'] for x in L],['A','B']);self.assertEqual(L[0]['c'],'pizza, italian');self.assertEqual(L[0]['h'],'Mo 10:00')
+class HotelList(unittest.TestCase):
+    def setUp(self):
+        self.p,self.f,self.g,self.u=hotels._page,hotels.net.fetch_json,hotels.store.get,hotels.store.put
+        hotels.store.get=lambda *a:(None,None);hotels.store.put=lambda *a:None
+    def tearDown(self): hotels._page,hotels.net.fetch_json,hotels.store.get,hotels.store.put=self.p,self.f,self.g,self.u
+    def test_snapshot_first(self):
+        hotels.net.fetch_json=lambda *a,**k:{'r':[{'key':'a'}]};hotels._page=lambda *a:self.fail('nie pytaj zrodla')
+        self.assertEqual(hotels._list({'id':'x','ta':'1'}),[{'key':'a'}])
+    def test_all_down_is_error_not_empty(self):
+        def no(*a,**k): raise hotels.net.SourceDown('x')
+        hotels.net.fetch_json=no;hotels._page=lambda *a:None
+        with self.assertRaises(hotels.net.SourceDown): hotels._list({'id':'x','ta':'1'})
+    def test_search_reports_source_down(self):
+        def no(*a,**k): raise hotels.net.SourceDown('x')
+        hotels.net.fetch_json=no;hotels._page=lambda *a:None
+        geo.BYID['y']={'id':'y','en':'Y','ta':'1','tags':['city'],'lat':1,'lon':1}
+        r=hotels.search('y','2027-05-05','2027-05-12',2,0);self.assertTrue(r['sourceDown']);self.assertTrue(r['fallback'])
 class Food(unittest.TestCase):
     D=lambda self:[{'stops':[{'meal':'lunch','lat':41.9,'lon':12.5},{'name':'X','lat':41.9,'lon':12.5}]}]
     def test_source_down_no_invented_names(self):

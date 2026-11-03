@@ -2,13 +2,30 @@
 Xotelo podaje srednia cene za noc pokoju; pobieramy w EUR i przeliczamy po kursie NBP."""
 import datetime as dt,math,threading,time
 from concurrent.futures import ThreadPoolExecutor
-import geo,links,net
+import geo,links,net,store
 API='https://data.xotelo.com/api'
 def rooms_for(A,C): return max(1,math.ceil((A+C)/3) if C else math.ceil(A/2))
-def _list(ta,sort,limit=40):
-    j=net.fetch_json(f'{API}/list?location_key=g{ta}&limit={limit}&offset=0&sort={sort}',ttl=7*86400)
-    if j.get('error'): raise net.SourceDown(str(j['error']))
-    return (j.get('result') or {}).get('list') or []
+def _page(ta,sort,off,n):
+    try:
+        j=net.fetch_json(f'{API}/list?location_key=g{ta}&limit={n}&offset={off}&sort={sort}',ttl=7*86400,tries=1,timeout=15)
+        return (j.get('result') or {}).get('list') or []
+    except net.SourceDown: return None
+SNAP='https://lewym90.github.io/globtroter/data/hotels/%s.json'
+def _list(d):
+    """Lista hoteli: najpierw zapisana w repozytorium, na zywo tylko jako zapas."""
+    k='hl2:'+d['id']
+    v,_=store.get(k)
+    if v: return v
+    try:
+        r=net.fetch_json(SNAP%d['id'],ttl=6*3600,tries=1,timeout=10,cache=False)['r']
+        if r: store.put(k,r,6*3600);return r
+    except Exception: pass
+    seen={}
+    for s_ in('best_value','popularity'):
+        for h in _page(d['ta'],s_,0,50) or []: seen.setdefault(h['key'],h)
+    if not seen: raise net.SourceDown('lista hoteli')
+    r=list(seen.values());store.put(k,r,6*3600)
+    return r
 _rl=threading.Lock();_last=[0.0]
 def _rates(key,ci,co):
     with _rl:
@@ -23,7 +40,7 @@ def estimate(d,ci,co,A,C):
     Liczy sie data: targi albo swieta potrafia podniesc ceny kilkukrotnie."""
     if not d.get('ta'): return None
     try:
-        L=[h for h in _list(d['ta'],'best_value') if (h.get('review_summary') or {}).get('rating',0)>=4][:5]
+        L=[h for h in _list(d) if (h.get('review_summary') or {}).get('rating',0)>=4][:5]
         if not L: return None
         eur=net.fx('EUR');vals=[]
         for h in L:
@@ -53,10 +70,8 @@ def search(did,ci,co,A,C,budget=None,pref='balanced',minrating=0,kind='all',brea
     if not d.get('ta'): return {'hotels':[],'unsupported':True,'fallback':links.hotel_links('hotele',d['en'],ci,co,A,C,R)}
     a,b=dt.date.fromisoformat(ci),dt.date.fromisoformat(co);N=(b-a).days
     if N<1: raise ValueError('Wymeldowanie musi być po zameldowaniu')
-    seen={}
-    for s in('best_value','popularity'):
-        for h in _list(d['ta'],s,50): seen.setdefault(h['key'],h)
-    L=list(seen.values())
+    try: L=list(_list(d))
+    except net.SourceDown: return {'hotels':[],'sourceDown':True,'fallback':links.hotel_links('hotele',d['en'],ci,co,A,C,R)}
     if kind!='all': L=[h for h in L if (h.get('accommodation_type') or '').lower()==kind]
     if minrating: L=[h for h in L if ((h.get('review_summary') or {}).get('rating') or 0)>=float(minrating)]
     if breakfast: L=[h for h in L if 'Breakfast included' in (h.get('merchandising_labels') or [])]
