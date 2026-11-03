@@ -4,7 +4,7 @@ on:
   push:
     paths: ['.github/workflows/food.yml','tools/build_food.py']
   schedule:
-    - cron: '23 3 * * *'
+    - cron: '23 */3 * * *'
 permissions:
   contents: write
 concurrency:
@@ -13,13 +13,13 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - name: Pobierz restauracje
         run: python3 tools/build_food.py
         env:
-          BUDGET_S: '2400'
+          BUDGET_S: '1500'
       - name: Zapisz
         run: |
           git config user.name 'globtroter-bot'

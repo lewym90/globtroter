@@ -5,7 +5,7 @@ import json,os,sys,time,urllib.parse,urllib.request
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOSTS=['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter','https://overpass.kumi.systems/api/interpreter']
 UA={'User-Agent':'Globtroter/1.0 (non-commercial travel planner; github.com/lewym90/globtroter)','Content-Type':'application/x-www-form-urlencoded'}
-MAX_AGE=30*86400;BUDGET=float(os.environ.get('BUDGET_S','2400'))
+MAX_AGE=30*86400;BUDGET=float(os.environ.get('BUDGET_S','1500'))
 def parse(raw):
     """Zamienia odpowiedz Overpass na krotkie rekordy, najpelniejsze wpisy najpierw."""
     out=[];seen=set()
@@ -21,11 +21,11 @@ def parse(raw):
         out.append(r)
     return sorted(out,key=lambda x:-x['s'])[:160]
 def fetch(lat,lon):
-    q=f'[out:json][timeout:40];nwr["amenity"="restaurant"]["name"](around:4500,{lat},{lon});out center tags 700;'
+    q=f'[out:json][timeout:25];nwr["amenity"="restaurant"]["name"](around:2800,{lat},{lon});out center tags 450;'
     body=urllib.parse.urlencode({'data':q}).encode()
     for h in HOSTS:
         try:
-            with urllib.request.urlopen(urllib.request.Request(h,data=body,headers=UA),timeout=60) as r: return json.loads(r.read())
+            with urllib.request.urlopen(urllib.request.Request(h,data=body,headers=UA),timeout=32) as r: return json.loads(r.read())
         except Exception as e: print(' ',h.split('/')[2],str(e)[:70],flush=True);time.sleep(4)
     return None
 def main():
