@@ -62,6 +62,11 @@ class Links(unittest.TestCase):
         L=links.flight_links('KRK','BCN','2027-02-10','2027-02-17',1,0);self.assertIn('/krk/bcn/270210/270217/',[x for x in L if x['site']=='Skyscanner'][0]['url'])
     def test_hotel_dates(self):
         self.assertIn('checkin=2027-02-10',links.hotel_links('Hotel X','Rome','2027-02-10','2027-02-14',2,0)['Booking.com'])
+class GoogleLink(unittest.TestCase):
+    def test_dates_in_words(self):
+        from urllib.parse import unquote_plus
+        u=unquote_plus(links.hotel_links('Catania Inn','Catania','2027-05-24','2027-05-29',2,0)['Google'])
+        self.assertIn('Catania Inn Catania from May 24 2027 to May 29 2027',u)
 class Rooms(unittest.TestCase):
     def test_rooms(self):
         self.assertEqual(hotels.rooms_for(2,0),1);self.assertEqual(hotels.rooms_for(3,0),2);self.assertEqual(hotels.rooms_for(2,1),1);self.assertEqual(hotels.rooms_for(4,2),2)

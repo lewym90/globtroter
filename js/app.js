@@ -2,7 +2,7 @@ import { scene, themeOf, landmarkOf } from './scene.js';
 import { flapRow } from './flap.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '2.0.0';
+const VERSION = '2.2.0';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -273,7 +273,7 @@ const next = () => { save('prefs', { ...S.q, origin: S.q.origin }); if (S.modal)
 function stepFrom(el) {
   const q = S.q;
   const draw = () => {
-    const near = q.origin ? S.airports.map((a) => ({ ...a, d: km(q.origin.lat, q.origin.lon, a.lat, a.lon) }))
+    const near = q.origin ? S.airports.filter((a) => !['BY', 'RU', 'UA'].includes(a.cc)).map((a) => ({ ...a, d: km(q.origin.lat, q.origin.lon, a.lat, a.lon) }))
       .filter((a) => (a.cc === 'PL' && a.d < Math.max(q.radius, 700)) || (a.d < q.radius && a.large)).sort((a, b) => a.d - b.d).slice(0, 16) : [];
     el.innerHTML = `<h1>Skąd startujesz?</h1><p class="sub">Porównamy wszystkie lotniska w zasięgu, razem z dojazdem i parkingiem.</p>
     <div class="field"><button class="btn line" id="gps">Użyj mojej lokalizacji</button></div>
@@ -615,7 +615,7 @@ async function viewHotels() {
     ${h.amen?.filter((a) => a !== 'śniadanie w cenie').length ? `<p class="mute" style="font-size:14px">${esc(h.amen.filter((a) => a !== 'śniadanie w cenie').slice(0, 6).join(', '))}</p>` : ''}
     ${h.overBudget ? '<p class="warn">Ponad Twój budżet.</p>' : ''}
     <div class="pricelist">${h.prices.map((p, j) => `<a class="pl ${j === 0 ? 'best' : ''}" href="${url(p.url)}" target="_blank" rel="noopener"><span>${esc(p.site)}</span><span>${zl(p.total)}</span></a>`).join('')}</div>
-    ${h.compare?.length ? `<p class="hint">Sprawdź cenę także tutaj:</p><div class="linkset">${h.compare.map((c) => `<a class="btn line small" href="${url(c.url)}" target="_blank" rel="noopener">${esc(c.site)}</a>`).join('')}</div>` : ''}
+    ${h.compare?.length ? `<p class="hint">Szukaj też na tych stronach. Szukamy po nazwie, więc sprawdź, czy otwarty hotel to ten sam. Nie każdy hotel jest na każdej stronie.</p><div class="linkset">${h.compare.map((c) => `<a class="btn line small" href="${url(c.url)}" target="_blank" rel="noopener">${esc(c.site)}</a>`).join('')}</div>` : ''}
     <div class="acts"><button class="btn" data-h="${esc(h.key)}">Wybieram ten hotel</button></div></div></article>`;
     const draw = () => {
       const v = list(); const f = S.hf; const L = r.hotels;

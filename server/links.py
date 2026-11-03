@@ -9,6 +9,10 @@ def flight_links(o,d,dep,ret,A,C,carrier=None):
     if carrier=='FR': L.insert(0,{'site':'Ryanair','url':f'https://www.ryanair.com/pl/pl/trip/flights/select?adults={A}&teens=0&children={C}&infants=0&dateOut={dep}&dateIn={ret}&isConnectedFlight=false&isReturn=true&originIata={o}&destinationIata={d}'})
     if carrier=='W6': L.insert(0,{'site':'Wizz Air','url':f'https://www.wizzair.com/pl-pl/booking/select-flight/{o}/{d}/{dep}/{ret}/{A}/{C}/0/null'})
     return L
+MONTHS='January February March April May June July August September October November December'.split()
+def eng(d):
+    # Google rozumie daty tylko w takim zapisie: inaczej traktuje je jak tekst i nic nie znajduje
+    y,m,dd=d.split('-');return f'{MONTHS[int(m)-1]} {int(dd)} {y}'
 def hotel_links(name,city,ci,co,A,C,rooms=1):
     q=f'{name} {city}'
     return {'Booking.com':'https://www.booking.com/searchresults.pl.html?'+urlencode({'ss':q,'checkin':ci,'checkout':co,'group_adults':A,'group_children':C,'no_rooms':rooms,'selected_currency':'PLN'}),
@@ -16,4 +20,4 @@ def hotel_links(name,city,ci,co,A,C,rooms=1):
       'Trip.com':'https://pl.trip.com/hotels/list?'+urlencode({'keyword':q,'checkin':ci,'checkout':co,'adult':A,'children':C,'crn':rooms}),
       'Expedia':'https://www.expedia.pl/Hotel-Search?'+urlencode({'destination':q,'startDate':ci,'endDate':co,'adults':A}),
       'Hotels.com':'https://pl.hotels.com/Hotel-Search?'+urlencode({'destination':q,'startDate':ci,'endDate':co,'adults':A}),
-      'Google':'https://www.google.com/travel/search?'+urlencode({'q':f'{q} {ci} {co}','hl':'pl','curr':'PLN'})}
+      'Google':'https://www.google.com/travel/search?'+urlencode({'q':f'{q} from {eng(ci)} to {eng(co)}','hl':'pl','gl':'pl','curr':'PLN'})}

@@ -78,7 +78,7 @@ def search_google(d,ci,co,A,C,budget,pref,minrating,kind):
         if (h['rating'] or 0)>=4.7: why.append('wyjątkowo wysoka ocena gości')
         if 'city' in d['tags'] and dist<1.5: why.append('w samym centrum')
         res.append({'key':h.get('id') or h['name'],'name':h['name'],'type':h.get('kind'),'rating':h['rating'],'reviews':h['reviews'],'image':h['image'],'url':lk['Google'],'lat':h['lat'],'lon':h['lon'],'distKm':round(dist,1) if 'city' in d['tags'] else None,'breakfast':h.get('breakfast')=='free','breakfastPaid':h.get('breakfast')=='paid','stars':h.get('stars'),'amen':h.get('amen') or [],'score':s,
-          'prices':[{'site':'Najtaniej w Google Hotels','night':h['nightPln'],'total':total,'url':lk['Google']}],'compare':[{'site':k,'url':lk[k]} for k in('Booking.com','Agoda.com','Trip.com')],'bestNight':h['nightPln'],'bestTotal':total,'overBudget':bool(budget and total>budget),'why':why,'google':lk['Google']})
+          'prices':[{'site':'Zobacz ten hotel w Google','night':h['nightPln'],'total':total,'url':lk['Google']}],'compare':[{'site':k,'url':lk[k]} for k in('Booking.com','Agoda.com','Trip.com')],'bestNight':h['nightPln'],'bestTotal':total,'overBudget':bool(budget and total>budget),'why':why,'google':lk['Google']})
     res.sort(key=lambda x:(x['overBudget'],-x['score']))
     return {'hotels':res,'nights':N,'rooms':R,'checkedAt':time.time(),'source':'google'}
 def score(h,pref,center):
