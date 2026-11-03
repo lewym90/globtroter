@@ -2,7 +2,7 @@
 Xotelo podaje srednia cene za noc pokoju; pobieramy w EUR i przeliczamy po kursie NBP."""
 import datetime as dt,math,threading,time
 from concurrent.futures import ThreadPoolExecutor
-import geo,links,net,store
+import geo,ghotels,links,net,store
 API='https://data.xotelo.com/api'
 def rooms_for(A,C): return max(1,math.ceil((A+C)/3) if C else math.ceil(A/2))
 def _page(ta,sort,off,n):
@@ -38,21 +38,48 @@ def _rates(key,ci,co):
 def estimate(d,ci,co,A,C):
     """Koszt noclegu na konkretny termin: mediana zywych cen pieciu dobrze ocenianych hoteli.
     Liczy sie data: targi albo swieta potrafia podniesc ceny kilkukrotnie."""
-    if not d.get('ta'): return None
+    if not d.get('ta'): return _est_google(d,ci,co,A,C)
     try:
         L=[h for h in _list(d) if (h.get('review_summary') or {}).get('rating',0)>=4][:5]
-        if not L: return None
+        if not L: return _est_google(d,ci,co,A,C)
         eur=net.fx('EUR');vals=[]
         for h in L:
             r=_safe(h['key'],ci,co) or []
             p=[x['rate'] for x in r if x.get('rate') and x['rate']>0]
             if p: vals.append(min(p)*eur)
-        if len(vals)<2: return None
+        if len(vals)<2: return _est_google(d,ci,co,A,C)
         vals.sort();night=vals[len(vals)//2]
         n=(dt.date.fromisoformat(co)-dt.date.fromisoformat(ci)).days
         R=rooms_for(A,C)
         return {'night':round(night),'rooms':R,'total':round(night*n*R),'est':True,'samples':len(vals)}
-    except Exception: return None
+    except Exception: return _est_google(d,ci,co,A,C)
+def _est_google(d,ci,co,A,C):
+    L=ghotels.search(d,ci,co)
+    if not L: return None
+    v=sorted(h['nightPln'] for h in L if (h['rating'] or 0)>=4) or sorted(h['nightPln'] for h in L)
+    night=v[len(v)//2];n=(dt.date.fromisoformat(co)-dt.date.fromisoformat(ci)).days;R=rooms_for(A,C)
+    return {'night':night,'rooms':R,'total':night*n*R,'est':True,'samples':len(v)}
+def search_google(d,ci,co,A,C,budget,pref,minrating,kind):
+    """Ranking z Google Hotels: gdy Xotelo nie ma listy albo cen dla tego miasta."""
+    L=ghotels.search(d,ci,co)
+    if not L: return None
+    R=rooms_for(A,C);N=(dt.date.fromisoformat(co)-dt.date.fromisoformat(ci)).days
+    L=[h for h in L if (h['reviews'] or 0)>=20] or L
+    if minrating: L=[h for h in L if (h['rating'] or 0)>=float(minrating)] or L
+    lo=min(h['nightPln'] for h in L);hi=max(h['nightPln'] for h in L)
+    res=[]
+    for h in L:
+        x={'review_summary':{'rating':h['rating'],'count':h['reviews']},'geo':{'latitude':h['lat'],'longitude':h['lon']},'_value':1-(h['nightPln']-lo)/max(1,hi-lo),'_breakfast':False,'_city':'city' in d['tags']}
+        s,dist=score(x,pref,(d['lat'],d['lon']))
+        total=h['nightPln']*N*R;lk=links.hotel_links(h['name'],d['en'],ci,co,A,C,R)
+        why=[]
+        if h.get('stars'): why.append(f"{h['stars']} gwiazdki" if h['stars']<5 else '5 gwiazdek')
+        if (h['rating'] or 0)>=4.7: why.append('wyjątkowo wysoka ocena gości')
+        if 'city' in d['tags'] and dist<1.5: why.append('w samym centrum')
+        res.append({'key':h.get('id') or h['name'],'name':h['name'],'type':h.get('kind'),'rating':h['rating'],'reviews':h['reviews'],'image':h['image'],'url':lk['Google'],'lat':h['lat'],'lon':h['lon'],'distKm':round(dist,1) if 'city' in d['tags'] else None,'breakfast':False,'score':s,
+          'prices':[{'site':'Najtaniej w Google Hotels','night':h['nightPln'],'total':total,'url':lk['Google']}],'compare':[{'site':k,'url':lk[k]} for k in('Booking.com','Agoda.com','Trip.com')],'bestNight':h['nightPln'],'bestTotal':total,'overBudget':bool(budget and total>budget),'why':why,'google':lk['Google']})
+    res.sort(key=lambda x:(x['overBudget'],-x['score']))
+    return {'hotels':res,'nights':N,'rooms':R,'checkedAt':time.time(),'note':'Cena z Google Hotels, ceny na poszczególnych stronach mogą się różnić. Śniadania to źródło nie podaje.','source':'google'}
 def score(h,pref,center):
     """Punkty 0-100. Wagi zaleza od priorytetu."""
     rs=h.get('review_summary') or {};rt=rs.get('rating') or 0;n=rs.get('count') or 0
@@ -67,11 +94,12 @@ def search(did,ci,co,A,C,budget=None,pref='balanced',minrating=0,kind='all',brea
     d=geo.BYID.get(did)
     if not d: raise ValueError('Nie znam tego miejsca')
     R=rooms_for(A,C)
-    if not d.get('ta'): return {'hotels':[],'unsupported':True,'fallback':links.hotel_links('hotele',d['en'],ci,co,A,C,R)}
     a,b=dt.date.fromisoformat(ci),dt.date.fromisoformat(co);N=(b-a).days
     if N<1: raise ValueError('Wymeldowanie musi być po zameldowaniu')
+    G=lambda:search_google(d,ci,co,A,C,budget,pref,minrating,kind)
+    down={'hotels':[],'sourceDown':True,'fallback':links.hotel_links('hotele',d['en'],ci,co,A,C,R)}
     try: L=list(_list(d))
-    except net.SourceDown: return {'hotels':[],'sourceDown':True,'fallback':links.hotel_links('hotele',d['en'],ci,co,A,C,R)}
+    except net.SourceDown: return G() or down
     if kind!='all': L=[h for h in L if (h.get('accommodation_type') or '').lower()==kind]
     if minrating: L=[h for h in L if ((h.get('review_summary') or {}).get('rating') or 0)>=float(minrating)]
     if breakfast: L=[h for h in L if 'Breakfast included' in (h.get('merchandising_labels') or [])]
@@ -89,7 +117,7 @@ def search(did,ci,co,A,C,budget=None,pref='balanced',minrating=0,kind='all',brea
         sr={x['name']:round(x['rate']*eur) for x in r if x.get('rate') and x['rate']>0}
         if not sr: continue
         h['_min']=min(sr.values());h['_rates']=sr;ok.append(h)
-    if not ok: return {'hotels':[],'noOffers':len(top)>0,'fallback':links.hotel_links('hotele',d['en'],ci,co,A,C,R)}
+    if not ok: return G() or {'hotels':[],'noOffers':len(top)>0,'fallback':links.hotel_links('hotele',d['en'],ci,co,A,C,R)}
     lo=min(h['_min'] for h in ok);hi=max(h['_min'] for h in ok)
     for h in ok: h['_value']=1-(h['_min']-lo)/max(1,hi-lo)
     res=[]

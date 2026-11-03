@@ -118,7 +118,24 @@ class HotelList(unittest.TestCase):
         def no(*a,**k): raise hotels.net.SourceDown('x')
         hotels.net.fetch_json=no;hotels._page=lambda *a:None
         geo.BYID['y']={'id':'y','en':'Y','ta':'1','tags':['city'],'lat':1,'lon':1}
-        r=hotels.search('y','2027-05-05','2027-05-12',2,0);self.assertTrue(r['sourceDown']);self.assertTrue(r['fallback'])
+        hotels.ghotels.search=lambda *a:None;r=hotels.search('y','2027-05-05','2027-05-12',2,0);self.assertTrue(r['sourceDown']);self.assertTrue(r['fallback'])
+class GoogleHotels(unittest.TestCase):
+    def rec(self,a=(2027,6,10),b=(2027,6,17),offer=True):
+        r=[None]*27;r[1]='Senses';r[2]=[[43.14,16.37]];r[3]=['Hotel 5-gwiazdkowy',5];r[7]=[[4.5,1000]];r[20]='abc'
+        o=[None]*11;o[1]=['$150','$169',149.7,None,150];o[10]=['$1,048','$1,182']
+        r[6]=[None,[[150,0],None,None,'USD',[list(a),list(b),7,1]],o if offer else None];return r
+    def test_parse(self):
+        import ghotels
+        h=ghotels.parse(self.rec(),'2027-06-10','2027-06-17');self.assertEqual((h['night'],h['total'],h['rating'],h['stars']),(150,1048,4.5,5))
+    def test_wrong_dates_rejected(self):
+        import ghotels
+        self.assertIsNone(ghotels.parse(self.rec(a=(2026,11,9)),'2027-06-10','2027-06-17'))
+    def test_no_offer_rejected(self):
+        import ghotels
+        self.assertIsNone(ghotels.parse(self.rec(offer=False),'2027-06-10','2027-06-17'))
+    def test_query_dates(self):
+        import ghotels
+        self.assertEqual(ghotels.query('Hvar','2026-12-28','2027-01-04'),'hotels in Hvar from December 28 2026 to January 4 2027')
 class Food(unittest.TestCase):
     D=lambda self:[{'stops':[{'meal':'lunch','lat':41.9,'lon':12.5},{'name':'X','lat':41.9,'lon':12.5}]}]
     def test_source_down_no_invented_names(self):

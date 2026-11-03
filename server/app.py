@@ -5,7 +5,7 @@ from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import parse_qs,urlsplit
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 import flights,geo,hotels,net,plan,search,store
-VERSION='1.0.4'
+VERSION='1.1.0'
 ALLOW={'https://lewym90.github.io','http://localhost:8000','http://127.0.0.1:8000'}
 class H(BaseHTTPRequestHandler):
     server_version='Globtroter'

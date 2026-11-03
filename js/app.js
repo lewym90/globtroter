@@ -2,7 +2,7 @@ import { scene, themeOf, landmarkOf } from './scene.js';
 import { flapRow } from './flap.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '1.1.1';
+const VERSION = '1.2.0';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -460,8 +460,9 @@ async function viewHotels() {
     <div class="in"><h3>${esc(h.name)}</h3><p><span class="stars">${String(h.rating ?? '').replace('.', ',')} / 5</span> <span class="mute">${(h.reviews || 0).toLocaleString('pl-PL')} opinii${h.distKm != null ? `, ${String(h.distKm).replace('.', ',')} km od centrum` : ''}</span></p>
     ${h.why.length ? `<p class="mute">${esc(h.why.join(', '))}.</p>` : ''}${h.overBudget ? '<p class="warn">Ponad Twój budżet.</p>' : ''}
     <div class="pricelist">${h.prices.map((p, j) => `<a class="pl ${j === 0 ? 'best' : ''}" href="${url(p.url)}" target="_blank" rel="noopener"><span>${esc(p.site)}</span><span>${zl(p.total)}</span></a>`).join('')}</div>
+    ${h.compare?.length ? `<p class="hint">Sprawdź cenę także tutaj:</p><div class="linkset">${h.compare.map((c) => `<a class="btn line small" href="${url(c.url)}" target="_blank" rel="noopener">${esc(c.site)}</a>`).join('')}</div>` : ''}
     <div class="acts"><button class="btn" data-h="${i}">Wybieram ten hotel</button></div></div></article>`).join('')}
-    ${L.length ? `<p class="foot">${r.rooms} ${r.rooms > 1 ? 'pokoje' : 'pokój'}, ${r.nights} nocy. ${esc(r.note)} Link otwiera wyszukiwanie tego hotelu z datami. Dane: TripAdvisor przez Xotelo.</p>` : ''}</section>`;
+    ${L.length ? `<p class="foot">${r.rooms} ${r.rooms > 1 ? 'pokoje' : 'pokój'}, ${r.nights} nocy. ${esc(r.note)} Link otwiera wyszukiwanie tego hotelu z datami. Dane: ${r.source === 'google' ? 'Google Hotels' : 'TripAdvisor przez Xotelo'}.</p>` : ''}</section>`;
     $('#b').onclick = viewOption;
     $$('[data-h]').forEach((b) => { b.onclick = () => buildPlan(L[+b.dataset.h]); });
     const nh = $('#noh'); if (nh) nh.onclick = () => buildPlan({ name: 'centrum: ' + o.dest.name, lat: o.dest.lat, lon: o.dest.lon, bestTotal: 0 });
