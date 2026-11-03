@@ -13,11 +13,11 @@ def fit(d,m,style):
     t,s,r=c['tmax'],c['sea'],c['rain'] or 0
     if style=='beach':
         if s is None: return 0.05,f'Brak dostępu do morza w danych, {round(t)}°C'
-        v=min(1,max(0,(t-19)/9))*0.6+min(1,max(0,(s-17)/7))*0.4
-        if t<22 or s<20: why=f'Za zimno na plażowanie: {round(t)}°C, morze {round(s)}°C'
+        v=min(1,max(0,(t-16)/8))*0.6+min(1,max(0,(s-15)/7))*0.4
+        if t<20 or s<18: why=f'Za zimno na plażowanie: {round(t)}°C, morze {round(s)}°C'
         else: why=f'{round(t)}°C, morze {round(s)}°C'
-        return round(v-min(.2,r/500),2),why
+        return round(v-min(.1,r/1000),2),why
     if style=='ski':
-        return round(min(1,max(0,(6-t)/8)),2),f'{round(t)}°C w dzień'
+        return round(min(1,max(0,(9-t)/7)),2),f'{round(t)}°C w dzień'
     v=1-min(1,abs(t-22)/16)-min(.25,r/400)
     return round(max(0,v),2),f'{round(t)}°C w dzień'+(f', opady {round(r)} mm' if c['rain'] is not None else '')

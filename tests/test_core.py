@@ -75,6 +75,12 @@ class Dest(unittest.TestCase):
     def test_city_ignores_style(self):
         geo.BYID['x']={'id':'x','name':'X','cc':'IT','air':['FCO'],'tags':['city'],'climate':{'tmax':[12]*12,'tmin':[5]*12,'rain':[1]*12}}
         ds,notes=search.pick_dests({'dest':{'mode':'city','ids':['x'],'style':'beach'}},2);self.assertEqual(notes,[]);self.assertEqual(len(ds),1)
+class Season(unittest.TestCase):
+    def test_real_data(self):
+        p=os.path.join(os.path.dirname(__file__),'..','data','destinations.json');ds=json.load(open(p,encoding='utf8'));B={d['name']:d for d in ds}
+        g=lambda n,m,st:climate.fit(B[n],m,st)[0]
+        self.assertGreaterEqual(g('Teneryfa',2,'beach'),.55);self.assertLess(g('Gdańsk',2,'beach'),.2);self.assertLess(g('Split',2,'beach'),.55)
+        self.assertGreaterEqual(g('Split',7,'beach'),.8);self.assertGreaterEqual(g('Chamonix',2,'ski'),.5);self.assertLess(g('Chamonix',7,'ski'),.1)
 class Food(unittest.TestCase):
     D=lambda self:[{'stops':[{'meal':'lunch','lat':41.9,'lon':12.5},{'name':'X','lat':41.9,'lon':12.5}]}]
     def test_source_down_no_invented_names(self):

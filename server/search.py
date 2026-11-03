@@ -46,13 +46,18 @@ def pick_dests(q,month):
         best=sorted([(climate.fit(d,month,'beach')[0] or 0,d) for d in geo.DESTS if 'beach' in d['tags']],key=lambda x:-x[0])[:4]
         notes.append({'kind':'climate','text':f"W tym miesiącu {unfit[0][0]['name']} nie nadaje się na plażowanie. {unfit[0][1]}.",
             'alternatives':[{'id':d['id'],'name':d['name'],'fit':climate.month(d,month)} for _,d in best]})
-    pool=[x for x in scored if not(style in('beach','ski') and mode=='anywhere' and (x[0] or 0)<0.55)] or scored
+    pool=scored
+    if style in('beach','ski') and mode=='anywhere':
+        pool=[x for x in scored if (x[0] or 0)>=0.55]
+        if not pool:
+            pool=sorted(scored,key=lambda x:-(x[0] or 0))[:6]
+            notes.append({'kind':'climate','text':'W tym miesiącu nigdzie w Europie nie ma idealnych warunków. Pokazujemy najlepsze, jakie są.'})
     pool.sort(key=lambda x:(-(x[0] if x[0] is not None else .5),-x[1].get('links',0)))
     res=[];seen={}
     for s,d,why in pool:
-        if mode=='anywhere' and seen.get(d['cc'],0)>=2: continue
+        if mode=='anywhere' and seen.get(d['cc'],0)>=(4 if style=='beach' else 2): continue
         res.append(d);seen[d['cc']]=seen.get(d['cc'],0)+1
-        if len(res)>=MAXD: break
+        if len(res)>=(8 if mode=='anywhere' else MAXD): break
     return res,notes
 def sample_days(a,b,n=3):
     if a==b: return [a]
