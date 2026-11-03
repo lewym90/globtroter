@@ -2,7 +2,7 @@ import { scene, themeOf, landmarkOf } from './scene.js';
 import { flapRow } from './flap.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '1.0.4';
+const VERSION = '1.1.0';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -82,6 +82,7 @@ const sceneOf = (d) => { const landmark = landmarkOf(d.id); return { seed: d.id,
 
 /* ---------- Start ---------- */
 function viewHome() {
+  if (S.reloadLater) { S.reloadLater = false; freshReload(); }
   setBackdrop({ seed: 'start', theme: 'beach', time: 'dusk', plane: true });
   const trips = load('trips', []);
   app.innerHTML = `<section class="hero">
@@ -117,7 +118,7 @@ function viewWizard() {
   app.innerHTML = `<section class="wiz">${wizTop()}<div class="sheet" id="sheet"></div></section>`;
   $('#back').onclick = () => { if (S.step > 0) { S.step--; viewWizard(); } else viewHome(); };
   STEPS[S.step]($('#sheet'));
-  scrollTo(0, 0);
+  app.scrollTop = 0;
 }
 const navBtns = (label = 'Dalej', ok = true) => `<div class="nav"><button class="btn" id="next" ${ok ? '' : 'disabled'}>${label}</button></div>`;
 const next = () => { save('prefs', { ...S.q, origin: S.q.origin }); S.step++; viewWizard(); };
@@ -364,7 +365,7 @@ function viewResults() {
   $('#b').onclick = () => { S.step = STEPS.length - 1; viewWizard(); };
   $$('[data-o]').forEach((b) => { b.onclick = () => { S.option = opts.find((o) => o.id === b.dataset.o); viewOption(); }; });
   $$('[data-alt]').forEach((b) => { b.onclick = () => { S.q.dest = { mode: 'city', ids: [b.dataset.alt], countries: [], style: 'beach' }; viewSearch(); }; });
-  scrollTo(0, 0);
+  app.scrollTop = 0;
 }
 function heat(v, lo, hi) {
   const t = hi > lo ? (v - lo) / (hi - lo) : 0;
@@ -429,7 +430,7 @@ function viewOption() {
   const h = $('#hot'); if (h) h.onclick = viewHotels;
   $$('[data-c]').forEach((b) => { b.onclick = () => { S.option = S.result.options.find((x) => x.id === b.dataset.c); viewOption(); }; });
   $$('.cal button').forEach((b) => { b.onclick = () => recheck(b.dataset.dep, b.dataset.ret); });
-  scrollTo(0, 0);
+  app.scrollTop = 0;
 }
 async function recheck(dep, ret) {
   const o = S.option;
@@ -464,7 +465,7 @@ async function viewHotels() {
     $('#b').onclick = viewOption;
     $$('[data-h]').forEach((b) => { b.onclick = () => buildPlan(L[+b.dataset.h]); });
     const nh = $('#noh'); if (nh) nh.onclick = () => buildPlan({ name: 'centrum: ' + o.dest.name, lat: o.dest.lat, lon: o.dest.lon, bestTotal: 0 });
-    scrollTo(0, 0);
+    app.scrollTop = 0;
   } catch (e) {
     app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Noclegi</h2></div><section class="page"><div class="note"><b>${esc(e.message)}</b><div class="acts"><button class="btn" id="r">Spróbuj ponownie</button></div></div></section>`;
     $('#b').onclick = viewOption; $('#r').onclick = viewHotels;
@@ -509,20 +510,61 @@ function viewPlan() {
     <div id="body" style="display:grid;gap:14px">${bodies[S.tab]()}</div>
     <p class="foot">Plan z ${esc(p.at.replace('T', ', '))}. Zapisany w telefonie, działa bez internetu. <button id="del" style="text-decoration:underline">Usuń wyjazd</button></p></section>`;
   $('#b').onclick = viewHome;
-  $$('.tabs button').forEach((b) => { b.onclick = () => { const y = scrollY; S.tab = b.dataset.t; viewPlan(); scrollTo(0, y); }; });
+  $$('.tabs button').forEach((b) => { b.onclick = () => { const y = app.scrollTop; S.tab = b.dataset.t; viewPlan(); app.scrollTop = y; }; });
   $$('[data-ck]').forEach((x) => { x.onchange = () => { const m = load('ck.' + o.id, {}); m[x.dataset.ck] = x.checked; save('ck.' + o.id, m); }; });
   $('#del').onclick = () => { save('trips', load('trips', []).filter((x) => x.option.id !== o.id)); viewHome(); };
 }
+
+// iOS potrafi dać aplikacji z ekranu początkowego krótszy obszar niż fizyczny ekran: na dole zostaje pusty pas.
+// Mierzymy lukę i rozciągamy interfejs do samego dołu, tak jak w Kalendarzu. Tylko po instalacji na ekranie początkowym.
+function fitScreen() {
+  const root = document.documentElement;
+  const standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  const vv = window.visualViewport ? Math.round(visualViewport.height) : 0;
+  const inner = Math.max(innerHeight, vv, root.clientHeight);
+  const d = Math.max(screen.height, screen.width) - inner;
+  root.style.setProperty('--gap', (standalone && innerHeight > innerWidth && d > 4 && d < 140 ? d : 0) + 'px');
+}
+fitScreen();
+addEventListener('resize', fitScreen);
+addEventListener('orientationchange', () => setTimeout(fitScreen, 300));
+
+// Aktualizacje: kod idzie zawsze najpierw z sieci (sw.js), a przy powrocie do aplikacji sprawdzamy, czy na serwerze jest coś nowszego.
+let stamp = '';
+async function currentStamp() {
+  const heads = await Promise.all(['js/app.js', 'css/app.css'].map((u) => fetch(u, { method: 'HEAD', cache: 'no-store' })));
+  return heads.map((r) => r.headers.get('etag') || r.headers.get('last-modified') || '').join('|');
+}
+let reloading = false;
+function freshReload() {
+  if (reloading) return;
+  if ($('.wiz')) { S.reloadLater = true; return; } // nie przerywamy wypełniania formularza
+  reloading = true; location.reload();
+}
+async function checkForUpdate() {
+  if (!navigator.onLine) return;
+  try {
+    const now2 = await currentStamp();
+    if (stamp && now2 && now2 !== stamp) freshReload();
+    else if (!stamp) stamp = now2;
+  } catch { /* brak sieci: zostajemy na wersji offline */ }
+}
+function startUpdates() {
+  checkForUpdate();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { fitScreen(); checkForUpdate(); swReg?.update().catch(() => {}); } });
+  addEventListener('pageshow', (e) => { if (e.persisted) checkForUpdate(); });
+  if (!('serviceWorker' in navigator)) return;
+  const had = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (had) freshReload(); });
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((r) => { swReg = r; r.update().catch(() => {}); }).catch(() => {});
+}
+let swReg = null;
 
 (async function boot() {
   viewHome();
   try { await data(); } catch { toast('Nie udało się wczytać bazy miejsc. Sprawdź internet.'); }
   const job = load('job', null);
   if (job && Date.now() - job.t < 3e6) { S.q = job.q; viewSearch(job.id); }
-  if ('serviceWorker' in navigator) {
-    const had = !!navigator.serviceWorker.controller; let done = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => { if (had && !done && !$('.board-wrap')) { done = true; location.reload(); } });
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  }
+  startUpdates();
   window.__gt = { S, viewResults, viewOption, viewPlan, VERSION };
 })();

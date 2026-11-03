@@ -24,7 +24,7 @@ async def main():
         await pg.click('[data-o]');await pg.wait_for_timeout(1200);await pg.screenshot(path=SP+'f9.png',full_page=True)
         await pg.click('#hot');await pg.wait_for_selector('.hot,.note',timeout=120000);await pg.wait_for_timeout(1500);await pg.screenshot(path=SP+'f10.png')
         await pg.click('[data-h]');await pg.wait_for_selector('.tabs',timeout=100000);await pg.wait_for_timeout(1500);await pg.screenshot(path=SP+'f11.png')
-        await pg.evaluate('scrollTo(0,500)');await pg.wait_for_timeout(300);await pg.screenshot(path=SP+'f12.png')
+        await pg.evaluate("document.querySelector('#app').scrollTop=500");await pg.wait_for_timeout(300);await pg.screenshot(path=SP+'f12.png')
         for t in ('dni','koszty','lista','info'):
             await pg.click(f'[data-t={t}]');await pg.wait_for_timeout(400);await pg.screenshot(path=SP+f'f13{t}.png',full_page=True)
         print('bledy',errs[:8]);json.dump(await pg.evaluate('window.__gt.S.plan'),open(SP+'plan.json','w'),ensure_ascii=False)
