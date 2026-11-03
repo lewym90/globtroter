@@ -24,7 +24,7 @@ def main():
             except Exception: pass
         if time.time()-t0>BUDGET: break
         seen={}
-        for s in('best_value','popularity'):
+        for s in('best_value','popularity','best_value'):
             for h in page(d['ta'],s): seen.setdefault(h['key'],{k:h.get(k) for k in KEEP})
             time.sleep(1)
         if len(seen)>=5:
