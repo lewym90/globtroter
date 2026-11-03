@@ -30,7 +30,7 @@ Wyszukiwanie ma trzy kroki, żeby jak najmniej pytać Google:
 | Hotele | Xotelo (dane TripAdvisora) | Średnia cena za noc pokoju |
 | Dojazd autem | OSRM | Serwer publiczny |
 | Komunikacja | Transitous | Darmowe, społecznościowe |
-| Restauracje | OpenStreetMap (Overpass) | Na żywo, z linkiem do mapy jako zapas |
+| Restauracje | OpenStreetMap, budowane przez GitHub Actions (`data/food/`) | Z linkiem do mapy jako zapas |
 | Klimat | Meteostat (CC BY-NC), normy wieloletnie | |
 | Morze | Open-Meteo Marine (CC BY), 2025 | |
 | Atrakcje | Wikidata (CC0), zdjęcia Wikimedia | |

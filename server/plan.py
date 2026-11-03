@@ -52,22 +52,12 @@ def holidays(cc,a,b):
                 if a<=h['date']<=b and h.get('global',True): res.append({'date':h['date'],'name':h.get('localName') or h['name']})
         except Exception: pass
     return res
-def restaurants(lat,lon,radius=3000):
-    """Lokale z OpenStreetMap, jedno zapytanie na caly wyjazd. Gdy zrodlo milczy, zwraca None:
+FOOD='https://lewym90.github.io/globtroter/data/food/%s.json'
+def restaurants(did):
+    """Lokale z OpenStreetMap, zbudowane przez GitHub Actions. Brak pliku to None:
     wtedy dajemy link do mapy, nigdy wymyslonych nazw."""
-    q=f'[out:json][timeout:15];nwr["amenity"="restaurant"]["name"]["cuisine"](around:{int(radius)},{lat},{lon});out center tags 400;'
-    for host in('overpass-api.de','overpass.kumi.systems'):
-        try:
-            r=net.fetch_json(f'https://{host}/api/interpreter?data='+quote(q),ttl=14*86400,tries=1,timeout=16)
-            out=[]
-            for e in r.get('elements',[]):
-                g=e.get('center') or e;tg=e.get('tags',{})
-                if 'lat' not in g or tg.get('disused') or tg.get('opening_hours')=='off': continue
-                score=sum(1 for k in('website','opening_hours','phone','contact:website','wheelchair','outdoor_seating') if k in tg)
-                out.append({'n':tg['name'],'cuisine':tg.get('cuisine','').replace(';',', ').replace('_',' '),'lat':g['lat'],'lon':g['lon'],'hours':tg.get('opening_hours'),'web':tg.get('website') or tg.get('contact:website'),'s':score})
-            return out
-        except Exception: continue
-    return None
+    try: return net.fetch_json(FOOD%did,ttl=86400,tries=2,timeout=10)['r']
+    except Exception: return None
 def cluster(items,center,k):
     """Grupuje atrakcje w dni: k-srednich na wspolrzednych, potem najkrotsza kolejnosc."""
     if not items: return [[] for _ in range(k)]
@@ -131,18 +121,16 @@ def schedule_days(d,opt,hotel,prefs):
                 if last_s: stops.append({'meal':'dinner','time':hm(max(cur,dt.datetime.combine(day,dt.time(19,0)))),'lat':last_s[-1]['lat'],'lon':last_s[-1]['lon'],'min':90})
         days.append({'date':day.isoformat(),'kind':kind,'stops':stops})
     return days
-def attach_food(days):
+def attach_food(days,did):
     meals=[s for dy in days for s in dy['stops'] if s.get('meal')]
     for s in meals: s['mapSearch']='https://www.google.com/maps/search/restauracje/@%s,%s,16z'%(s['lat'],s['lon'])
     if not meals: return True
-    c=(sum(s['lat'] for s in meals)/len(meals),sum(s['lon'] for s in meals)/len(meals))
-    rad=min(6000,max(1500,1000*max(geo.km(c[0],c[1],s['lat'],s['lon']) for s in meals)+800))
-    R=restaurants(round(c[0],3),round(c[1],3),round(rad,-2))
+    R=restaurants(did)
     if R is None: return False
     used=set()
     for s in meals:
         near=sorted([x for x in R if x['n'] not in used and geo.km(s['lat'],s['lon'],x['lat'],x['lon'])<.9],key=lambda x:(-x['s'],geo.km(s['lat'],s['lon'],x['lat'],x['lon'])))[:3]
-        s['options']=[{'name':x['n'],'cuisine':x['cuisine'],'hours':x['hours'],'web':x['web'],'map':place(x['n'],x['lat'],x['lon'])} for x in near]
+        s['options']=[{'name':x['n'],'cuisine':x.get('c',''),'hours':x.get('h'),'web':x.get('w'),'map':place(x['n'],x['lat'],x['lon'])} for x in near]
         used.update(x['n'] for x in near)
     return True
 def build(body):
@@ -184,7 +172,7 @@ def build(body):
     m=int(o['dep'][5:7]);cl=(d.get('climate') or {})
     for dy in days:
         if dy['date'] in wx: dy['weather']=wx[dy['date']]
-    food=attach_food(days)
+    food=attach_food(days,d['id'])
     from climate import month as cm
     c=countries.info(d['cc']);hol=holidays(d['cc'],o['dep'],o['ret'])
     rate=None

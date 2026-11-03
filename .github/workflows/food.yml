@@ -1,0 +1,31 @@
+name: Restauracje (OpenStreetMap)
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/food.yml','tools/build_food.py']
+  schedule:
+    - cron: '23 3 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: food
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pobierz restauracje
+        run: python3 tools/build_food.py
+        env:
+          BUDGET_S: '2400'
+      - name: Zapisz
+        run: |
+          git config user.name 'globtroter-bot'
+          git config user.email 'globtroter-bot@users.noreply.github.com'
+          git add data/food
+          git diff --cached --quiet && exit 0
+          git commit -qm 'Restauracje z OpenStreetMap'
+          git pull -q --rebase origin main || true
+          git push -q || true

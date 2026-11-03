@@ -97,16 +97,21 @@ class Confirm(unittest.TestCase):
     def test_nothing_is_empty(self):
         flights.roundtrip=lambda *a,**k:([],0);flights.oneway=lambda *a,**k:([],0)
         self.assertEqual(search.confirm(self.C(),2,0,None)[0],[])
+class FoodParse(unittest.TestCase):
+    def test_parse(self):
+        sys.path.insert(0,os.path.join(os.path.dirname(__file__),'..','tools'));import build_food as b
+        L=b.parse({'elements':[{'lat':1,'lon':2,'tags':{'name':'A','cuisine':'pizza;italian','website':'http://a.pl','opening_hours':'Mo 10:00'}},{'type':'way','center':{'lat':3,'lon':4},'tags':{'name':'B'}},{'lat':1,'lon':2,'tags':{'name':'A'}},{'lat':1,'lon':2,'tags':{'cuisine':'x'}},{'lat':1,'lon':2,'tags':{'name':'Zamk','opening_hours':'off'}}]})
+        self.assertEqual([x['n'] for x in L],['A','B']);self.assertEqual(L[0]['c'],'pizza, italian');self.assertEqual(L[0]['h'],'Mo 10:00')
 class Food(unittest.TestCase):
     D=lambda self:[{'stops':[{'meal':'lunch','lat':41.9,'lon':12.5},{'name':'X','lat':41.9,'lon':12.5}]}]
     def test_source_down_no_invented_names(self):
         o=plan.restaurants;plan.restaurants=lambda *a:None
         try:
-            d=self.D();self.assertFalse(plan.attach_food(d));self.assertNotIn('options',d[0]['stops'][0]);self.assertIn('google.com/maps',d[0]['stops'][0]['mapSearch'])
+            d=self.D();self.assertFalse(plan.attach_food(d,'rzym'));self.assertNotIn('options',d[0]['stops'][0]);self.assertIn('google.com/maps',d[0]['stops'][0]['mapSearch'])
         finally: plan.restaurants=o
     def test_near_only(self):
-        o=plan.restaurants;plan.restaurants=lambda *a:[{'n':'Blisko','cuisine':'pizza','lat':41.901,'lon':12.5,'hours':None,'web':None,'s':1},{'n':'Daleko','cuisine':'x','lat':42.2,'lon':12.5,'hours':None,'web':None,'s':9}]
+        o=plan.restaurants;plan.restaurants=lambda *a:[{'n':'Blisko','c':'pizza','lat':41.901,'lon':12.5,'s':1},{'n':'Daleko','c':'x','lat':42.2,'lon':12.5,'s':9}]
         try:
-            d=self.D();plan.attach_food(d);self.assertEqual([x['name'] for x in d[0]['stops'][0]['options']],['Blisko'])
+            d=self.D();plan.attach_food(d,'rzym');self.assertEqual([x['name'] for x in d[0]['stops'][0]['options']],['Blisko'])
         finally: plan.restaurants=o
 if __name__=='__main__': unittest.main()
