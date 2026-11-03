@@ -44,6 +44,14 @@ def weather(d,ci,co):
                 if ci<=day<=co: out[day]={'tmax':x['temperature_2m_max'][i],'tmin':x['temperature_2m_min'][i],'rain':x['precipitation_probability_max'][i],'code':x['weather_code'][i],'kind':'forecast'}
         except Exception: pass
     return out
+def sun(d,ci,co):
+    """Wschod i zachod. Dane z tych samych dat rok wczesniej, roznica to najwyzej minuty."""
+    try:
+        a=dt.date.fromisoformat(ci);b=dt.date.fromisoformat(co);ago=max(1,a.year-dt.date.today().year+1)
+        f=lambda x:x.replace(year=x.year-ago,day=min(x.day,28))
+        r=net.fetch_json(f"https://archive-api.open-meteo.com/v1/archive?latitude={d['lat']}&longitude={d['lon']}&start_date={f(a)}&end_date={f(b)}&daily=sunrise,sunset&timezone=auto",ttl=30*86400,tries=2,timeout=10)['daily']
+        return {x[5:]:(r['sunrise'][i][11:16],r['sunset'][i][11:16]) for i,x in enumerate(r['time'])}
+    except Exception: return {}
 def holidays(cc,a,b):
     res=[]
     for y in sorted({a[:4],b[:4]}):
@@ -111,7 +119,7 @@ def schedule_days(d,opt,hotel,prefs):
                 cur=add(cur,walk)
                 if not any(s.get('meal') for s in stops) and cur.hour>=13 and avail>240:
                     stops.append({'meal':'lunch','time':hm(cur),'lat':x['lat'],'lon':x['lon'],'min':60});cur=add(cur,60)
-                stops.append({'time':hm(cur),'name':x['n'][0].upper()+x['n'][1:],'type':LABEL.get(x['t'],'Zabytek'),'kind':x['t'],'min':need,'lat':x['lat'],'lon':x['lon'],'img':x.get('img'),'web':x.get('web'),'map':place(x['n'],x['lat'],x['lon']),'walk':walk,'q':x['q']})
+                stops.append({'time':hm(cur),'name':x['n'][0].upper()+x['n'][1:],'type':LABEL.get(x['t'],'Zabytek'),'kind':x['t'],'min':need,'lat':x['lat'],'lon':x['lon'],'info':x.get('d'),'img':x.get('img'),'web':x.get('web'),'map':place(x['n'],x['lat'],x['lon']),'walk':walk,'q':x['q']})
                 used.add(x['q']);cur=add(cur,need);mins+=need+walk
             if stops and avail>240 and not any(s.get('meal') for s in stops):
                 ls=[s for s in stops if not s.get('meal')][-1]
@@ -168,10 +176,11 @@ def build(body):
         rt.append(dict(at=l['dep'],title=f"Powrót {l['airline']} {l['no']}",text=f"{l['airlineName']}, ląduje o {l['arr'][11:]}.",sure='fact',icon='plane'))
     rt.append(dict(at=add(barr,road+40).isoformat(timespec='minutes'),title='W domu',text=(f"Około {span(road)} jazdy po odebraniu auta." if mode=='car' else f"Około {span(road)} drogi z lotniska."),sure='est',icon='home'))
     days=schedule_days(d,o,h,prefs)
-    wx=weather(d,o['dep'],o['ret'])
+    wx=weather(d,o['dep'],o['ret']);sn=sun(d,o['dep'],o['ret'])
     m=int(o['dep'][5:7]);cl=(d.get('climate') or {})
     for dy in days:
         if dy['date'] in wx: dy['weather']=wx[dy['date']]
+        if dy['date'][5:] in sn: dy['sun']=sn[dy['date'][5:]]
     food=attach_food(days,d['id'])
     from climate import month as cm
     c=countries.info(d['cc']);hol=holidays(d['cc'],o['dep'],o['ret'])

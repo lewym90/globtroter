@@ -5,7 +5,8 @@ def flight_links(o,d,dep,ret,A,C,carrier=None):
     q=quote(f'Flights to {d} from {o} on {dep} through {ret}')
     L=[{'site':'Google Flights','url':f'https://www.google.com/travel/flights?q={q}&curr=PLN&hl=pl'},
        {'site':'Skyscanner','url':f'https://www.skyscanner.pl/transport/loty/{o.lower()}/{d.lower()}/{s(dep)}/{s(ret)}/?adultsv2={A}&cabinclass=economy&childrenv2={"|".join(["8"]*C)}&currency=PLN&locale=pl-PL&market=PL'},
-       {'site':'Kayak','url':f'https://www.kayak.pl/flights/{o}-{d}/{dep}/{ret}/{A}adults{"/children-"+"-".join(["8"]*C) if C else ""}?sort=price_a'}]
+       {'site':'Kayak','url':f'https://www.kayak.pl/flights/{o}-{d}/{dep}/{ret}/{A}adults{"/children-"+"-".join(["8"]*C) if C else ""}?sort=price_a'},
+       {'site':'Momondo','url':f'https://www.momondo.pl/flight-search/{o}-{d}/{dep}/{ret}/{A}adults{"/children-"+"-".join(["8"]*C) if C else ""}?sort=price_a'}]
     if carrier=='FR': L.insert(0,{'site':'Ryanair','url':f'https://www.ryanair.com/pl/pl/trip/flights/select?adults={A}&teens=0&children={C}&infants=0&dateOut={dep}&dateIn={ret}&isConnectedFlight=false&isReturn=true&originIata={o}&destinationIata={d}'})
     if carrier=='W6': L.insert(0,{'site':'Wizz Air','url':f'https://www.wizzair.com/pl-pl/booking/select-flight/{o}/{d}/{dep}/{ret}/{A}/{C}/0/null'})
     return L

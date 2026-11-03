@@ -4,8 +4,8 @@ import json,logging,os,sys,threading,time
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import parse_qs,urlsplit
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
-import flights,geo,hotels,net,plan,search,store
-VERSION='1.3.1'
+import flights,geo,hotels,net,plan,ryanair,search,store
+VERSION='1.4.0'
 ALLOW={'https://lewym90.github.io','http://localhost:8000','http://127.0.0.1:8000'}
 class H(BaseHTTPRequestHandler):
     server_version='Globtroter'
@@ -25,7 +25,7 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         u=urlsplit(self.path);p=u.path.replace('/globtroter','',1);q={k:v[0] for k,v in parse_qs(u.query).items()}
         try:
-            if p in('/api/health','/zdrowie'): return self.out(200,{'ok':True,'version':VERSION,'google':flights.status(),'dests':len(geo.DESTS),'airports':len(geo.AIRPORTS)})
+            if p in('/api/health','/zdrowie'): return self.out(200,{'ok':True,'version':VERSION,'google':flights.status(),'ryanair':ryanair.status(),'dests':len(geo.DESTS),'airports':len(geo.AIRPORTS)})
             if p=='/api/job':
                 j=search.JOBS.get(q.get('id',''))
                 if not j: return self.out(404,{'error':'Wyszukiwanie wygasło. Uruchom je jeszcze raz.'})
@@ -36,6 +36,7 @@ class H(BaseHTTPRequestHandler):
                 import ghotels
                 d=geo.BYID.get(q.get('dest','hvar'));r=ghotels.search(d,q.get('in','2027-06-10'),q.get('out','2027-06-17'))
                 return self.out(200,{'found':len(r or []),'last':ghotels.last})
+            if p=='/api/ryanair': return self.out(200,{'routes':len(ryanair.routes(q.get('o','KRK'))),'may':len(ryanair.month(q.get('o','KRK'),q.get('d','BCN'),q.get('ym','2027-05')))})
             if p=='/api/fx': return self.out(200,{'USD':net.fx('USD'),'EUR':net.fx('EUR')})
             self.out(404,{'error':'Nie ma takiej ścieżki'})
         except ValueError as e: self.out(400,{'error':str(e)})
@@ -48,6 +49,7 @@ class H(BaseHTTPRequestHandler):
             b=self.body()
             if p=='/api/search': return self.out(200,{'id':search.start(b)})
             if p=='/api/plan': return self.out(200,plan.build(b))
+            if p=='/api/calendar': return self.out(200,search.month_grid(b))
             if p=='/api/option': return self.out(200,search.recheck(b))
             self.out(404,{'error':'Nie ma takiej ścieżki'})
         except ValueError as e: self.out(400,{'error':str(e)})

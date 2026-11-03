@@ -174,6 +174,32 @@ class Compare(unittest.TestCase):
     def test_no_negative_and_hotel_excluded(self):
         a=self.opt('KRK',7,1668,1000,'a');b=self.opt('WMI',7,1200,4000,'b');self.run_([a,b])
         self.assertEqual(a['compare'][0]['from'],'WMI');self.assertNotIn('-',a['insight']);self.assertIn('468 zł',a['insight'])
+class Periods(unittest.TestCase):
+    def test_month_is_strict(self):
+        y=dt.date.today().year+1;w={'mode':'month','year':y,'month':5,'nights':[7]};a,b,n,m=search.window(w);lim=search.last_return(w,b)
+        self.assertTrue(search.allowed({'dep':f'{y}-05-20','ret':f'{y}-05-27'},a,b,lim,set()))
+        self.assertFalse(search.allowed({'dep':f'{y}-05-28','ret':f'{y}-06-04'},a,b,lim,set()))
+    def test_preset_may_spill_own_may_not(self):
+        y=dt.date.today().year+1;w={'mode':'range','from':f'{y}-04-01','to':f'{y}-06-30','nights':[7],'spill':True};a,b,_,_=search.window(w)
+        self.assertIsNone(search.last_return(w,b));self.assertEqual(search.last_return({**w,'spill':False},b),b)
+    def test_weekday_filter(self):
+        y=dt.date.today().year+1;a=dt.date(y,5,1);b=dt.date(y,5,31);x={'dep':a.isoformat(),'ret':(a+dt.timedelta(days=7)).isoformat()}
+        self.assertTrue(search.allowed(x,a,b,None,{a.weekday()}));self.assertFalse(search.allowed(x,a,b,None,{(a.weekday()+1)%7}))
+    def test_spans_cover_year_in_60_days(self):
+        a=dt.date(2027,1,1);b=dt.date(2027,12,31);p=search.spans(a,b)
+        self.assertEqual(p[0][0],a);self.assertEqual(p[-1][1],b);self.assertTrue(all((e-s).days<=59 for s,e in p))
+        self.assertTrue(all((p[i+1][0]-p[i][1]).days==1 for i in range(len(p)-1)))
+    def test_merge_keeps_lowest(self):
+        g=search.merge([{'dep':'2027-05-01','ret':'2027-05-08','price':900}],[{'dep':'2027-05-01','ret':'2027-05-08','price':700}]);self.assertEqual(len(g),1);self.assertEqual(g[0]['price'],700)
+    def test_ryanair_grid_pairs_days(self):
+        import ryanair
+        t={'2027-05-03':{'price':200.4}};z={'2027-05-10':{'price':300.2}}
+        g=ryanair.grid(t,z,dt.date(2027,5,1),dt.date(2027,5,31),7);self.assertEqual(g,[{'dep':'2027-05-03','ret':'2027-05-10','price':501,'src':'FR'}])
+    def test_ryanair_duration_ignores_timezone(self):
+        import ryanair
+        geo.AIRPORTS.setdefault('KRK',{'lat':50.08,'lon':19.78,'city':'Krakow'});geo.AIRPORTS.setdefault('DUB',{'lat':53.42,'lon':-6.27,'city':'Dublin'})
+        f=ryanair._flight('KRK','DUB',{'price':100,'dep':'2027-05-03T10:00','arr':'2027-05-03T11:45'})
+        self.assertEqual(f['min'],165);self.assertTrue(flights.valid_flight(f,['KRK'],['DUB'],'2027-05-03'))
 class Food(unittest.TestCase):
     D=lambda self:[{'stops':[{'meal':'lunch','lat':41.9,'lon':12.5},{'name':'X','lat':41.9,'lon':12.5}]}]
     def test_source_down_no_invented_names(self):

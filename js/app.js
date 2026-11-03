@@ -2,7 +2,7 @@ import { scene, themeOf, landmarkOf } from './scene.js';
 import { flapRow } from './flap.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '2.3.0';
+const VERSION = '2.4.0';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -14,6 +14,7 @@ const osobD = (n) => (n === 1 ? 'osoby' : 'osób');
 const zl = (n) => Math.round(n).toLocaleString('pl-PL').replace(/,/g, ' ') + ' zł';
 const MONTHS = ['styczeń', 'luty', 'marzec', 'kwiecień', 'maj', 'czerwiec', 'lipiec', 'sierpień', 'wrzesień', 'październik', 'listopad', 'grudzień'];
 const MONTHS_G = ['stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca', 'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia'];
+const PRESETS = { y: { l: 'Cały rok', a: 1, b: 12 }, h1: { l: 'I półrocze', a: 1, b: 6 }, h2: { l: 'II półrocze', a: 7, b: 12 }, q1: { l: 'I kwartał', a: 1, b: 3 }, q2: { l: 'II kwartał', a: 4, b: 6 }, q3: { l: 'III kwartał', a: 7, b: 9 }, q4: { l: 'IV kwartał', a: 10, b: 12 } };
 const DAYS = ['pon', 'wt', 'śr', 'czw', 'pt', 'sob', 'nd'];
 const WEEK = ['niedziela', 'poniedziałek', 'wtorek', 'środa', 'czwartek', 'piątek', 'sobota'];
 const dateL = (iso) => { const d = new Date(iso.slice(0, 10) + 'T12:00'); return `${d.getDate()} ${MONTHS_G[d.getMonth()]}`; };
@@ -131,6 +132,7 @@ function destLabel() {
 function whenLabel() {
   const w = S.q.when;
   if (w.mode === 'month') return `${MONTHS[w.month - 1][0].toUpperCase()}${MONTHS[w.month - 1].slice(1)} ${w.year}`;
+  if (w.mode === 'range' && w.preset && w.preset !== 'own') return `${PRESETS[w.preset].l}, ${w.pyear}`;
   return w.from && w.to ? `${dateL(w.from)} – ${dateL(w.to)}` : 'Wybierz daty';
 }
 const paxLabel = () => { const n = S.q.pax.adults + S.q.pax.children; return `${n} ${n === 1 ? 'osoba' : n < 5 ? 'osoby' : 'osób'}`; };
@@ -359,21 +361,36 @@ function stepWhen(el) {
   const w = S.q.when;
   const list = [];
   for (let i = 0; i < 12; i++) { const d = new Date(now.getFullYear(), now.getMonth() + i, 1); list.push([d.getFullYear(), d.getMonth() + 1]); }
+  w.pyear ||= now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
+  w.days ||= [];
+  if (w.mode === 'range' && !w.preset) w.preset = w.from && w.to ? 'own' : '';
+  const pad = (n) => String(n).padStart(2, '0');
+  const lastDay = (y, m) => new Date(y, m, 0).getDate();
+  const live = (k, y) => new Date(y, PRESETS[k].b, 0) >= now;
+  const pick = (k) => { const p = PRESETS[k]; w.preset = k; w.spill = true; w.from = `${w.pyear}-${pad(p.a)}-01`; w.to = `${w.pyear}-${pad(p.b)}-${pad(lastDay(w.pyear, p.b))}`; };
   const draw = () => {
     const today = new Date(Date.now() + 864e5).toISOString().slice(0, 10);
+    const own = w.mode === 'dates' || w.preset === 'own';
     el.innerHTML = `<h1>Kiedy?</h1><p class="sub">Im szerszy termin, tym większa szansa na okazję.</p>
     <div class="field seg" id="md">${[['month', 'Miesiąc'], ['range', 'Zakres'], ['dates', 'Dokładnie']].map(([k, l]) => `<button data-m="${k}" aria-pressed="${w.mode === k}">${l}</button>`).join('')}</div>
-    ${w.mode === 'month' ? `<div class="field chips">${list.map(([y, m]) => `<button class="chip" data-y="${y}" data-m2="${m}" aria-pressed="${w.year === y && w.month === m}">${MONTHS[m - 1]}${y !== now.getFullYear() ? ' ' + y : ''}</button>`).join('')}</div>` : ''}
-    ${w.mode !== 'month' ? `<div class="field grid2"><div><label class="lab" for="f">${w.mode === 'dates' ? 'Wylot' : 'Najwcześniej'}</label><input id="f" type="date" min="${today}" value="${esc(w.from)}"></div><div><label class="lab" for="t">${w.mode === 'dates' ? 'Powrót' : 'Najpóźniej'}</label><input id="t" type="date" min="${today}" value="${esc(w.to)}"></div></div>` : ''}
-    ${w.mode !== 'dates' ? `<div class="field"><span class="lab">Ile nocy? Możesz wybrać do trzech</span><div class="chips">${[2, 3, 4, 5, 7, 10, 14].map((n) => `<button class="chip" data-n="${n}" aria-pressed="${w.nights.includes(n)}">${n}</button>`).join('')}</div></div>` : ''}
+    ${w.mode === 'month' ? `<div class="field chips">${list.map(([y, m]) => `<button class="chip" data-y="${y}" data-m2="${m}" aria-pressed="${w.year === y && w.month === m}">${MONTHS[m - 1]}${y !== now.getFullYear() ? ' ' + y : ''}</button>`).join('')}</div><p class="sub" style="font-size:14px">Wylot i powrót w tym miesiącu.</p>` : ''}
+    ${w.mode === 'range' ? `<div class="field seg" id="yr">${[now.getFullYear(), now.getFullYear() + 1].map((y) => `<button data-yr="${y}" aria-pressed="${w.pyear === y}">${y}</button>`).join('')}</div>
+    <div class="field chips">${Object.keys(PRESETS).filter((k) => live(k, w.pyear)).map((k) => `<button class="chip" data-p="${k}" aria-pressed="${w.preset === k}">${PRESETS[k].l}</button>`).join('')}<button class="chip" data-p="own" aria-pressed="${w.preset === 'own'}">Własne daty</button></div>
+    ${w.preset && w.preset !== 'own' ? `<p class="sub" style="font-size:14px">Wylot w tym okresie, powrót może wypaść tuż po nim. Pokażę ceny w każdym miesiącu. Długi okres to do kilku minut szukania.</p>` : ''}` : ''}
+    ${own ? `<div class="field grid2"><div><label class="lab" for="f">${w.mode === 'dates' ? 'Wylot' : 'Najwcześniej'}</label><input id="f" type="date" min="${today}" value="${esc(w.from)}"></div><div><label class="lab" for="t">${w.mode === 'dates' ? 'Powrót' : 'Najpóźniej'}</label><input id="t" type="date" min="${today}" value="${esc(w.to)}"></div></div>` : ''}
+    ${w.mode !== 'dates' ? `<div class="field"><span class="lab">Ile nocy? Możesz wybrać do trzech</span><div class="chips">${[2, 3, 4, 5, 7, 10, 14].map((n) => `<button class="chip" data-n="${n}" aria-pressed="${w.nights.includes(n)}">${n}</button>`).join('')}</div></div>
+    <div class="field"><span class="lab">Wylot tylko w te dni (nieobowiązkowe)</span><div class="chips">${DAYS.map((d, i) => `<button class="chip" data-wd="${i}" aria-pressed="${w.days.includes(i)}">${d}</button>`).join('')}</div></div>` : ''}
     ${navBtns('Dalej', ok())}`;
-    $$('#md button').forEach((b) => { b.onclick = () => { w.mode = b.dataset.m; draw(); }; });
+    $$('#md button').forEach((b) => { b.onclick = () => { w.mode = b.dataset.m; if (w.mode === 'range' && !w.preset) w.preset = ''; draw(); }; });
     $$('[data-m2]').forEach((b) => { b.onclick = () => { w.year = +b.dataset.y; w.month = +b.dataset.m2; draw(); }; });
+    $$('[data-yr]').forEach((b) => { b.onclick = () => { w.pyear = +b.dataset.yr; if (w.preset && w.preset !== 'own') { if (live(w.preset, w.pyear)) pick(w.preset); else w.preset = ''; } draw(); }; });
+    $$('[data-p]').forEach((b) => { b.onclick = () => { if (b.dataset.p === 'own') { w.preset = 'own'; w.spill = false; } else pick(b.dataset.p); draw(); }; });
+    $$('[data-wd]').forEach((b) => { b.onclick = () => { const i = +b.dataset.wd; w.days = w.days.includes(i) ? w.days.filter((x) => x !== i) : [...w.days, i]; draw(); }; });
     $$('[data-n]').forEach((b) => { b.onclick = () => { const n = +b.dataset.n; w.nights = w.nights.includes(n) ? (w.nights.length > 1 ? w.nights.filter((x) => x !== n) : w.nights) : [...w.nights, n].slice(-3).sort((a, c) => a - c); draw(); }; });
     ['f', 't'].forEach((i) => { const x = $('#' + i); if (x) x.onchange = () => { w[i === 'f' ? 'from' : 'to'] = x.value; draw(); }; });
     $('#next').onclick = next;
   };
-  const ok = () => w.mode === 'month' || (w.from && w.to && w.to > w.from);
+  const ok = () => w.mode === 'month' || (w.mode === 'range' ? !!w.preset && !!(w.from && w.to && w.to > w.from) : !!(w.from && w.to && w.to > w.from));
   if (!list.some(([y, m]) => y === w.year && m === w.month)) { [w.year, w.month] = list[1]; }
   draw();
 }
@@ -499,7 +516,7 @@ function viewResults() {
   const opts = (R.options || []).filter((o) => o.insight !== undefined || o.compare || true);
   const best = new Map();
   opts.forEach((o) => { if (!best.has(o.dest.id)) best.set(o.dest.id, o); });
-  const top = [...best.values()];
+  const top = R.months && best.size === 1 ? opts.slice(0, 5) : [...best.values()];
   if (top[0]) setBackdrop({ photo: heroNow()?.src, dim: true, strong: true });
   const ago = R.at ? new Date(R.at * 1000).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }) : '';
   app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>${top.length ? 'Najlepsze opcje' : 'Brak wyników'}</h2></div>
@@ -507,6 +524,7 @@ function viewResults() {
   ${(R.notes || []).map((n) => `<div class="note"><b>${esc(n.text)}</b>${n.alternatives?.length ? `<p class="mute">Ciepło jest wtedy tutaj: ${n.alternatives.map((a) => `${esc(a.name)}${a.fit?.tmax != null ? ` (${Math.round(a.fit.tmax)}°C)` : ''}`).join(', ')}.</p><div class="chips" style="margin-top:8px">${n.alternatives.map((a) => `<button class="chip" data-alt="${a.id}">${esc(a.name)}</button>`).join('')}</div>` : ''}</div>`).join('')}
   ${R.partial ? '<div class="note"><b>Część zapytań nie przeszła.</b><p class="mute">Mogą istnieć tańsze opcje, których nie widzimy. Pokazujemy tylko to, co udało się sprawdzić.</p></div>' : ''}
   ${!top.length ? `<div class="note info"><b>Na ten termin nie ma lotów z Twoich lotnisk.</b><p class="mute">Spróbuj szerszego terminu albo większego zasięgu lotnisk.</p></div>` : ''}
+  ${monthsHtml(R)}
   ${top.map((o, i) => `<article class="card"><button data-o="${o.id}" style="display:block;width:100%;text-align:left">${posterOf(o, `<span class="pr">${zl(o.hotelEst ? o.perPersonAll : o.perPerson)}<small style="font:600 12px var(--body)"> /os. ${o.hotelEst ? 'z noclegiem' : 'bez noclegu'}</small></span>`)}
     <div class="in"><p><b>${dateL(o.dep)} – ${dateL(o.ret)}</b>, ${o.nights} nocy, z ${esc(o.fromGen)}</p>
     <p class="mute">${o.climate?.score != null ? esc(o.climate.why) + '. ' : ''}</p><p>${o.hotelEst ? `<b>Razem około ${zl(o.totalWithHotel)}</b> dla ${o.pax.adults + o.pax.children} ${osobD(o.pax.adults + o.pax.children)}: loty i dojazd ${zl(o.total)}, nocleg około ${zl(o.hotelEst.total)}.` : `<b>Loty i dojazd ${zl(o.total)}.</b> Tej ceny brakuje noclegu: nie udało się teraz pobrać cen hoteli.`}</p>
@@ -514,6 +532,7 @@ function viewResults() {
   <p class="foot">Ceny sprawdzone dziś o ${esc(ago)}. Linie zmieniają je często, ostateczną zobaczysz przy zakupie.</p></section>`;
   $('#b').onclick = () => { S.step = STEPS.length - 1; viewWizard(); };
   $$('[data-o]').forEach((b) => { b.onclick = () => { S.option = opts.find((o) => o.id === b.dataset.o); viewOption(); }; });
+  $$('[data-ym]').forEach((b) => { b.onclick = () => openMonth(b.dataset.ym); });
   $$('[data-alt]').forEach((b) => { b.onclick = () => { S.q.dest = { mode: 'city', ids: [b.dataset.alt], countries: [], style: 'beach' }; viewSearch(); }; });
   app.scrollTop = 0;
 }
@@ -523,20 +542,72 @@ function heat(v, lo, hi) {
   const m = t < 0.5 ? [c[0], c[1], t * 2] : [c[1], c[2], (t - 0.5) * 2];
   return `rgb(${m[0].map((x, i) => Math.round(x + (m[1][i] - x) * m[2])).join(',')})`;
 }
-function calendar(o) {
-  const g = o.calendar || [];
-  if (g.length < 2) return '';
+function monthsHtml(R) {
+  if (!R.months) return '';
+  const ok = R.months.filter((m) => m.state === 'ok');
+  if (!ok.length) return '';
+  const lo = Math.min(...ok.map((m) => m.price)); const hi = Math.max(...ok.map((m) => m.price));
+  return `<div class="note info months"><b>Ceny w każdym miesiącu</b><p class="mute">Najtańszy bilet w obie strony dla 1 osoby. Dotknij miesiąca, sprawdzę loty i nocleg.</p>
+  ${R.months.map((m) => { const [y, mm] = m.ym.split('-'); const nm = `${MONTHS[+mm - 1]} ${y}`;
+    if (m.state !== 'ok') return `<div class="mrow off"><span>${nm}</span><span>rozkład jeszcze niepełny</span></div>`;
+    return `<button class="mrow${m.price === lo ? ' low' : ''}" data-ym="${m.ym}"><span class="m1">${nm}<small>${m.tmax != null ? `${Math.round(m.tmax)}°C${m.sea != null ? `, morze ${Math.round(m.sea)}°C` : ''}` : ''}${m.unfit ? ', za zimno na ten styl' : ''}</small></span><span class="mb"><i style="width:${hi > lo ? 25 + ((m.price - lo) / (hi - lo)) * 75 : 60}%"></i></span><b>${zl(m.price)}</b></button>`; }).join('')}</div>`;
+}
+async function openFare(x) {
+  const R = S.result; const base = R.options.find((o) => o.dest.id === x.destId) || R.options[0];
+  if (!base) return;
+  const key = `${x.from}-${x.to}-${x.nights}`;
+  toast('Sprawdzam loty na ' + dateL(x.dep));
+  try {
+    const opt = { ...base, from: x.from, to: x.to, drive: x.drive, dest: x.destId ? { ...base.dest, id: x.destId } : base.dest, calendar: R.grids?.[key] || base.calendar };
+    const r = await api('/api/option', { option: opt, dep: x.dep, ret: x.ret, q: S.q });
+    R.options.push(r); S.option = r; viewOption();
+  } catch (e) { toast(e.message); }
+}
+function openMonth(ym) {
+  const R = S.result; const have = R.options.find((o) => o.dep.startsWith(ym));
+  if (have) { S.option = have; return viewOption(); }
+  const m = R.months.find((x) => x.ym === ym);
+  openFare({ ...m, drive: R.driveBy?.[m.from] });
+}
+function calendar() { return '<div class="in" id="calbox"></div>'; }
+const addYm = (ym, k) => { const d = new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + k, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
+async function drawCal(o) {
+  const box = $('#calbox'); if (!box) return;
+  S.calCache ||= {};
+  const ym = S.calYm || o.dep.slice(0, 7);
+  const key = `${o.from}-${o.to}-${o.nights}-${ym}`;
+  const here = (o.calendar || []).filter((x) => x.dep.startsWith(ym));
+  let g = here.length ? here : S.calCache[key];
+  const nowYm = addYm(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`, 0);
+  const head = `<h3 class="big" style="font-size:32px">Kiedy najtaniej</h3><p class="mute">Bilet w obie strony dla 1 osoby według dnia wylotu, ${o.nights} nocy. Dotknij dnia, by sprawdzić.</p>
+  <div class="calnav"><button class="round" id="cp" aria-label="Poprzedni miesiąc" ${ym <= nowYm ? 'disabled' : ''}>‹</button><b>${MONTHS[+ym.slice(5, 7) - 1]} ${ym.slice(0, 4)}</b><button class="round" id="cn" aria-label="Następny miesiąc" ${ym >= addYm(nowYm, 12) ? 'disabled' : ''}>›</button></div>`;
+  const bind = () => {
+    const go = (k) => { S.calYm = addYm(ym, k); drawCal(o); };
+    const p = $('#cp'); const n = $('#cn');
+    if (p) p.onclick = () => go(-1);
+    if (n) n.onclick = () => go(1);
+    $$('.cal button').forEach((b) => { b.onclick = () => recheck(b.dataset.dep, b.dataset.ret); });
+  };
+  if (!g) {
+    box.innerHTML = `${head}<p class="mute">Sprawdzam ceny w tym miesiącu…</p>`; bind();
+    try { const r = await api('/api/calendar', { from: o.from, to: o.to, ym, nights: o.nights, direct: !!S.q.direct }); S.calCache[key] = r.grid; }
+    catch (e) { box.innerHTML = `${head}<p class="warn">${esc(e.message)}</p>`; bind(); return; }
+    if ((S.calYm || o.dep.slice(0, 7)) === ym && S.option === o) drawCal(o);
+    return;
+  }
+  if (!g.length) { box.innerHTML = `${head}<p class="mute">Brak lotów w tym miesiącu albo rozkład nie jest jeszcze sprzedawany.</p>`; bind(); return; }
   const lo = Math.min(...g.map((x) => x.price)); const hi = Math.max(...g.map((x) => x.price));
   const map = Object.fromEntries(g.map((x) => [x.dep, x]));
-  const first = new Date(g[0].dep + 'T12:00'); const last = new Date(g[g.length - 1].dep + 'T12:00');
+  const y = +ym.slice(0, 4); const m = +ym.slice(5, 7) - 1;
+  const first = new Date(y, m, 1, 12); const days = new Date(y, m + 1, 0).getDate();
   let cells = '';
   for (let i = 0; i < (first.getDay() + 6) % 7; i++) cells += '<span></span>';
-  for (let d = new Date(first); d <= last; d.setDate(d.getDate() + 1)) {
-    const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const x = map[k];
-    cells += x ? `<button data-dep="${k}" data-ret="${x.ret}" style="background:${heat(x.price, lo, hi)}" aria-pressed="${k === o.dep}" aria-label="${dateL(k)}, ${x.price} zł">${d.getDate()}<small>${x.price}</small></button>` : `<span class="mute">${d.getDate()}</span>`;
+  for (let d = 1; d <= days; d++) {
+    const k = `${ym}-${String(d).padStart(2, '0')}`; const x = map[k];
+    cells += x ? `<button data-dep="${k}" data-ret="${x.ret}" style="background:${heat(x.price, lo, hi)}" aria-pressed="${k === o.dep}" aria-label="${dateL(k)}, ${x.price} zł">${d}<small>${x.price}</small></button>` : `<span class="mute">${d}</span>`;
   }
-  return `<div class="in"><h3 class="big" style="font-size:32px">Kiedy najtaniej</h3><p class="mute">Bilet w obie strony dla 1 osoby według dnia wylotu, ${o.nights} nocy. Dotknij dnia, by sprawdzić.</p><div class="cal">${DAYS.map((d) => `<b>${d}</b>`).join('')}${cells}</div></div>`;
+  box.innerHTML = `${head}<div class="cal">${DAYS.map((d) => `<b>${d}</b>`).join('')}${cells}</div>`;
+  bind();
 }
 function passHtml(f, label) {
   const L = f.legs; const a = L[0]; const z = L[L.length - 1];
@@ -546,7 +617,7 @@ function passHtml(f, label) {
 }
 function viewOption() {
   const o = S.option;
-  const others = (S.result.options || []).filter((x) => x.dest.id === o.dest.id);
+  const others = (S.result.options || []).filter((x) => x.dest.id === o.dest.id && (!S.result.months || x.dep.slice(0, 7) === o.dep.slice(0, 7)));
   const cmp = others.find((x) => x.compare)?.compare;
   const insight = others.find((x) => x.insight)?.insight;
   const max = cmp ? Math.max(...cmp.map((c) => c.total || 0)) : 1;
@@ -568,10 +639,10 @@ function viewOption() {
     <div class="acts">${o.flight ? `<button class="btn" id="hot">Wybierz nocleg</button>` : '<p class="warn">Nie potwierdziliśmy lotów na ten termin. Dotknij innego dnia w kalendarzu poniżej.</p>'}</div></div>
    ${calendar(o)}
    ${cmp?.length > 1 ? `<div class="in"><h3 class="big" style="font-size:32px">Z którego lotniska</h3><p class="mute">Bilety, bagaż i dojazd dla ${n} ${osob(n)}, ${o.compareNights || others[0].nights} nocy, w najtańszym terminie z każdego lotniska. Noclegu tu nie liczymy, bo nie zależy od lotniska. „Około” to cena wstępna.</p>${insight ? `<div class="insight">${esc(insight)}</div>` : ''}
-    <div class="bars">${cmp.map((c) => {
+    <div class="bars">${cmp.map((c, ci) => {
       if (c.state === 'none') return `<div class="cmp mute"><div class="t"><span>${esc(c.city)} ${c.from}, ${c.km} km</span><span>brak lotów w sprawdzonych dniach</span></div></div>`;
-      const inner = `<div class="t"><span>${esc(c.city)} ${c.from}, ${c.km} km${c.dep ? `<small class="mute" style="display:block;font-weight:500">${dateL(c.dep)} – ${dateL(c.ret)}</small>` : ''}</span><span>${c.state === 'estimate' ? 'około ' : ''}${zl(c.total)}</span></div><div class="tr" style="width:${(c.total / max) * 100}%"><i class="a" style="flex:${c.tickets}"></i><i class="b" style="flex:${c.access}"></i></div>`;
-      return c.optionId ? `<button class="cmp" data-c="${c.optionId}">${inner}</button>` : `<div class="cmp">${inner}</div>`;
+      const inner = `<div class="t"><span>${esc(c.city)} ${c.from}, ${c.km} km${c.dep ? `<small class="mute" style="display:block;font-weight:500">${dateL(c.dep)} – ${dateL(c.ret)}${c.stops === 0 ? ', bez przesiadek' : c.stops ? `, przesiadki: ${c.stops}` : ''}</small>` : ''}</span><span>${c.state === 'estimate' ? 'około ' : ''}${zl(c.total)}</span></div><div class="tr" style="width:${(c.total / max) * 100}%"><i class="a" style="flex:${c.tickets}"></i><i class="b" style="flex:${c.access}"></i></div>`;
+      return c.optionId ? `<button class="cmp" data-c="${c.optionId}">${inner}</button>` : c.state === 'fare' ? `<button class="cmp" data-f="${ci}">${inner}</button>` : `<div class="cmp">${inner}</div>`;
     }).join('')}</div>
     <div class="legend"><span><i style="background:var(--deep)"></i>bilety</span><span><i style="background:var(--coral)"></i>dojazd i bagaż</span></div></div>` : ''}
    <div class="in"><h3 class="big" style="font-size:32px">Kup bilety</h3><p class="mute">Otwierają się z wypełnionymi datami. Sprawdź cenę przed zapłatą.</p><div class="linkset">${o.links.map((l) => `<a class="btn line small" href="${url(l.url)}" target="_blank" rel="noopener">${esc(l.site)}</a>`).join('')}</div></div>
@@ -579,7 +650,8 @@ function viewOption() {
   $('#b').onclick = viewResults;
   const h = $('#hot'); if (h) h.onclick = viewHotels;
   $$('[data-c]').forEach((b) => { b.onclick = () => { S.option = S.result.options.find((x) => x.id === b.dataset.c); viewOption(); }; });
-  $$('.cal button').forEach((b) => { b.onclick = () => recheck(b.dataset.dep, b.dataset.ret); });
+  $$('[data-f]').forEach((b) => { b.onclick = () => { const c = cmp[+b.dataset.f]; openFare({ ...c, destId: o.dest.id }); }; });
+  S.calYm = null; drawCal(o);
   app.scrollTop = 0;
 }
 async function recheck(dep, ret) {
@@ -761,9 +833,9 @@ function viewDay() {
     items.push(`<div class="tr"><time>${s.time}</time><i>${I.walk}</i><div class="grow"><a href="${url(s.map)}" target="_blank" rel="noopener"><b>${esc(s.name)}</b></a><small>${esc(s.type)}, około ${dur(s.min)}${s.walk ? `, ${s.walk} min dojścia` : ''}</small>${s.web ? `<a class="sm" href="${url(s.web)}" target="_blank" rel="noopener">Godziny i bilety</a>` : '<span class="sure check">sprawdź godziny</span>'}</div>${src ? IMG(src, s.name, 'th') : ''}</div>`);
   });
   const bodies = {
-    plan: () => `${st.length ? '<div class="dmap" id="dm"></div>' : ''}<div class="wbody">${d.weather ? `<p class="mute">Prognoza: ${Math.round(d.weather.tmin)}–${Math.round(d.weather.tmax)}°C, deszcz ${d.weather.rain ?? '?'}%</p>` : ''}<div class="tline">${items.join('') || `<p class="mute">${esc(daySub(d, p))}.</p>`}</div><div class="tip">${I.bulb}<p><b>Wskazówka:</b> ${esc(tipFor(d, p))}</p></div></div>`,
+    plan: () => `${st.length ? '<div class="dmap" id="dm"></div>' : ''}<div class="wbody">${d.sun ? `<p class="mute">Wschód słońca ${d.sun[0]}, zachód ${d.sun[1]}</p>` : ''}${d.weather ? `<p class="mute">Prognoza: ${Math.round(d.weather.tmin)}–${Math.round(d.weather.tmax)}°C, deszcz ${d.weather.rain ?? '?'}%</p>` : ''}<div class="tline">${items.join('') || `<p class="mute">${esc(daySub(d, p))}.</p>`}</div><div class="tip">${I.bulb}<p><b>Wskazówka:</b> ${esc(tipFor(d, p))}</p></div></div>`,
     mapa: () => `<div class="dmap big" id="dm"></div><div class="wbody">${st.map((s, i) => `<div class="kv"><span><b>${i + 1}.</b> ${esc(s.name)}</span><a href="${url(s.map)}" target="_blank" rel="noopener">Nawiguj</a></div>`).join('')}<p class="hint">Linia pokazuje kolejność, nie dokładną drogę pieszą.</p></div>`,
-    atr: () => `<div class="wbody">${st.map((s) => `<div class="acard">${stopSrc(s, 700) ? IMG(stopSrc(s, 700), s.name) : ''}<h3>${esc(s.name)}</h3><p class="mute">${esc(s.type)}, około ${dur(s.min)}</p>${s.web ? `<a href="${url(s.web)}" target="_blank" rel="noopener">Godziny i bilety</a>` : ''}</div>`).join('') || '<p class="mute">Na ten dzień nie ma atrakcji.</p>'}</div>`,
+    atr: () => `<div class="wbody">${st.map((s) => `<div class="acard">${stopSrc(s, 700) ? IMG(stopSrc(s, 700), s.name) : ''}<h3>${esc(s.name)}</h3><p class="mute">${esc(s.type)}, około ${dur(s.min)}</p>${s.info ? `<p>${esc(s.info)}</p><p class="mute" style="font-size:12px">Opis: Wikipedia</p>` : ''}${s.web ? `<a href="${url(s.web)}" target="_blank" rel="noopener">Godziny i bilety</a>` : ''}</div>`).join('') || '<p class="mute">Na ten dzień nie ma atrakcji.</p>'}</div>`,
     gas: () => { const m = d.stops.filter((s) => s.meal); return `<div class="wbody">${m.map((s) => `<h3 class="gh">${s.meal === 'lunch' ? 'Obiad' : 'Kolacja'}, ${s.time}</h3>${(s.options || []).map((r) => `<div class="kv"><span><b>${esc(r.name)}</b><br><small class="mute">${esc(r.cuisine)}</small></span><a href="${url(r.map)}" target="_blank" rel="noopener">Mapa</a></div>`).join('') || '<p class="mute">Brak lokali w bazie dla tej okolicy.</p>'}<a class="sm" href="${url(s.mapSearch)}" target="_blank" rel="noopener">Więcej restauracji i ich oceny</a>`).join('') || '<p class="mute">Na ten dzień nie planujemy posiłków na mieście.</p>'}</div>`; },
   };
   setBackdrop({ photo: heroNow()?.src, dim: true, strong: true });
