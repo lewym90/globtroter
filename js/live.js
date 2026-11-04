@@ -85,7 +85,7 @@ export function initLive(x) {
   function applyDays(p) {
     const l = L(p); const o = l.s.days; p.days.forEach((d) => { if (o[d.date]) d.stops = o[d.date].stops; });
     const h = l.s.meta.hotel?.hotel;
-    if (h) { p.hotel = h; if (h.bestTotal) { p.cost = [...p.cost.filter((c) => !c.label.startsWith('Nocleg')), { label: `Nocleg: ${h.name}`, pln: h.bestTotal, sure: 'fact' }]; p.total = p.cost.reduce((n, c) => n + c.pln, 0); } }
+    if (h) { p.hotel = h; if (h.bestTotal) { p.cost = [...p.cost.filter((c) => !c.label.startsWith('Nocleg')), { label: `Nocleg: ${h.name}`, pln: h.bestTotal, sure: 'est' }]; p.total = p.cost.reduce((n, c) => n + c.pln, 0); } }
   }
   function savePlan(p = S.plan) {
     const c = { ...p, option: { ...p.option, calendar: [], alternatives: [], compare: undefined } };

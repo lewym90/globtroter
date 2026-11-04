@@ -372,8 +372,9 @@ def build(c,rt,checked,q,drive,mode,cfg,A,C,adest,lat,lon,month,best):
         res.update(tickets=c['one']*P,flight=None,alternatives=[],verified=False,checkedAt=None)
         warn.append('Nie udało się potwierdzić konkretnych lotów. To cena z kalendarza dla jednej osoby razy liczba osób.')
     bags=0;carr=res['flight']['out']['legs'][0]['airline'] if res['flight'] else None
+    if res['flight'] and res['flight'].get('source')=='Ryanair' and P>=3: warn.append('Cena z kalendarza Ryanaira na jedną osobę, razy liczba osób. Przy większej grupie tanie miejsca mogą się skończyć i bilet wyjdzie drożej, nawet o kilkanaście procent.')
     if carr in LCC:
-        bags=(int(bag.get('cabin',0))*130+int(bag.get('checked',0))*220)*2
+        bags=(int(bag.get('cabin',0))*130+int(bag.get('checked',0))*220)*2*P
         res['bagNote']='Tania linia: bilet zwykle obejmuje tylko mały plecak. Dopłata za bagaż to szacunek, sprawdź przy zakupie.'
     res['bags']=bags
     res['hotelEst']=c['hotelEst'] if 'hotelEst' in c else hotels.estimate(d,c['dep'],c['ret'],A,C)

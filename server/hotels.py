@@ -83,7 +83,7 @@ def search_google(d,ci,co,A,C,budget,pref,minrating,kind):
         if (h['rating'] or 0)>=4.7: why.append('wyjątkowo wysoka ocena gości')
         if 'city' in d['tags'] and dist<1.5: why.append('w samym centrum')
         res.append({'key':h.get('id') or h['name'],'name':h['name'],'type':h.get('kind'),'rating':h['rating'],'reviews':h['reviews'],'image':h['image'],'url':lk['Google'],'lat':h['lat'],'lon':h['lon'],'distKm':round(dist,1) if 'city' in d['tags'] else None,'breakfast':h.get('breakfast')=='free','breakfastPaid':h.get('breakfast')=='paid','stars':h.get('stars'),'amen':h.get('amen') or [],'score':s,
-          'prices':[{'site':'Zobacz ten hotel w Google','night':h['nightPln'],'total':total,'url':lk['Google']}],'compare':[{'site':k,'url':lk[k]} for k in('Booking.com','Agoda.com','Trip.com')],'bestNight':h['nightPln'],'bestTotal':total,'overBudget':bool(budget and total>budget),'why':why,'google':lk['Google']})
+          'prices':[{'site':'Najniższa oferta w Google','night':h['nightPln'],'total':total,'url':lk['Google']}],'compare':[{'site':k,'url':lk[k]} for k in('Booking.com','Agoda.com','Trip.com')],'bestNight':h['nightPln'],'bestTotal':total,'overBudget':bool(budget and total>budget),'why':why,'google':lk['Google']})
     res.sort(key=lambda x:(x['overBudget'],-x['score']))
     return {'hotels':res,'nights':N,'rooms':R,'checkedAt':time.time(),'source':'google'}
 def score(h,pref,center):
@@ -127,7 +127,7 @@ def search_xotelo(d,ci,co,A,C,budget=None,pref='balanced',minrating=0,kind='all'
         s,dist=score(h,pref,(d['lat'],d['lon']))
         rs=h.get('review_summary') or {}
         lk=links.hotel_links(h['name'],d['en'],ci,co,A,C,R)
-        prices=sorted([{'site':'Strona hotelu' if k=='Official Site' else k,'night':v,'total':v*N*R,'url':lk.get(k) or lk['Google']} for k,v in h['_rates'].items()],key=lambda x:x['night'])
+        prices=sorted([{'site':'Strona hotelu' if k=='Official Site' else k,'night':v,'total':v*N*R,'url':lk.get(k) or lk['Google'],'via':k not in lk} for k,v in h['_rates'].items()],key=lambda x:x['night'])
         total=prices[0]['total'];why=[]
         if (rs.get('rating') or 0)>=4.7: why.append('wyjątkowo wysoka ocena gości')
         if 'city' not in d['tags']: pass
@@ -172,11 +172,5 @@ def search(did,ci,co,A,C,budget=None,pref='balanced',minrating=0,kind='all',brea
     if pref!='cheap': out=[h for h in out if not re.search(r'hostel|dorm|backpack',h['name'],re.I) and (h.get('stars') or 2)>=2] or out
     if breakfast: out=[h for h in out if h['breakfast']] or out
     out.sort(key=lambda h:(h['overBudget'],-h['score']))
-    def exact(h):
-        i=links.booking_id(h['name'],d['en'])
-        if i:
-            for p in h['prices']:
-                if p.get('site')=='Booking.com': p['url']=links.booking_url(i,ci,co,A,C,R);p['exact']=True
-    with ThreadPoolExecutor(4) as ex: list(ex.map(exact,out[:12]))
     return {'hotels':out,'nights':(x or g)['nights'],'rooms':R,'checkedAt':time.time(),'sources':[n for n,v in (('Xotelo',x),('Google Hotels',g)) if v],
-      'note':'Cena za pokój. Lokalny podatek turystyczny może dojść na miejscu. Śniadanie sprawdź przy rezerwacji, bo zależy też od wybranej oferty.'}
+      'note':'To ceny orientacyjne z pośredników, za pokój dla dwóch osób. Ten sam hotel potrafi różnić się między serwisami o kilkanaście, a nawet ponad 30%, a przy rezerwacji cena może być inna, zależnie od pokoju, warunków odwołania i podatku lokalnego. Ostateczną kwotę i śniadanie zobaczysz dopiero w serwisie.'}

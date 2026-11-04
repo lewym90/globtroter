@@ -1,7 +1,5 @@
 """Linki do zakupu i rezerwacji z wypelnionymi danymi."""
-import json,re,unicodedata
 from urllib.parse import quote,urlencode
-import net
 def flight_links(o,d,dep,ret,A,C,carrier=None):
     s=lambda x:x[2:4]+x[5:7]+x[8:10]
     q=quote(f'Flights to {d} from {o} on {dep} through {ret}')
@@ -25,19 +23,3 @@ def hotel_links(name,city,ci,co,A,C,rooms=1):
       'Hotels.com':'https://pl.hotels.com/Hotel-Search?'+urlencode({'destination':q,'startDate':ci,'endDate':co,'adults':A}),
       'Google':'https://www.google.com/travel/search?'+urlencode({'q':f'{q} from {eng(ci)} to {eng(co)}','hl':'pl','gl':'pl','curr':'PLN'})}
 
-_off=[0]
-def _key(n):
-    n=unicodedata.normalize('NFKD',n.lower()).encode('ascii','ignore').decode()
-    return re.sub(r'\b(hotel|the|hostal|apartments?|by|and|spa|resort)\b|[^a-z0-9]','',n)
-def booking_id(name,city):
-    """Id hotelu w Bookingu. Bierzemy tylko wynik typu hotel o tej samej nazwie, inaczej zostaje zwykle wyszukiwanie."""
-    if _off[0]>=3: return None
-    try:
-        j=net.fetch_json('https://accommodations.booking.com/autocomplete.json',ttl=30*86400,tries=1,timeout=6,data=json.dumps({'query':f'{name} {city}','pageview_id':'','aid':800210,'language':'pl','size':5}),headers={'Content-Type':'application/json','User-Agent':'Mozilla/5.0'})
-        _off[0]=0
-        for r in j.get('results') or []:
-            if r.get('dest_type')=='hotel' and _key(str(r.get('value') or r.get('label') or '').split(',')[0])==_key(name): return r.get('dest_id')
-    except Exception: _off[0]+=1
-    return None
-def booking_url(hid,ci,co,A,C,rooms):
-    return 'https://www.booking.com/searchresults.pl.html?'+urlencode({'dest_id':hid,'dest_type':'hotel','checkin':ci,'checkout':co,'group_adults':A,'group_children':C,'no_rooms':rooms,'selected_currency':'PLN'})

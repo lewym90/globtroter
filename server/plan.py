@@ -267,6 +267,6 @@ def finish(d,o,h,home,prefs,mode,tl,rt,bags,c0):
     if c and 'C' not in c['plugs']: check.append({'t':f"Adapter do gniazdek {c['plugs']}",'d':-3})
     cost=([] if o.get('manual') else [{'label':'Bilety','pln':o['tickets'],'sure':'fact' if o['verified'] else 'est'}])+[{'label':i['label'],'pln':i['pln'],'sure':'est'} for i in o['access']['items']]
     if o.get('bags'): cost.append({'label':'Bagaż (szacunek)','pln':o['bags'],'sure':'est'})
-    if h.get('bestTotal'): cost.append({'label':f"Nocleg: {h['name']}",'pln':h['bestTotal'],'sure':'fact'})
+    if h.get('bestTotal'): cost.append({'label':f"Nocleg: {h['name']}",'pln':h['bestTotal'],'sure':'est'})
     elif o.get('hotelEst'): cost.append({'label':'Nocleg','pln':o['hotelEst']['total'],'sure':'est'})
     return {'title':f"{d['name']}: {o['nights']} nocy",'dest':{k:d.get(k) for k in('id','name','cc','lat','lon')},'option':o,'hotel':h,'home':home,'timeline':tl,'return':rt,'days':days,'climate':cm(d,m),'climateSource':cl.get('station'),'country':c,'holidays':hol,'checklist':sorted(check,key=lambda x:x['d']),'cost':cost,'total':sum(x['pln'] for x in cost),'foodOk':food is not False,'at':dt.datetime.now().isoformat(timespec='minutes')}
