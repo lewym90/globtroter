@@ -3,7 +3,7 @@ import { flapRow } from './flap.js';
 import { initLive } from './live.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '2.5.0';
+const VERSION = '2.5.1';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
