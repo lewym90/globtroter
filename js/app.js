@@ -3,7 +3,7 @@ import { flapRow } from './flap.js';
 import { initLive, swapDay } from './live.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '2.6.1';
+const VERSION = '2.7.0';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -714,13 +714,25 @@ async function viewHotels() {
       if (f.sort === 'rate') v = [...v].sort((a, c) => (c.rating || 0) - (a.rating || 0) || (c.reviews || 0) - (a.reviews || 0));
       return v;
     };
+    const priceBox = (h) => `${h.live ? `<p><span class="sure fact">ceny z serwisów, z podatkami</span></p>` : h.gkey && !h.liveFail ? '<p class="mute" style="font-size:14px">Sprawdzam ceny w serwisach…</p>' : '<p><span class="sure est">cena przybliżona</span></p>'}${h.noOffers ? '<p class="warn">Brak ofert na te daty.</p>' : ''}<div class="pricelist">${h.prices.slice(0, 6).map((p, j) => `<a class="pl ${j === 0 ? 'best' : ''}" href="${url(p.url)}" target="_blank" rel="noopener"><span>${esc(p.site)}${p.via ? ' (przez Google)' : ''}</span><span>${zl(p.total)}</span></a>`).join('')}</div>`;
+    const fill = async () => {
+      const run = (S.hfRun = {});
+      for (const h of list().slice(0, S.hf.limit)) {
+        if (S.hfRun !== run || S.hotels !== r || h.live || h.liveFail || !h.gkey) continue;
+        try {
+          const a = await api(`/api/hotel/offers?${new URLSearchParams({ key: h.gkey, in: o.dep, out: o.ret, rooms: r.rooms })}`);
+          if (a.offers.length) { const bk = a.offers.find((x) => x.site === 'Booking.com'); const top = a.offers.slice(0, 5); if (bk && !top.includes(bk)) top.push(bk); h.prices = top; h.bestTotal = a.offers[0].total; h.bestNight = a.offers[0].night; h.live = true; } else { h.noOffers = true; h.liveFail = true; }
+        } catch { h.liveFail = true; }
+        const el = document.querySelector(`[data-pl="${CSS.escape(String(h.key))}"]`); if (el) el.innerHTML = priceBox(h);
+      }
+    };
     const card = (h, i) => `<article class="card hot">${i === 0 && S.hf.sort === 'best' && !h.overBudget ? '<span class="badge">Nasz wybór</span>' : ''}${h.image ? `<img src="${url(h.image)}" alt="${esc(h.name)}" loading="lazy" referrerpolicy="no-referrer">` : ''}
     <div class="in"><h3>${esc(h.name)}</h3><p>${h.rating ? `<span class="stars">${String(h.rating).replace('.', ',')} / 5</span> ` : ''}<span class="mute">${(h.reviews || 0).toLocaleString('pl-PL')} opinii${h.stars ? `, ${h.stars}★` : ''}${h.distKm != null ? `, ${String(h.distKm).replace('.', ',')} km od centrum` : ''}</span></p>
     <p>${h.breakfast ? '<span class="sure fact">śniadanie w cenie</span>' : h.breakfastPaid ? '<span class="sure est">śniadanie płatne</span>' : '<span class="sure check">śniadanie: brak danych</span>'}</p>
     ${h.amen?.filter((a) => a !== 'śniadanie w cenie').length ? `<p class="mute" style="font-size:14px">${esc(h.amen.filter((a) => a !== 'śniadanie w cenie').slice(0, 6).join(', '))}</p>` : ''}
     ${h.overBudget ? '<p class="warn">Ponad Twój budżet.</p>' : ''}
-    <div class="pricelist">${h.prices.map((p, j) => `<a class="pl ${j === 0 ? 'best' : ''}" href="${url(p.url)}" target="_blank" rel="noopener"><span>${esc(p.site)}${p.via ? ' (przez Google)' : ''}</span><span>${zl(p.total)}</span></a>`).join('')}</div>
-    ${h.compare?.length ? `<p class="hint">Szukaj też na tych stronach. Szukamy po nazwie, więc sprawdź, czy otwarty hotel to ten sam. Nie każdy hotel jest na każdej stronie.</p><div class="linkset">${h.compare.map((c) => `<a class="btn line small" href="${url(c.url)}" target="_blank" rel="noopener">${esc(c.site)}</a>`).join('')}</div>` : ''}
+    <div data-pl="${esc(h.key)}">${priceBox(h)}</div>
+    ${!h.live && h.compare?.length ? `<p class="hint">Szukaj też na tych stronach. Szukamy po nazwie, więc sprawdź, czy otwarty hotel to ten sam. Nie każdy hotel jest na każdej stronie.</p><div class="linkset">${h.compare.map((c) => `<a class="btn line small" href="${url(c.url)}" target="_blank" rel="noopener">${esc(c.site)}</a>`).join('')}</div>` : ''}
     <div class="acts"><button class="btn" data-h="${esc(h.key)}">Wybieram ten hotel</button></div></div></article>`;
     const draw = () => {
       const v = list(); const f = S.hf; const L = r.hotels;
@@ -744,6 +756,7 @@ async function viewHotels() {
       $$('[data-h]').forEach((b) => { b.onclick = () => buildPlan(L.find((h) => String(h.key) === b.dataset.h)); });
       const nh = $('#noh'); if (nh) nh.onclick = () => buildPlan({ name: 'centrum: ' + o.dest.name, lat: o.dest.lat, lon: o.dest.lon, bestTotal: 0 });
       app.scrollTop = y;
+      fill();
     };
     draw();
     app.scrollTop = 0;

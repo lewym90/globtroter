@@ -1,7 +1,7 @@
 """Drugie zrodlo hoteli: strona Google Hotels. Dane sa wbudowane w strone jako struktura JSON.
 Zwraca tylko rekordy zgodne z podanymi datami i lezace przy celu. Awaria to None, nigdy zgadywanie."""
-import datetime as dt,html,json,logging,re,threading,time
-from urllib.parse import quote
+import datetime as dt,html,json,logging,re,threading,time,base64
+from urllib.parse import quote,unquote
 import geo,net,store
 log=logging.getLogger('ghotels')
 MONTHS='January February March April May June July August September October November December'.split()
@@ -115,3 +115,56 @@ def deep(d,ci,co):
     out=list(seen.values())
     if len(out)>=5: store.put(k,out,4*3600)
     return out or None
+
+def _v(n):
+    o=b''
+    while True:
+        b=n&127;n>>=7
+        if n: o+=bytes([b|128])
+        else: return o+bytes([b])
+def _ld(f,b): return bytes([f<<3|2])+_v(len(b))+b
+def _vi(f,n): return bytes([f<<3])+_v(n)
+def stay_token(ci,co):
+    """Daty pobytu w formacie strony cen Google. Bez tego Google pokazuje oferty na jutro."""
+    a=dt.date.fromisoformat(ci);b=dt.date.fromisoformat(co)
+    day=lambda x:_vi(1,x.year)+_vi(2,x.month)+_vi(3,x.day)
+    inner=_ld(1,day(a))+_ld(2,day(b))+_vi(3,(b-a).days)
+    body=_ld(1,b'\x1a\x00')+_ld(2,_ld(2,inner)+_ld(6,b'\x08\x02'))
+    raw=b'\x08\x01'+_ld(2,_ld(1,b'\x08\x03')+_ld(1,b'\x08\x03'))+_vi(2,0)+_ld(3,body)
+    return base64.urlsafe_b64encode(raw).rstrip(b'=').decode()
+_OFF=re.compile(r'\[\["([^"]{2,60})",\d+,"(/travel/lodging/clk\?[^"]+)"')
+_PR=re.compile(r'\["[^"]*PLN",null,([\d.]+),null,\d+\],\["[^"]*PLN",null,([\d.]+),null,\d+\]')
+def parse_offers(t,ci,co):
+    """Oferty serwisow: cena z podatkami za caly pobyt i link prosto do tego hotelu z datami."""
+    t=t.replace('\\u003d','=').replace('\\u0026','&');n=(dt.date.fromisoformat(co)-dt.date.fromisoformat(ci)).days;out={}
+    for m in _OFF.finditer(t):
+        p=_PR.search(t[m.end():m.end()+1300])
+        if not p or m[1] in out: continue
+        night,total=float(p[1]),float(p[2])
+        if n>1 and not(.9<total/(night*n)<1.15): continue
+        q=m[2].split('pcurl=',1)
+        if len(q)<2: continue
+        link=unquote(q[1].split('&s=')[0])
+        if link.startswith('http') and not re.search(r'202\d-\d\d-\d\d',link) and ci.replace('-','') not in link: pass
+        d=re.search(r'(?:checkin|datefrom|checkIn)=(\d{4}-\d\d-\d\d)',link)
+        if d and d[1]!=ci: continue
+        out[m[1]]={'site':m[1],'night':round(night),'total':round(total),'url':link,'taxes':True}
+    return sorted(out.values(),key=lambda x:x['total'])
+def offers(key,ci,co):
+    """Ceny z poszczegolnych serwisow dla jednego hotelu. None = strona nie odpowiedziala, [] = brak ofert."""
+    k=f'ghof:{key}:{ci}:{co}'
+    v,_=store.get(k)
+    if v is not None: return v
+    if _blocked[0]>time.time(): return None
+    from curl_cffi import requests
+    url=f'https://www.google.com/travel/hotels/entity/{key}/prices?ts={stay_token(ci,co)}&hl=en&gl=pl&curr=PLN'
+    with _l:
+        w=_last[0]+2.5-time.time()
+        if w>0: time.sleep(w)
+        _last[0]=time.time()
+        res=requests.get(url,impersonate='chrome',timeout=25,cookies=COOK)
+    if res.status_code==429: _blocked[0]=time.time()+600
+    if res.status_code!=200: return None
+    r=parse_offers(res.text,ci,co)
+    store.put(k,r,3*3600)
+    return r

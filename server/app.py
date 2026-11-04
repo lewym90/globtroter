@@ -5,7 +5,7 @@ from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import parse_qs,urlsplit
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 import ai,flights,geo,hotels,net,plan,push,ryanair,search,store,trips
-VERSION='1.6.1'
+VERSION='1.7.0'
 _hits={}
 def limited(ip,kind,n,win):
     """Prosty limit zapytan na adres, zeby nikt nie zapchal bazy ani darmowego limitu AI."""
@@ -36,6 +36,7 @@ class H(BaseHTTPRequestHandler):
                 j=search.JOBS.get(q.get('id',''))
                 if not j: return self.out(404,{'error':'Wyszukiwanie wygasło. Uruchom je jeszcze raz.'})
                 return self.out(200,j)
+            if p=='/api/hotel/offers': return self.out(200,hotels.offers(q.get('key'),q.get('in'),q.get('out'),q.get('rooms',1)))
             if p=='/api/hotels':
                 return self.out(200,hotels.search(q['dest'],q['in'],q['out'],int(q.get('adults',2)),int(q.get('children',0)),int(q['budget']) if q.get('budget') else None,q.get('pref','balanced'),q.get('minRating',0),q.get('kind','all'),q.get('breakfast')=='1'))
             if p=='/api/diag':

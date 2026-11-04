@@ -192,6 +192,20 @@ class Manual(unittest.TestCase):
         import plan
         d=plan.custom_dest({'name':'Kołobrzeg','cc':'pl','lat':54.17,'lon':15.57});self.assertEqual(d['id'],'x-kolobrzeg');self.assertEqual(d['cc'],'PL')
         with self.assertRaises(ValueError): plan.custom_dest({'name':'x'})
+class Offers(unittest.TestCase):
+    def rec(self,site,night,total,link):
+        return f'[["{site}",184,"/travel/lodging/clk?pc\\u003dAJ\\u0026pcurl\\u003d{link}\\u0026s\\u003dAB\\u0026ap\\u003d1",["x"]],null,[null,null,null,null,["{night} PLN",null,{night},null,{night}],["{total} PLN",null,{total},null,{total}]]]'
+    def test_token_keeps_known_form(self):
+        import ghotels
+        self.assertEqual(ghotels.stay_token('2027-06-10','2027-06-17'),'CAESCAoCCAMKAggDEAAaIAoCGgASGhIUCgcI6w8QBhgKEgcI6w8QBhgRGAcyAggC')
+    def test_parse_and_filter_wrong_dates(self):
+        import ghotels
+        t=self.rec('Booking.com',678,4747,'https://www.booking.com/x?checkin%3D2027-06-10%26dest_id%3D1')+self.rec('Agoda',400,2800,'https://www.agoda.com/x')+self.rec('Zla',300,2100,'https://z.pl/x?checkin%3D2026-11-05')
+        r=ghotels.parse_offers(t,'2027-06-10','2027-06-17')
+        self.assertEqual([x['site'] for x in r],['Agoda','Booking.com']);self.assertEqual(r[1]['total'],4747);self.assertIn('checkin=2027-06-10',r[1]['url'])
+    def test_rejects_total_that_is_not_the_whole_stay(self):
+        import ghotels
+        self.assertEqual(ghotels.parse_offers(self.rec('X',678,678,'https://x.pl'),'2027-06-10','2027-06-17'),[])
 class Periods(unittest.TestCase):
     def test_month_is_strict(self):
         y=dt.date.today().year+1;w={'mode':'month','year':y,'month':5,'nights':[7]};a,b,n,m=search.window(w);lim=search.last_return(w,b)

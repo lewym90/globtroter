@@ -42,7 +42,12 @@ def _quick(key,ci,co):
 def estimate(d,ci,co,A,C):
     """Koszt noclegu na konkretny termin: mediana zywych cen pieciu dobrze ocenianych hoteli.
     Liczy sie data: targi albo swieta potrafia podniesc ceny kilkukrotnie."""
-    if not d.get('ta'): return _est_google(d,ci,co,A,C)
+    # Google podaje cene z podatkami i oplatami, wiec jest pierwszym zrodlem szacunku
+    try:
+        e=_est_google(d,ci,co,A,C)
+        if e: return e
+    except Exception: pass
+    if not d.get('ta'): return None
     try:
         L=[h for h in _list(d) if (h.get('review_summary') or {}).get('rating',0)>=4][:5]
         if not L: return _est_google(d,ci,co,A,C)
@@ -144,6 +149,12 @@ def _safe(k,ci,co):
     except Exception: return None
 def _norm(n):
     return re.sub(r'[^a-z0-9]','',unicodedata.normalize('NFKD',n.lower()).encode('ascii','ignore').decode())[:18]
+def offers(key,ci,co,rooms=1):
+    if not re.fullmatch(r'Ch[A-Za-z0-9_-]{10,80}',key or ''): raise ValueError('Zły identyfikator hotelu')
+    dt.date.fromisoformat(ci);dt.date.fromisoformat(co);r=ghotels.offers(key,ci,co)
+    if r is None: raise net.SourceDown('oferty')
+    R=max(1,min(5,int(rooms)))
+    return {'offers':[{**x,'total':x['total']*R} for x in r],'at':time.time()}
 def search(did,ci,co,A,C,budget=None,pref='balanced',minrating=0,kind='all',breakfast=False):
     """Dwa niezalezne zrodla naraz, wynik laczony bez duplikatow."""
     d=geo.BYID.get(did)
@@ -163,6 +174,7 @@ def search(did,ci,co,A,C,budget=None,pref='balanced',minrating=0,kind='all',brea
     for h in (x or {}).get('hotels',[]):
         m=gs.pop(_norm(h['name']),None)
         if m:
+            h['gkey']=m['key']
             h['amen']=m['amen'];h['stars']=m.get('stars');h['breakfast']=h['breakfast'] or m['breakfast'];h['breakfastPaid']=m['breakfastPaid'] and not h['breakfast']
             if m['bestTotal']<h['bestTotal']:
                 h['prices'].insert(0,m['prices'][0]);h['bestTotal']=m['bestTotal'];h['bestNight']=m['bestNight']
@@ -172,5 +184,7 @@ def search(did,ci,co,A,C,budget=None,pref='balanced',minrating=0,kind='all',brea
     if pref!='cheap': out=[h for h in out if not re.search(r'hostel|dorm|backpack',h['name'],re.I) and (h.get('stars') or 2)>=2] or out
     if breakfast: out=[h for h in out if h['breakfast']] or out
     out.sort(key=lambda h:(h['overBudget'],-h['score']))
+    for h in out:
+        if str(h.get('key','')).startswith('Ch'): h['gkey']=h['key']
     return {'hotels':out,'nights':(x or g)['nights'],'rooms':R,'checkedAt':time.time(),'sources':[n for n,v in (('Xotelo',x),('Google Hotels',g)) if v],
-      'note':'To ceny orientacyjne z pośredników, za pokój dla dwóch osób. Ten sam hotel potrafi różnić się między serwisami o kilkanaście, a nawet ponad 30%, a przy rezerwacji cena może być inna, zależnie od pokoju, warunków odwołania i podatku lokalnego. Ostateczną kwotę i śniadanie zobaczysz dopiero w serwisie.'}
+      'note':'Ceny za pokój dla dwóch osób. Przy zielonym znaczniku to oferty serwisów z podatkami i opłatami, a link prowadzi do tego hotelu na Twoje daty. Podatek miejski płatny na miejscu może dojść osobno. Ostateczną kwotę, rodzaj pokoju i warunki odwołania potwierdzasz w serwisie.'}
