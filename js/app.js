@@ -3,7 +3,7 @@ import { flapRow } from './flap.js';
 import { initLive, swapDay } from './live.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '2.8.1';
+const VERSION = '2.8.2';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -755,7 +755,12 @@ async function viewHotels() {
       $$('[data-st]').forEach((b) => { b.onclick = () => { const n = +b.dataset.st; f.stars = f.stars === n ? 0 : n; f.limit = 12; draw(); }; });
       $$('[data-so]').forEach((b) => { b.onclick = () => { f.sort = b.dataset.so; f.limit = 12; draw(); }; });
       const m = $('#more'); if (m) m.onclick = () => { f.limit += 12; draw(); };
-      $$('[data-h]').forEach((b) => { b.onclick = () => buildPlan(L.find((h) => String(h.key) === b.dataset.h)); });
+      $$('[data-h]').forEach((b) => { b.onclick = async () => {
+        const h = L.find((x) => String(x.key) === b.dataset.h);
+        // Plan dostaje cene z oferty, a nie wstepna z listy
+        if (h.gkey && !h.live && !h.liveFail) { b.disabled = true; b.textContent = 'Sprawdzam aktualną cenę…'; try { const a = await api(`/api/hotel/offers?${new URLSearchParams({ key: h.gkey, in: o.dep, out: o.ret, rooms: r.rooms })}`); if (a.offers.length) { h.prices = a.offers.slice(0, 6); h.bestTotal = a.offers[0].total; h.bestNight = a.offers[0].night; h.live = true; } } catch { /* zostaje cena z listy */ } }
+        buildPlan(h);
+      }; });
       $('#ownh').onclick = () => LV.viewOwnHotel(o, buildPlan, viewHotels);
       const nh = $('#noh'); if (nh) nh.onclick = () => buildPlan({ name: 'centrum: ' + o.dest.name, lat: o.dest.lat, lon: o.dest.lon, bestTotal: 0 });
       app.scrollTop = y;
