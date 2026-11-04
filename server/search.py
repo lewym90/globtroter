@@ -244,10 +244,11 @@ def run(job,q):
         for o,(did,ym) in wins:
             d=geo.BYID[did];n=o['nights']
             have=lambda c:any(x for k,v in checked.items() if k[0]==c and k[1] in d['air'] and k[2]==n for x in v if x['dep'].startswith(ym))
-            for c in sorted([c for c in codes if any((c,x) in best for x in d['air'])],key=lambda c:min(best[(c,x)]['price'] for x in d['air'] if (c,x) in best)):
+            # Rozpoznanie pokazuje tylko czesc par, wiec lotnisko bez ceny tez sprawdzamy: najpierw te z cena, potem najblizsze
+            for c in sorted(codes,key=lambda c:(min([best[(c,x)]['price'] for x in d['air'] if (c,x) in best] or [10**9]),drive[c]['km'])):
                 if have(c): tried.add((c,did,ym));continue
-                if calls>=10 or gone: continue
-                for dd in [x for x in d['air'] if (c,x) in best]:
+                if calls>=12 or gone: continue
+                for dd in [x for x in d['air'] if (c,x) in best] or d['air'][:1]:
                     if ym:
                         y,m0=int(ym[:4]),int(ym[5:7]);p0=max(a,dt.date(y,m0,1));p1=min(b,dt.date(y,m0,cal.monthrange(y,m0)[1]));use=[(p0,p1)]
                     else: use=parts
@@ -419,7 +420,7 @@ def compare_airports(opts,best,drive,mode,cfg,P,codes,lat,lon,fr=None,bymonth=Fa
                 if mode in('car','dropoff'): c2['tollOneWay']=access.tolls(lat,lon,c) or 0
                 ac=access.cost(mode,c,drive[c],days,P,c2)['total']+win.get('bags',0);t=round(x['price']*P)
                 rows[c]={'from':c,'to':to,'city':aname(c),'km':drive[c]['km'],'min':drive[c]['min'],'tickets':t,'access':ac,'total':t+ac,'dep':x['dep'],'ret':x['ret'],'verified':False,'state':'fare','stops':0,'nights':win['nights'],'drive':drive[c]}
-            elif ps and tried is not None and (c,did,ym) not in tried: continue
+            elif tried is not None and (c,did,ym) not in tried: continue
             else:
                 # Sprawdzone i brak lotow w tym okresie. Nie zgadujemy ceny.
                 rows[c]={'from':c,'city':aname(c),'km':drive[c]['km'],'min':drive[c]['min'],'state':'none'}
