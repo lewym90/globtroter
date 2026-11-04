@@ -2,7 +2,7 @@
 """Dodatkowe atrakcje z OpenStreetMap dla miejsc, gdzie Wikidata daje ich malo. Tylko obiekty z nazwa, bez duplikatow."""
 import json,os,re,sys,time,unicodedata,urllib.parse,urllib.request
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-P=ROOT+'/data/attractions.json';MIN=70
+P=ROOT+'/data/attractions.json';D=ROOT+'/data/poi_done.json';MIN=70
 URLS=['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter','https://overpass.kumi.systems/api/interpreter']
 def ask(q):
     for u in URLS:
@@ -28,7 +28,8 @@ def main():
     ds=json.load(open(ROOT+'/data/destinations.json',encoding='utf8'));A=json.load(open(P,encoding='utf8'));t0=time.time()
     for d in sorted(ds,key=lambda d:len(A.get(d['id'],[]))):
         L=A.setdefault(d['id'],[])
-        if len(L)>=MIN or time.time()-t0>17000: continue
+        done=json.load(open(D,encoding='utf8')) if os.path.exists(D) else []
+        if d['id'] in done or len(L)>=MIN or time.time()-t0>2400: continue
         la,lo=d['lat'],d['lon'];w=.13
         b=f'({la-w},{lo-w},{la+w},{lo+w})'
         r=ask(f'[out:json][timeout:90];(nwr["tourism"~"^(attraction|museum|gallery|viewpoint|zoo|aquarium)$"]["name"]{b};nwr["natural"="beach"]["name"]{b};nwr["historic"~"^(castle|fort|ruins|archaeological_site|monument)$"]["name"]{b};nwr["leisure"~"^(park|nature_reserve)$"]["name"]["wikidata"]{b};);out center tags 300;')
@@ -39,6 +40,12 @@ def main():
             t=e.get('tags',{});nm=t.get('name:pl') or t.get('name');c=e.get('center') or e
             if not nm or norm(nm) in have or 'lat' not in c or len(L)>=90: continue
             have.add(norm(nm));L.append({'n':nm,'lat':round(c['lat'],5),'lon':round(c['lon'],5),'l':sc(e),'t':kind(t),'q':t.get('wikidata') or f"osm{e['type'][0]}{e['id']}",'img':None,'web':t.get('website'),'h':(t.get('opening_hours') or '')[:120] or None});n+=1
+        done=json.load(open(D,encoding='utf8')) if os.path.exists(D) else []
+        json.dump(done+[d['id']],open(D,'w'))
         print(d['name'],n,len(L),flush=True);time.sleep(3)
         json.dump(A,open(P,'w',encoding='utf8'),ensure_ascii=False,separators=(',',':'))
+def left():
+    ds=json.load(open(ROOT+'/data/destinations.json',encoding='utf8'));A=json.load(open(P,encoding='utf8'));done=set(json.load(open(D,encoding='utf8')) if os.path.exists(D) else [])
+    return sum(1 for d in ds if d['id'] not in done and len(A.get(d['id'],[]))<MIN)
 if __name__=='__main__': main()
+    print('zostalo',left())
