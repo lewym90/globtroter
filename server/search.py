@@ -419,7 +419,7 @@ def compare_airports(opts,best,drive,mode,cfg,P,codes,lat,lon,fr=None,bymonth=Fa
                 x,to=min(g,key=lambda v:v[0]['price']);c2=dict(cfg)
                 if mode in('car','dropoff'): c2['tollOneWay']=access.tolls(lat,lon,c) or 0
                 ac=access.cost(mode,c,drive[c],days,P,c2)['total']+win.get('bags',0);t=round(x['price']*P)
-                rows[c]={'from':c,'to':to,'city':aname(c),'km':drive[c]['km'],'min':drive[c]['min'],'tickets':t,'access':ac,'total':t+ac,'dep':x['dep'],'ret':x['ret'],'verified':False,'state':'fare','stops':0,'nights':win['nights'],'drive':drive[c]}
+                rows[c]={'from':c,'to':to,'city':aname(c),'km':drive[c]['km'],'min':drive[c]['min'],'tickets':t,'access':ac,'total':t+ac,'dep':x['dep'],'ret':x['ret'],'verified':False,'state':'fare','stops':0 if x.get('src')=='FR' else None,'nights':win['nights'],'drive':drive[c]}
             elif tried is not None and (c,did,ym) not in tried: continue
             else:
                 # Sprawdzone i brak lotow w tym okresie. Nie zgadujemy ceny.

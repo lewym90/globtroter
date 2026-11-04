@@ -3,7 +3,7 @@ import { flapRow } from './flap.js';
 import { initLive } from './live.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '2.5.2';
+const VERSION = '2.5.3';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -646,7 +646,7 @@ function viewOption() {
    ${calendar(o)}
    ${cmp?.length > 1 ? `<div class="in"><h3 class="big" style="font-size:32px">Z którego lotniska</h3><p class="mute">Bilety, bagaż i dojazd dla ${n} ${osob(n)}, ${o.compareNights || others[0].nights} nocy, w najtańszym terminie z każdego lotniska. Noclegu tu nie liczymy, bo nie zależy od lotniska.</p>${insight ? `<div class="insight">${esc(insight)}</div>` : ''}
     <div class="bars">${cmp.map((c, ci) => {
-      if (c.state === 'none') return `<div class="cmp mute"><div class="t"><span>${esc(c.city)} ${c.from}, ${c.km} km</span><span>brak lotów w tym terminie</span></div></div>`;
+      if (c.state === 'none') return `<div class="cmp mute"><div class="t"><span>${esc(c.city)} ${c.from}, ${c.km} km</span><span>brak lotów w sprzedaży na ten termin</span></div></div>`;
       const inner = `<div class="t"><span>${esc(c.city)} ${c.from}, ${c.km} km${c.dep ? `<small class="mute" style="display:block;font-weight:500">${dateL(c.dep)} – ${dateL(c.ret)}${c.stops === 0 ? ', bez przesiadek' : c.stops ? `, przesiadki: ${c.stops}` : ''}</small>` : ''}</span><span>${c.state === 'estimate' ? 'około ' : ''}${zl(c.total)}</span></div><div class="tr" style="width:${(c.total / max) * 100}%"><i class="a" style="flex:${c.tickets}"></i><i class="b" style="flex:${c.access}"></i></div>`;
       return c.optionId ? `<button class="cmp" data-c="${c.optionId}">${inner}</button>` : c.state === 'fare' ? `<button class="cmp" data-f="${ci}">${inner}</button>` : `<div class="cmp">${inner}</div>`;
     }).join('')}</div>
