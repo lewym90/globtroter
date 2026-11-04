@@ -2,9 +2,10 @@
 import base64,datetime as dt,json,logging,os,threading,time
 import trips
 log=logging.getLogger('push')
-SUBJECT='https://lewym90.github.io/globtroter/'
+SUBJECT='https://lewym90.github.io'
 _key=os.path.join(trips._d,'vapid.pem')
 _send=None
+_err=['']
 def _ensure():
     from cryptography.hazmat.primitives import serialization as z
     from cryptography.hazmat.primitives.asymmetric import ec
@@ -26,15 +27,15 @@ def _deliver(dev,sub,payload):
     from py_vapid import Vapid02
     from pywebpush import WebPushException,webpush
     try:
-        webpush(subscription_info=sub,data=json.dumps(payload,ensure_ascii=False),vapid_private_key=Vapid02.from_pem(open(_key,'rb').read()),vapid_claims={'sub':SUBJECT},ttl=3600,timeout=15)
+        webpush(subscription_info=sub,data=json.dumps(payload,ensure_ascii=False),vapid_private_key=Vapid02.from_pem(open(_key,'rb').read()),vapid_claims={'sub':SUBJECT,'exp':int(time.time())+6*3600},ttl=3600,timeout=15)
         return True
     except WebPushException as e:
         code=getattr(e.response,'status_code',None)
         if code in(404,410):
             with trips._l: trips._c.execute('DELETE FROM devices WHERE id=?',(dev,));trips._c.commit()
-        log.warning('push %s %s',code,str(e)[:120]);return False
+        _err[0]=f'{code} {getattr(e.response,"text","")[:120]}';log.warning('push %s %s',code,str(e)[:120]);return False
     except Exception as e:
-        log.warning('push %s',str(e)[:120]);return False
+        _err[0]=str(e)[:120];log.warning('push %s',str(e)[:120]);return False
 def subscribe(device,sub,keys):
     if not isinstance(device,str) or not 10<=len(device)<=64: raise ValueError('Zły identyfikator urządzenia')
     if not isinstance(sub,dict) or not str(sub.get('endpoint','')).startswith('https://') or not (sub.get('keys') or {}).get('p256dh'): raise ValueError('Zła subskrypcja')

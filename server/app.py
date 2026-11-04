@@ -5,7 +5,7 @@ from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import parse_qs,urlsplit
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 import ai,flights,geo,hotels,net,plan,push,ryanair,search,store,trips
-VERSION='1.5.2'
+VERSION='1.5.3'
 _hits={}
 def limited(ip,kind,n,win):
     """Prosty limit zapytan na adres, zeby nikt nie zapchal bazy ani darmowego limitu AI."""
@@ -31,7 +31,7 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         u=urlsplit(self.path);p=u.path.replace('/globtroter','',1);q={k:v[0] for k,v in parse_qs(u.query).items()}
         try:
-            if p in('/api/health','/zdrowie'): return self.out(200,{'ok':True,'version':VERSION,'google':flights.status(),'ryanair':ryanair.status(),'ai':ai.ready(),'dests':len(geo.DESTS),'airports':len(geo.AIRPORTS)})
+            if p in('/api/health','/zdrowie'): return self.out(200,{'ok':True,'version':VERSION,'google':flights.status(),'ryanair':ryanair.status(),'ai':ai.ready(),'pushErr':push._err[0],'dests':len(geo.DESTS),'airports':len(geo.AIRPORTS)})
             if p=='/api/job':
                 j=search.JOBS.get(q.get('id',''))
                 if not j: return self.out(404,{'error':'Wyszukiwanie wygasło. Uruchom je jeszcze raz.'})
