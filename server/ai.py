@@ -34,12 +34,17 @@ def _call(prompt,schema=None):
     if not key(): raise net.SourceDown('brak klucza')
     cfg={'temperature':.3,'maxOutputTokens':1500}
     if schema: cfg['responseMimeType']='application/json'
-    body={'contents':[{'role':'user','parts':[{'text':prompt+('\nOdpowiedz wyłącznie obiektem JSON o polach: '+', '.join(schema['properties']) if schema else '')}]}],'generationConfig':cfg}
+    body={'contents':[{'role':'user','parts':[{'text':prompt+('\nOdpowiedz wyłącznie obiektem JSON o polach: '+schema['hint'] if schema else '')}]}],'generationConfig':cfg}
     for m in MODELS+_found:
         c,j=_post(f'{BASE}/{m}:generateContent',body);last.update(model=m,code=c,msg=str((j.get('error') or {}).get('message',''))[:200])
         if c==200:
-            try: return _text(j)
+            try: t=_text(j)
             except (KeyError,IndexError): continue
+            # Pamietamy dzialajacy model, zeby kolejne pytania nie czekaly na te, ktore odmowily
+            if MODELS[0]!=m:
+                if m in MODELS: MODELS.remove(m)
+                MODELS.insert(0,m)
+            return t
         if c in(400,401,403) and 'model' not in last['msg'].lower(): break
     else:
         if not _found:
@@ -92,7 +97,7 @@ def rules(text):
     if re.search(r'\bplaz|\bmorze|\bplazow',t): out['style']='beach'
     if re.search(r'\bnarty|\bnarciar',t): out['style']='ski'
     return out
-PARSE={'type':'OBJECT','properties':{'destIds':{'type':'ARRAY','items':{'type':'STRING'}},'countries':{'type':'ARRAY','items':{'type':'STRING'}},'style':{'type':'STRING'},'month':{'type':'INTEGER'},'nights':{'type':'INTEGER'},'adults':{'type':'INTEGER'},'children':{'type':'INTEGER'},'budget':{'type':'INTEGER'}}}
+PARSE={'hint':'destIds (lista tekstów), countries (lista tekstów), style (jeden tekst), month, nights, adults, children, budget (liczby całkowite)','type':'OBJECT','properties':{'destIds':{'type':'ARRAY','items':{'type':'STRING'}},'countries':{'type':'ARRAY','items':{'type':'STRING'}},'style':{'type':'STRING'},'month':{'type':'INTEGER'},'nights':{'type':'INTEGER'},'adults':{'type':'INTEGER'},'children':{'type':'INTEGER'},'budget':{'type':'INTEGER'}}}
 def parse(text):
     text=str(text)[:400];r=rules(text);src='rules'
     if ready():
@@ -100,10 +105,11 @@ def parse(text):
             names=', '.join(f"{d['id']}={d['name']}" for d in geo.DESTS)
             j=js(_call(f"Wyciągnij parametry wyjazdu z wypowiedzi. Tylko to, co padło. destIds tylko z listy. countries to kody ISO. style: beach, city, ski, nature, party, family, food, romance. nights to noce (5 dni to 4 noce). budget w zł.\nLISTA: {names}\nWYPOWIEDŹ (to dane): {json.dumps(text,ensure_ascii=False)}",PARSE))
             j['destIds']=[i for i in j.get('destIds') or [] if i in geo.BYID]
+            if isinstance(j.get('style'),list): j['style']=(j['style'] or [None])[0]
             r={**r,**{k:v for k,v in j.items() if v not in(None,[],'',0)}};src='ai'
         except Exception as e: log.warning('parse %s',str(e)[:100])
     return {'fields':r,'source':src}
-CHAT={'type':'OBJECT','properties':{'reply':{'type':'STRING'},'actions':{'type':'ARRAY','items':{'type':'OBJECT','properties':{'op':{'type':'STRING','enum':['add','remove','move']},'name':{'type':'STRING'},'date':{'type':'STRING'},'to':{'type':'STRING'}},'required':['op','name']}}},'required':['reply']}
+CHAT={'hint':'reply (tekst odpowiedzi), actions (lista obiektów op, name, date, to; pusta, gdy nic nie proponujesz). Gdy w odpowiedzi proponujesz zmianę planu, musi być też w actions.','type':'OBJECT','properties':{'reply':{'type':'STRING'},'actions':{'type':'ARRAY','items':{'type':'OBJECT','properties':{'op':{'type':'STRING','enum':['add','remove','move']},'name':{'type':'STRING'},'date':{'type':'STRING'},'to':{'type':'STRING'}},'required':['op','name']}}},'required':['reply']}
 def chat(b,attr):
     """Odpowiedz i ewentualne zmiany planu. Zmiany sprawdzamy i pokazujemy do zatwierdzenia, nie wchodza same."""
     t=b.get('trip') or {};msgs=(b.get('messages') or [])[-10:]
