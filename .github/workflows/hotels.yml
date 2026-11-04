@@ -4,7 +4,7 @@ on:
   push:
     paths: ['.github/workflows/hotels.yml','tools/build_hotels.py']
   schedule:
-    - cron: '17 * * * *'
+    - cron: '17 5 * * 1'
 permissions:
   contents: write
 concurrency:

@@ -100,13 +100,59 @@ def tick(now=None):
                     c=trips._c.execute('INSERT OR IGNORE INTO sent VALUES(?,?,?,?)',(tid,i,r['key'],time.time()));trips._c.commit()
                 if c.rowcount and _deliver(i,json.loads(sub),{'title':r['title'],'body':r['body'],'url':'./','tag':r['key']}): n+=1
     return n
+def price_now(o,d,ym,n):
+    """Najnizsza cena biletu w obie strony dla 1 osoby w miesiacu: (cena, dzien) albo None."""
+    import calendar as cal,flights,ryanair,search
+    y,m=int(ym[:4]),int(ym[5:7]);a=max(dt.date(y,m,1),dt.date.today()+dt.timedelta(days=1));b=dt.date(y,m,cal.monthrange(y,m)[1])
+    if b<a: return None
+    g=search.month_grid({'from':o,'to':d,'ym':ym,'nights':n})['grid']
+    if not g: return None
+    x=min(g,key=lambda v:v['price']);return x['price'],x['dep']
+def watch_add(device,o,d,ym,n,name,price):
+    import uuid
+    with trips._l:
+        if trips._c.execute('SELECT COUNT(*) FROM watches WHERE device=?',(device,)).fetchone()[0]>=15: raise ValueError('Możesz obserwować najwyżej 15 tras')
+        if not trips._c.execute('SELECT 1 FROM devices WHERE id=?',(device,)).fetchone(): raise ValueError('Włącz najpierw powiadomienia w Profilu')
+        i=uuid.uuid4().hex[:12];trips._c.execute('INSERT INTO watches VALUES(?,?,?,?,?,?,?,?,?,?,?)',(i,device,o,d,ym,int(n),str(name)[:60],float(price),float(price),None,time.time()));trips._c.commit()
+    return i
+def watch_list(device):
+    with trips._l: r=trips._c.execute('SELECT id,o,d,ym,n,name,first,last,day FROM watches WHERE device=? ORDER BY t DESC',(device,)).fetchall()
+    return [dict(zip(('id','from','to','ym','nights','name','first','last','day'),x)) for x in r]
+def watch_del(device,i):
+    with trips._l: trips._c.execute('DELETE FROM watches WHERE id=? AND device=?',(i,device));trips._c.commit()
+def drop(old,new):
+    """Powiadamiamy o realnym spadku: co najmniej 5% i 30 zl."""
+    return new<=old*.95 and old-new>=30
+def watch_tick(limit=30):
+    today=dt.date.today().strftime('%Y-%m')
+    with trips._l:
+        trips._c.execute('DELETE FROM watches WHERE ym<?',(today,));trips._c.commit()
+        rows=trips._c.execute('SELECT w.id,w.device,w.o,w.d,w.ym,w.n,w.name,w.last,d.sub FROM watches w JOIN devices d ON d.id=w.device LIMIT ?',(limit,)).fetchall()
+    n=0
+    for i,dev,o,d,ym,nights,name,last,sub in rows:
+        try: r=price_now(o,d,ym,nights)
+        except Exception: continue
+        if not r: continue
+        p,day=r
+        with trips._l: trips._c.execute('UPDATE watches SET last=?,day=? WHERE id=?',(p,day,i));trips._c.commit()
+        if drop(last,p):
+            _deliver(dev,json.loads(sub),{'title':f'Taniej: {name}','body':f'{o} → {d}: {round(p)} zł za osobę, wylot {int(day[8:])}.{day[5:7]}. Wcześniej {round(last)} zł.','url':'./','tag':'cena'+i});n+=1
+    return n
+def nightly():
+    import flights
+    try: flights.warm()
+    except Exception: log.exception('rozgrzewanie')
+    try: watch_tick()
+    except Exception: log.exception('ceny')
 def loop():
-    day=None
+    day=None;night=None
     while True:
         try:
             tick()
             d=dt.date.today()
             if d!=day: trips.backup();trips.prune();day=d
+            h=dt.datetime.now()
+            if h.hour==4 and night!=d: night=d;threading.Thread(target=nightly,daemon=True).start()
         except Exception: log.exception('harmonogram')
         time.sleep(60)
 def start(): threading.Thread(target=loop,daemon=True).start()

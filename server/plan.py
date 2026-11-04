@@ -87,7 +87,8 @@ def schedule_days(d,opt,hotel,prefs):
     """Plan dni. Pierwszy i ostatni dzien licza sie z godzin lotow."""
     A=ATTR.get(d['id'],[])
     style=prefs.get('pace','normal');limit={'slow':300,'normal':420,'fast':540}[style]
-    arr=t(opt['flight']['out']['legs'][-1]['arr']);dep=t(opt['flight']['back']['legs'][0]['dep'])
+    arr=t(opt['arrive']) if opt.get('manual') else t(opt['flight']['out']['legs'][-1]['arr'])
+    dep=t(opt['leave']) if opt.get('manual') else t(opt['flight']['back']['legs'][0]['dep'])
     H=(hotel['lat'],hotel['lon'])
     first=arr.date();last=dep.date();nd=(last-first).days+1
     pool=sorted(A,key=lambda x:-x['l'])[:max(8,nd*5)]
@@ -129,7 +130,7 @@ def schedule_days(d,opt,hotel,prefs):
                 if last_s: stops.append({'meal':'dinner','time':hm(max(cur,dt.datetime.combine(day,dt.time(19,0)))),'lat':last_s[-1]['lat'],'lon':last_s[-1]['lon'],'min':90})
         days.append({'date':day.isoformat(),'kind':kind,'stops':stops})
     return days
-def attach_food(days,did):
+def attach_food(days,did,likes=None):
     meals=[s for dy in days for s in dy['stops'] if s.get('meal')]
     for s in meals: s['mapSearch']='https://www.google.com/maps/search/restauracje/@%s,%s,16z'%(s['lat'],s['lon'])
     if not meals: return True
@@ -137,7 +138,7 @@ def attach_food(days,did):
     if R is None: return False
     used=set()
     for s in meals:
-        near=sorted([x for x in R if x['n'] not in used and geo.km(s['lat'],s['lon'],x['lat'],x['lon'])<.9],key=lambda x:(-x['s'],geo.km(s['lat'],s['lon'],x['lat'],x['lon'])))[:3]
+        near=sorted([x for x in R if x['n'] not in used and geo.km(s['lat'],s['lon'],x['lat'],x['lon'])<.9],key=lambda x:(not any(k in x.get('c','') for k in likes or []),-x['s'],geo.km(s['lat'],s['lon'],x['lat'],x['lon'])))[:3]
         s['options']=[{'name':x['n'],'cuisine':x.get('c',''),'hours':x.get('h'),'web':x.get('w'),'map':place(x['n'],x['lat'],x['lon'])} for x in near]
         used.update(x['n'] for x in near)
     return True
@@ -147,6 +148,68 @@ def explore(d):
     A=[{'name':x['n'][0].upper()+x['n'][1:],'kind':x['t'],'type':LABEL.get(x['t'],'Zabytek'),'min':DUR.get(x['t'],45),'lat':x['lat'],'lon':x['lon'],'img':x.get('img'),'web':x.get('web'),'info':x.get('d'),'hours':x.get('h'),'indoor':x['t'] in INDOOR,'q':x['q'],'map':place(x['n'],x['lat'],x['lon'])} for x in sorted(ATTR.get(d['id'],[]),key=lambda x:-x['l'])]
     R=[{'name':x['n'],'cuisine':x.get('c',''),'hours':x.get('h'),'web':x.get('w'),'lat':x['lat'],'lon':x['lon'],'map':place(x['n'],x['lat'],x['lon'])} for x in (restaurants(d['id']) or [])]
     return {'attractions':A,'restaurants':R}
+ROUTES={'foot':('routed-foot','foot'),'bike':('routed-bike','bike'),'car':('routed-car','driving')}
+def route(b):
+    """Prawdziwa trasa miedzy punktami dnia."""
+    a=ROUTES.get(b.get('mode'))
+    if not a: raise ValueError('Zły rodzaj trasy')
+    pts=[(round(float(x[0]),5),round(float(x[1]),5)) for x in (b.get('pts') or [])[:24]]
+    if len(pts)<2: raise ValueError('Za mało punktów')
+    c=';'.join(f'{lo},{la}' for la,lo in pts)
+    return net.fetch_json(f'https://routing.openstreetmap.de/{a[0]}/route/v1/{a[1]}/{c}?overview=full&geometries=geojson',ttl=30*86400,tries=2,timeout=20)
+def custom_dest(x):
+    """Miejsce spoza bazy, z wyszukiwarki nazw. Tylko to, co potrzebne do planu."""
+    try: la,lo=float(x['lat']),float(x['lon'])
+    except Exception: raise ValueError('Podaj miejsce')
+    if not(-90<=la<=90 and -180<=lo<=180): raise ValueError('Złe współrzędne')
+    return {'id':'x-'+geo.slug(str(x.get('name'))[:60]),'name':str(x.get('name'))[:60],'cc':str(x.get('cc') or '')[:2].upper(),'lat':la,'lon':lo,'tags':[],'air':[]}
+def car_route(lat,lon,la,lo,cfg=None):
+    """Trasa autem: odleglosc, czas i paliwo. Oplat drogowych za granica nie znamy, wiec ich nie podajemy."""
+    r=net.fetch_json(f'https://router.project-osrm.org/route/v1/driving/{lon},{lat};{lo},{la}?overview=false',ttl=30*86400,tries=2,timeout=20)['routes'][0]
+    km=round(r['distance']/1000);mins=round(r['duration']/60*1.1);cfg=cfg or {}
+    stops=max(0,(mins-1)//150)*20
+    return {'km':km,'min':mins+stops,'fuel':round(km*2*float(cfg.get('consumption') or 7.5)/100*float(cfg.get('fuelPrice') or 5.99)),'map':f'https://www.google.com/maps/dir/?api=1&origin={lat},{lon}&destination={la},{lo}&travelmode=driving'}
+def manual(b):
+    """Wyjazd bez lotu z wyszukiwarki: auto, pociag, wlasne bilety."""
+    q=b.get('dest') or {};d=geo.BYID.get(q.get('id')) or custom_dest(q)
+    a=dt.date.fromisoformat(b['from']);z=dt.date.fromisoformat(b['to'])
+    if z<=a: raise ValueError('Powrót musi być po wyjeździe')
+    if (z-a).days>60: raise ValueError('Wyjazd może mieć najwyżej 60 dni')
+    home=b.get('home') or {};mode=b.get('mode') if b.get('mode') in('car','train','plane','other') else 'other'
+    pax=b.get('pax') or {};A=max(1,int(pax.get('adults',1)));C=max(0,int(pax.get('children',0)))
+    arr=dt.datetime.combine(a,dt.time.fromisoformat(b.get('arrive') or '15:00'));lv=dt.datetime.combine(z,dt.time.fromisoformat(b.get('leave') or '10:00'))
+    H=(d['lat'],d['lon']);tl=[];rt=[];items=[];leave=None;warn=[];links_=[]
+    mname={'car':'Autem','train':'Pociągiem','plane':'Samolotem','other':'Własnym transportem'}[mode]
+    ha=home.get('lat') is not None
+    if mode=='car' and ha:
+        c=car_route(float(home['lat']),float(home['lon']),d['lat'],d['lon'],b.get('transport'))
+        leave=add(arr,-c['min']);tl.append(dict(at=leave.isoformat(timespec='minutes'),title='Wyjazd z domu',text=f"{c['km']} km, około {span(c['min'])} z postojami.",sure='est',icon='car',map=c['map']))
+        items.append({'label':f"Paliwo {c['km']*2} km",'pln':c['fuel'],'est':True})
+        if c['min']>540: warn.append(f"Trasa to około {span(c['min'])}. Rozważ nocleg po drodze.")
+        warn.append('Opłat za autostrady i winiet za granicą nie liczymy. Sprawdź je dla swojej trasy.')
+        rt.append(dict(at=lv.isoformat(timespec='minutes'),title='Wyjazd do domu',text=f"Około {span(c['min'])} z postojami.",sure='est',icon='car'))
+        rt.append(dict(at=add(lv,c['min']).isoformat(timespec='minutes'),title='W domu',text='',sure='est',icon='home'))
+        o_drive={'km':c['km'],'min':c['min']}
+    else:
+        o_drive={'km':0,'min':0}
+        if mode=='train' and ha:
+            tr=transit((float(home['lat']),float(home['lon'])),H,dt.datetime.combine(a,dt.time(7,0)))
+            links_=[{'site':'Połączenie w Google Maps','url':f"https://www.google.com/maps/dir/?api=1&origin={home['lat']},{home['lon']}&destination={d['lat']},{d['lon']}&travelmode=transit"},{'site':'PKP Intercity','url':'https://www.intercity.pl/'},{'site':'Deutsche Bahn','url':'https://www.bahn.com/pl'}]
+            if tr:
+                leave=add(arr,-tr['min']);tl.append(dict(at=leave.isoformat(timespec='minutes'),title='Wyjazd z domu',text=f"Około {span(tr['min'])}, {przes(tr['transfers'])}.",legs=tr['legs'],sample=tr['sample'],sure='est',icon='bus'))
+            else: warn.append('Nie mamy rozkładu dla tej trasy. Sprawdź połączenie w linkach.')
+        tl.append(dict(at=arr.isoformat(timespec='minutes'),title='Na miejscu',text=f"{mname}. Godzina, którą podałeś.",sure='check',icon='door'))
+        rt.append(dict(at=lv.isoformat(timespec='minutes'),title='Wyjazd do domu',text=f"{mname}. Godzina, którą podałeś.",sure='check',icon='door'))
+    c_t=float(b.get('transportCost') or 0)
+    if c_t>0: items.append({'label':'Transport','pln':round(c_t),'est':False})
+    if mode=='car': tl.append(dict(at=arr.isoformat(timespec='minutes'),title='Na miejscu',text='',sure='est',icon='door'))
+    hc=float(b.get('hotelCost') or 0);name=str(b.get('hotel') or '').strip()[:80]
+    h={'name':name or 'Nocleg do wyboru','lat':d['lat'],'lon':d['lon'],'bestTotal':round(hc) if hc>0 else None,'breakfast':False}
+    o={'id':__import__('uuid').uuid4().hex[:10],'manual':True,'mode':mode,'modeName':mname,'dest':{k:d.get(k) for k in('id','name','cc','lat','lon','tags','desc','ta')},'from':'','to':'','fromName':home.get('label','Dom'),'toName':d['name'],'dep':a.isoformat(),'ret':z.isoformat(),'nights':(z-a).days,'pax':{'adults':A,'children':C},'arrive':arr.isoformat(timespec='minutes'),'leave':lv.isoformat(timespec='minutes'),'flight':None,'links':links_,'tickets':0,'verified':True,'total':0,'access':{'mode':mode,'items':items,'total':sum(i['pln'] for i in items)},'drive':o_drive,'warnings':warn,'calendar':[]}
+    o['total']=o['access']['total']
+    if leave: o['leaveHome']=leave.isoformat(timespec='minutes')
+    p=finish(d,o,h,home,b.get('prefs') or {},mode,tl,rt,False,None)
+    return p
 def build(body):
     o=body['option'];h=body['hotel'];home=body['home'];prefs=body.get('prefs') or {}
     if not o.get('flight'): raise ValueError('Ten wariant nie ma potwierdzonych lotów. Wybierz potwierdzony.')
@@ -181,13 +244,15 @@ def build(body):
     for l in backL:
         rt.append(dict(at=l['dep'],title=f"Powrót {l['airline']} {l['no']}",text=f"{l['airlineName']}, ląduje o {l['arr'][11:]}.",sure='fact',icon='plane'))
     rt.append(dict(at=add(barr,road+40).isoformat(timespec='minutes'),title='W domu',text=(f"Około {span(road)} jazdy po odebraniu auta." if mode=='car' else f"Około {span(road)} drogi z lotniska."),sure='est',icon='home'))
+    return finish(d,o,h,home,prefs,mode,tl,rt,F['out']['legs'][0]['airline'] in search.LCC,(c0:=None))
+def finish(d,o,h,home,prefs,mode,tl,rt,bags,c0):
     days=schedule_days(d,o,h,prefs)
     wx=weather(d,o['dep'],o['ret']);sn=sun(d,o['dep'],o['ret'])
     m=int(o['dep'][5:7]);cl=(d.get('climate') or {})
     for dy in days:
         if dy['date'] in wx: dy['weather']=wx[dy['date']]
         if dy['date'][5:] in sn: dy['sun']=sn[dy['date'][5:]]
-    food=attach_food(days,d['id'])
+    food=attach_food(days,d['id'],prefs.get('food'))
     from climate import month as cm
     c=countries.info(d['cc']);hol=holidays(d['cc'],o['dep'],o['ret'])
     rate=None
@@ -195,13 +260,12 @@ def build(body):
         try: rate=net.fx(c['currency'])
         except Exception: pass
     if c: c['rate']=rate
-    bags=(F['out']['legs'][0]['airline'] in search.LCC)
     check=[{'t':f"{c['docs'] if c else 'Dokument tożsamości'} ważny przez cały wyjazd",'d':-30},{'t':'Sprawdź wymogi wjazdu w MSZ','d':-14,'url':(c or {}).get('msz')}]
     if c and c['ekuz']: check.append({'t':'Karta EKUZ','d':-14,'url':'https://www.nfz.gov.pl/dla-pacjenta/nasze-zdrowie-w-europie/'})
-    check+=[{'t':'Ubezpieczenie turystyczne','d':-14},{'t':'Rezerwacja parkingu','d':-7} if mode=='car' else {'t':'Bilety na dojazd','d':-7},{'t':'Odprawa online: zwykle 24–48 h przed lotem','d':-2},{'t':'Pobierz karty pokładowe','d':-1},{'t':'Ładowarka i powerbank w bagażu podręcznym','d':-1}]
+    check+=[{'t':'Ubezpieczenie turystyczne','d':-14},{'t':'Rezerwacja parkingu','d':-7} if mode=='car' and not o.get('manual') else {'t':'Przegląd auta: opony, płyny, winiety','d':-7} if o.get('manual') and o.get('mode')=='car' else {'t':'Bilety na dojazd','d':-7},{'t':'Odprawa online: zwykle 24–48 h przed lotem','d':-2} if not o.get('manual') or o.get('mode')=='plane' else {'t':'Sprawdź trasę i bilety na dojazd','d':-2},{'t':'Pobierz bilety i karty pokładowe','d':-1},{'t':'Ładowarka i powerbank w bagażu podręcznym','d':-1}]
     if bags: check.insert(2,{'t':'Dokup bagaż u linii. Na lotnisku jest dużo drożej','d':-7})
     if c and 'C' not in c['plugs']: check.append({'t':f"Adapter do gniazdek {c['plugs']}",'d':-3})
-    cost=[{'label':'Bilety','pln':o['tickets'],'sure':'fact' if o['verified'] else 'est'}]+[{'label':i['label'],'pln':i['pln'],'sure':'est'} for i in o['access']['items']]
+    cost=([] if o.get('manual') else [{'label':'Bilety','pln':o['tickets'],'sure':'fact' if o['verified'] else 'est'}])+[{'label':i['label'],'pln':i['pln'],'sure':'est'} for i in o['access']['items']]
     if o.get('bags'): cost.append({'label':'Bagaż (szacunek)','pln':o['bags'],'sure':'est'})
     if h.get('bestTotal'): cost.append({'label':f"Nocleg: {h['name']}",'pln':h['bestTotal'],'sure':'fact'})
     elif o.get('hotelEst'): cost.append({'label':'Nocleg','pln':o['hotelEst']['total'],'sure':'est'})

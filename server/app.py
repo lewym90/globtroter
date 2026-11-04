@@ -5,7 +5,7 @@ from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import parse_qs,urlsplit
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 import ai,flights,geo,hotels,net,plan,push,ryanair,search,store,trips
-VERSION='1.5.8'
+VERSION='1.6.0'
 _hits={}
 def limited(ip,kind,n,win):
     """Prosty limit zapytan na adres, zeby nikt nie zapchal bazy ani darmowego limitu AI."""
@@ -53,6 +53,7 @@ class H(BaseHTTPRequestHandler):
                 d=geo.BYID.get(q.get('dest',''))
                 if not d: raise ValueError('Nie znam tego miejsca')
                 return self.out(200,plan.explore(d))
+            if p=='/api/watch': return self.out(200,{'list':push.watch_list(q.get('device',''))})
             if p=='/api/trip': return self.out(200,trips.get(q.get('k','')))
             if p=='/api/push/key': return self.out(200,{'key':push.public()})
             self.out(404,{'error':'Nie ma takiej ścieżki'})
@@ -85,6 +86,12 @@ class H(BaseHTTPRequestHandler):
                 if limited(ip,'ai',80,3600): return self.out(429,{'error':'Asystent ma chwilę przerwy. Spróbuj za kilkanaście minut.'})
                 if not ai.ready(): return self.out(503,{'error':'Asystent nie ma jeszcze klucza na serwerze.'})
                 d=geo.BYID.get(b.get('dest',''));return self.out(200,ai.chat(b,plan.ATTR.get(d['id'],[]) if d else []))
+            if p=='/api/route': return self.out(200,plan.route(b))
+            if p=='/api/plan/manual': return self.out(200,plan.manual(b))
+            if p=='/api/car':
+                return self.out(200,plan.car_route(float(b['lat']),float(b['lon']),float(b['la']),float(b['lo']),b.get('transport')))
+            if p=='/api/watch/add': return self.out(200,{'id':push.watch_add(b.get('device',''),b['from'],b['to'],b['ym'],b['nights'],b.get('name',''),b['price'])})
+            if p=='/api/watch/del': push.watch_del(b.get('device',''),b.get('id',''));return self.out(200,{'ok':True})
             if p=='/api/calendar': return self.out(200,search.month_grid(b))
             if p=='/api/option': return self.out(200,search.recheck(b))
             self.out(404,{'error':'Nie ma takiej ścieżki'})

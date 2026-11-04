@@ -144,7 +144,12 @@ def run(job,q):
         def gq(fn,*x):
             if fr and stat['failed']>=2: raise flights.Unavailable('Google pominiete')
             return fn(*x)
-        if a==b: days=[a]
+        grids={};parts=spans(a,b)
+        # Krotki okres i jedno-dwa miasta: od razu kalendarze. Jedno zapytanie daje caly miesiac zamiast jednego dnia,
+        # i pokazuje kazda pare lotnisk, a nie tylko te, ktore Google wybral do rozpoznania.
+        direct=not long_ and a!=b and len(dests)<=2
+        if direct: days=[]
+        elif a==b: days=[a]
         elif long_: days=[d for d in sample_days(a,b,len(yms) if len(yms)<=6 else 6)]
         else: days=sample_days(a,b,2 if len(dests)>3 else 3)
         batches=[(o,d,day) for day in days for o in chunk(codes,7) for d in chunk(air,7)]
@@ -157,6 +162,19 @@ def run(job,q):
                     k=(f['legs'][0]['from'],f['legs'][-1]['to'])
                     if k not in best or f['price']<best[k]['price']: best[k]={'price':f['price'],'stops':f['stops'],'day':day.isoformat()}
             except flights.Unavailable: stat['failed']+=1
+        if direct:
+            pairs=[(c,x) for c in sorted(codes,key=lambda c:drive[c]['km']) for d in dests for x in d['air'][:2]][:12]
+            for i,(c,x) in enumerate(pairs):
+                step(f'Kalendarz cen {c} → {x}',.18+.42*i/len(pairs))
+                for p in parts:
+                    try:
+                        r,_=gq(flights.calendar,c,x,p[0].isoformat(),p[1].isoformat(),nights[0],1,0,st)
+                        g=[y for y in r if ok(y)];stat['ok']+=1
+                        grids.setdefault((c,x,nights[0]),[]).extend(g)
+                        if g:
+                            top=min(g,key=lambda y:y['price'])
+                            if (c,x) not in best or top['price']/2<best[(c,x)]['price']: best[(c,x)]={'price':top['price']/2,'stops':None,'day':top['dep']}
+                    except flights.Unavailable: stat['failed']+=1
         if not best:
             if stat['failed']: raise flights.Unavailable('Google Flights nie odpowiada')
             job.update(state='done',result={'options':[],'notes':notes,'coverage':stat,'empty':True});return
@@ -173,7 +191,6 @@ def run(job,q):
             for k in ks+near:
                 if k not in chosen: chosen.append(k)
         chosen=sorted(chosen,key=est)[:(10 if len(dests)>1 else 8) if not long_ else (6 if len(dests)>1 else 4)]
-        grids={};parts=spans(a,b)
         jobs=[]
         for (o,dd) in chosen:
             for n in nights:
@@ -183,10 +200,11 @@ def run(job,q):
                     # Ryanair zna juz caly okres, Google sprawdza tylko najtansze fragmenty pod katem innych linii
                     use=sorted(parts,key=lambda p:min([x['price'] for x in g if p[0].isoformat()<=x['dep']<=p[1].isoformat()] or [10**9]))[:1]
                 else: use=parts if n==nights[0] else parts[:0]
+                if (o,dd,n) in grids: continue
                 jobs+=[(o,dd,n,p) for p in use]
         jobs=jobs[:36]
         for i,(o,dd,n,p) in enumerate(jobs):
-            step(f"Kalendarz cen {o} → {dd}",.48+.27*i/len(jobs))
+            step(f"Kalendarz cen {o} → {dd}",.6+.15*i/len(jobs))
             try:
                 r,_=gq(flights.calendar,o,dd,p[0].isoformat(),p[0].isoformat() if a==b else p[1].isoformat(),n,1,0,st)
                 grids.setdefault((o,dd,n),[]).extend([x for x in r if ok(x)]);stat['ok']+=1

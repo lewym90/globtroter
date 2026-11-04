@@ -184,6 +184,17 @@ class CompareReal(unittest.TestCase):
         o={'id':'a','dest':{'id':'bcn'},'from':'KRK','nights':7,'drive':{'km':300,'min':200},'tickets':800,'access':{'total':200},'bags':0,'total':1000,'dep':'2027-05-11','ret':'2027-05-18','verified':True,'hotelEst':{'total':2000},'totalWithHotel':3000}
         search.compare_airports([o],{('KTW','BCN'):{'price':10}},{'KTW':{'km':100,'min':60}},'public',{},2,['KTW'],51,22,{},False,{('KTW','bcn','')})
         self.assertEqual(next(r for r in o['compare'] if r['from']=='KTW')['state'],'none')
+class Manual(unittest.TestCase):
+    def test_drop_rule(self):
+        import push
+        self.assertTrue(push.drop(500,450));self.assertFalse(push.drop(500,480));self.assertFalse(push.drop(100,80))
+    def test_custom_dest(self):
+        import plan
+        d=plan.custom_dest({'name':'Kołobrzeg','cc':'pl','lat':54.17,'lon':15.57});self.assertEqual(d['id'],'x-kolobrzeg');self.assertEqual(d['cc'],'PL')
+        with self.assertRaises(ValueError): plan.custom_dest({'name':'x'})
+    def test_booking_name_must_match(self):
+        import links
+        self.assertEqual(links._key('Hotel Arts Barcelona'),links._key('Arts Barcelona'));self.assertNotEqual(links._key('Hotel Arts'),links._key('Hotel Astoria'))
 class Periods(unittest.TestCase):
     def test_month_is_strict(self):
         y=dt.date.today().year+1;w={'mode':'month','year':y,'month':5,'nights':[7]};a,b,n,m=search.window(w);lim=search.last_return(w,b)

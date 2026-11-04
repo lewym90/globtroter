@@ -172,5 +172,11 @@ def search(did,ci,co,A,C,budget=None,pref='balanced',minrating=0,kind='all',brea
     if pref!='cheap': out=[h for h in out if not re.search(r'hostel|dorm|backpack',h['name'],re.I) and (h.get('stars') or 2)>=2] or out
     if breakfast: out=[h for h in out if h['breakfast']] or out
     out.sort(key=lambda h:(h['overBudget'],-h['score']))
+    def exact(h):
+        i=links.booking_id(h['name'],d['en'])
+        if i:
+            for p in h['prices']:
+                if p.get('site')=='Booking.com': p['url']=links.booking_url(i,ci,co,A,C,R);p['exact']=True
+    with ThreadPoolExecutor(4) as ex: list(ex.map(exact,out[:12]))
     return {'hotels':out,'nights':(x or g)['nights'],'rooms':R,'checkedAt':time.time(),'sources':[n for n,v in (('Xotelo',x),('Google Hotels',g)) if v],
       'note':'Cena za pokój. Lokalny podatek turystyczny może dojść na miejscu. Śniadanie sprawdź przy rezerwacji, bo zależy też od wybranej oferty.'}

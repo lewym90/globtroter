@@ -81,11 +81,11 @@ def oneway(origins,dests,day,adults=1,children=0,stops=None):
     out=[g for g in map(_flight,r) if valid_flight(g,origins,dests,day)]
     store.put(key,out,6*3600)
     return out,0
-def calendar(o,d,start,end,nights,adults=1,children=0,stops=None):
+def calendar(o,d,start,end,nights,adults=1,children=0,stops=None,fresh=False):
     """Kalendarz: najtanszy lot w obie strony na kazda date wylotu (max 60 dni)."""
     key=f'grid:{o}:{d}:{start}:{end}:{nights}:{adults}:{children}:{stops}'
     v,age=store.get(key)
-    if v is not None: return v,age
+    if v is not None and not fresh: return v,age
     SD,SF,m=_fli()
     a=dt.date.fromisoformat(start);ret=(a+dt.timedelta(days=nights)).isoformat()
     kw={'stops':m.MaxStops.NON_STOP} if stops==0 else {}
@@ -100,8 +100,22 @@ def calendar(o,d,start,end,nights,adults=1,children=0,stops=None):
         day=x.date[0].date().isoformat();back=x.date[1].date().isoformat() if len(x.date)>1 else None
         if x.price and x.price>0 and back: out.append({'dep':day,'ret':back,'price':x.price})
     out=sorted(out,key=lambda g:g['dep'])
-    store.put(key,out,6*3600)
+    store.put(key,out,20*3600)
+    if not fresh: remember([o,d,start,end,nights,adults,children,stops])
     return out,0
+def remember(q):
+    L=store.get('warmlist')[0] or []
+    L=[x for x in L if x[0]!=q][-150:]+[[q,time.time()]]
+    store.put('warmlist',L,30*86400)
+def warm(limit=40):
+    """Noca odswieza kalendarze szukane w ostatnich dwoch tygodniach, zeby rano wyniki byly od razu."""
+    L=[x for x in (store.get('warmlist')[0] or []) if time.time()-x[1]<14*86400 and x[0][3]>=dt.date.today().isoformat()]
+    n=0
+    for q,_ in L[::-1][:limit]:
+        try: calendar(*q,fresh=True);n+=1
+        except Unavailable: break
+        except Exception: continue
+    return n
 def roundtrip(o,d,dep,ret,adults=1,children=0,top=5,stops=None):
     """Konkretne loty tam i z powrotem: to jest potwierdzenie ceny."""
     key=f'rt:{o}:{d}:{dep}:{ret}:{adults}:{children}:{top}:{stops}'

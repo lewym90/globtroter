@@ -51,3 +51,24 @@ bash <(curl -fsSL https://raw.githubusercontent.com/lewym90/globtroter/main/depl
 python3 -m unittest discover tests      # logika, bez sieci
 python3 tests/flow.py Barcelona         # pełny przejazd na widoku iPhone'a
 ```
+
+
+## Serwer i dane
+
+Wyjazdy wspólne, wydatki i powiadomienia są w `/opt/globtroter/data-run/trips.db`. Klucze powiadomień w `data-run/vapid.pem`. Klucz Gemini w `/etc/globtroter.env`, czytelny tylko dla roota. Pamięć cen to `cache.db`, można ją usunąć bez szkody.
+
+Serwer robi kopię bazy raz dziennie w `data-run/backup/`, sprawdza ją i trzyma 7 ostatnich. To ten sam dysk, więc przy awarii całego serwera pomaga kopia z telefonu: Profil, Pobierz kopię.
+
+### Przywracanie
+
+    bash <(curl -fsSL https://raw.githubusercontent.com/lewym90/globtroter/main/deploy/restore.sh)
+
+Skrypt zatrzymuje usługę, zachowuje obecną bazę, wstawia najnowszą dobrą kopię i uruchamia usługę. Inną kopię wskażesz argumentem. Nowy serwer: najpierw `deploy/install.sh`, potem przenieś `data-run` i `/etc/globtroter.env`. Bez `vapid.pem` trzeba od nowa włączyć powiadomienia na telefonach.
+
+## Nocne zadania
+
+O 4:00 serwer odświeża kalendarze cen szukane w ostatnich dwóch tygodniach (do 40 zapytań) i sprawdza obserwowane ceny (do 30 tras).
+
+## Źródła, które mogą zniknąć
+
+Ceny Ryanaira, Google Flights, Google Hotels i Xotelo to nieoficjalne dostępy. Gdy któreś padnie, reszta działa, a aplikacja mówi, czego nie sprawdziła. Lista hoteli Xotelo od listopada 2026 nie odpowiada, więc 57 miast bez zapisanej listy korzysta tylko z Google.
