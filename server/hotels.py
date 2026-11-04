@@ -43,8 +43,9 @@ def estimate(d,ci,co,A,C):
         L=[h for h in _list(d) if (h.get('review_summary') or {}).get('rating',0)>=4][:5]
         if not L: return _est_google(d,ci,co,A,C)
         eur=net.fx('EUR');vals=[]
-        for h in L:
-            r=_safe(h['key'],ci,co) or []
+        # Rownolegle: kolejka w _rates pilnuje odstepow, a nie czekamy na kazdy hotel po kolei
+        with ThreadPoolExecutor(5) as ex: res=list(ex.map(lambda h:_safe(h['key'],ci,co) or [],L))
+        for r in res:
             p=[x['rate'] for x in r if x.get('rate') and x['rate']>0]
             if p: vals.append(min(p)*eur)
         if len(vals)<2: return _est_google(d,ci,co,A,C)
