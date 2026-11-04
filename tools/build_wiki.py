@@ -9,7 +9,7 @@ def get(u):
         except Exception as e: print(str(e)[:70],flush=True);time.sleep(5*(i+1))
     return {}
 def main():
-    A=json.load(open(P,encoding='utf8'));items=[x for v in A.values() for x in v if 'd' not in x]
+    A=json.load(open(P,encoding='utf8'));items=[x for v in A.values() for x in v if 'd' not in x and str(x['q']).startswith('Q')]
     t0=time.time();titles={}
     qs=sorted({x['q'] for x in items})
     for i in range(0,len(qs),50):

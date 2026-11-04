@@ -1,0 +1,24 @@
+name: Atrakcje z Wikivoyage
+on:
+  workflow_dispatch:
+  push:
+    paths: ['tools/build_voyage.py','.github/workflows/voyage.yml']
+concurrency:
+  group: attr
+  cancel-in-progress: false
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/build_voyage.py
+      - run: |
+          git config user.name 'globtroter-bot'
+          git config user.email 'globtroter-bot@users.noreply.github.com'
+          git add data/attractions.json
+          git diff --cached --quiet && exit 0
+          git commit -qm 'Atrakcje z Wikivoyage'
+          for i in 1 2 3 4; do git pull -q --rebase origin main && git push -q && break; sleep 8; done

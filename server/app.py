@@ -5,7 +5,7 @@ from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import parse_qs,urlsplit
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 import ai,flights,geo,hotels,net,plan,push,ryanair,search,store,trips
-VERSION='1.7.0'
+VERSION='1.8.0'
 _hits={}
 def limited(ip,kind,n,win):
     """Prosty limit zapytan na adres, zeby nikt nie zapchal bazy ani darmowego limitu AI."""
@@ -87,6 +87,7 @@ class H(BaseHTTPRequestHandler):
                 if limited(ip,'ai',80,3600): return self.out(429,{'error':'Asystent ma chwilę przerwy. Spróbuj za kilkanaście minut.'})
                 if not ai.ready(): return self.out(503,{'error':'Asystent nie ma jeszcze klucza na serwerze.'})
                 d=geo.BYID.get(b.get('dest',''));return self.out(200,ai.chat(b,plan.ATTR.get(d['id'],[]) if d else []))
+            if p=='/api/geocode': return self.out(200,{'hit':plan.geocode(b.get('q'),b.get('near'))})
             if p=='/api/route': return self.out(200,plan.route(b))
             if p=='/api/plan/manual': return self.out(200,plan.manual(b))
             if p=='/api/car':

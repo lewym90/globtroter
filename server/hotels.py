@@ -154,7 +154,7 @@ def offers(key,ci,co,rooms=1):
     dt.date.fromisoformat(ci);dt.date.fromisoformat(co);r=ghotels.offers(key,ci,co)
     if r is None: raise net.SourceDown('oferty')
     R=max(1,min(5,int(rooms)))
-    return {'offers':[{**x,'total':x['total']*R} for x in r],'at':time.time()}
+    return {'offers':[{**x,'url':x['url'].replace('searchresults.en.html','searchresults.pl.html').replace('lang=en','lang=pl'),'total':x['total']*R} for x in r],'at':time.time()}
 def search(did,ci,co,A,C,budget=None,pref='balanced',minrating=0,kind='all',breakfast=False):
     """Dwa niezalezne zrodla naraz, wynik laczony bez duplikatow."""
     d=geo.BYID.get(did)
@@ -186,5 +186,7 @@ def search(did,ci,co,A,C,budget=None,pref='balanced',minrating=0,kind='all',brea
     out.sort(key=lambda h:(h['overBudget'],-h['score']))
     for h in out:
         if str(h.get('key','')).startswith('Ch'): h['gkey']=h['key']
+        h.pop('compare',None)
+        if h.get('gkey'): h['gpage']=f"https://www.google.com/travel/hotels/entity/{h['gkey']}/prices?ts={ghotels.stay_token(ci,co)}&hl=pl&gl=pl&curr=PLN"
     return {'hotels':out,'nights':(x or g)['nights'],'rooms':R,'checkedAt':time.time(),'sources':[n for n,v in (('Xotelo',x),('Google Hotels',g)) if v],
       'note':'Ceny za pokój dla dwóch osób. Przy zielonym znaczniku to oferty serwisów z podatkami i opłatami, a link prowadzi do tego hotelu na Twoje daty. Podatek miejski płatny na miejscu może dojść osobno. Ostateczną kwotę, rodzaj pokoju i warunki odwołania potwierdzasz w serwisie.'}

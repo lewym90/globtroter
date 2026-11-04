@@ -107,7 +107,7 @@ export function initLive(x) {
     ensureRemote.busy = true;
     try {
       const r = await api('/api/trip/new', { plan: scrub(p), s: l.s });
-      l.k = r.edit; l.view = r.view; l.rev = r.rev; l.dirty = emptyS(); savePlan(p); linkPush();
+      l.k = r.edit; l.view = r.view; l.rev = r.rev; savePlan(p); linkPush(); if (Object.values(l.dirty).some((v) => Object.keys(v).length)) syncNow(p).catch(() => {});
       return l.k;
     } finally { ensureRemote.busy = false; }
   }
@@ -208,7 +208,7 @@ export function initLive(x) {
       const A = D.attractions.filter((a) => (st.g === 'all' || (st.g === 'indoor' ? a.indoor : GROUPS.find((g) => g[0] === st.g)[2].includes(a.kind))) && (!q || a.name.toLowerCase().includes(q))).slice(0, 40);
       const R = D.restaurants.filter((r) => (!st.c || r.cuisine.includes(st.c)) && (!q || r.name.toLowerCase().includes(q))).slice(0, 40);
       const canAdd = canEdit();
-      const list = st.tab === 'a' ? (A.map((a, i) => `<div class="acard">${a.img ? IMG(commons(a.img, 700), a.name) : ''}<h3>${esc(a.name)}</h3><p class="mute">${esc(a.type)}, około ${dur(a.min)}${a.indoor ? ', pod dachem' : ''}</p>${a.info ? `<p>${esc(a.info)}</p>` : ''}${a.hours ? `<p class="mute">Godziny wg OpenStreetMap: ${esc(a.hours)}. Sprawdź przed wyjściem.</p>` : ''}<div class="linkset">${a.web ? `<a class="btn line small" href="${url(a.web)}" target="_blank" rel="noopener">Strona</a>` : ''}<a class="btn line small" href="${url(a.map)}" target="_blank" rel="noopener">Mapa</a>${canAdd ? `<button class="btn small" data-aa="${i}">Dodaj do dnia ${st.day + 1}</button>` : ''}</div></div>`).join('') || '<p class="mute">Nic nie pasuje do tego filtra.</p>')
+      const list = st.tab === 'a' ? (A.map((a, i) => `<div class="acard">${a.img ? IMG(commons(a.img, 700), a.name) : ''}<h3>${esc(a.name)}</h3><p class="mute">${esc(a.type)}, około ${dur(a.min)}${a.indoor ? ', pod dachem' : ''}</p>${a.info ? `<p>${esc(a.info)}</p>${a.infoEn ? '<p class="mute" style="font-size:12px">Opis po angielsku, Wikivoyage</p>' : ''}` : ''}${a.hours ? `<p class="mute">Godziny wg OpenStreetMap: ${esc(a.hours)}. Sprawdź przed wyjściem.</p>` : ''}<div class="linkset">${a.web ? `<a class="btn line small" href="${url(a.web)}" target="_blank" rel="noopener">Strona</a>` : ''}<a class="btn line small" href="${url(a.map)}" target="_blank" rel="noopener">Mapa</a>${canAdd ? `<button class="btn small" data-aa="${i}">Dodaj do dnia ${st.day + 1}</button>` : ''}</div></div>`).join('') || '<p class="mute">Nic nie pasuje do tego filtra.</p>')
         : (R.map((r, i) => `<div class="acard"><h3>${esc(r.name)}</h3><p class="mute">${esc(r.cuisine || 'kuchnia nieopisana')}</p>${r.hours ? `<p class="mute">Godziny wg OpenStreetMap: ${esc(r.hours)}</p>` : ''}<div class="linkset"><a class="btn line small" href="${url(r.map)}" target="_blank" rel="noopener">Mapa i oceny</a>${r.web ? `<a class="btn line small" href="${url(r.web)}" target="_blank" rel="noopener">Strona</a>` : ''}${canAdd ? `<button class="btn small" data-ar="${i}">Dodaj do dnia ${st.day + 1}</button>` : ''}</div></div>`).join('') || `<p class="mute">${D.restaurants.length ? 'Nic nie pasuje do tego filtra.' : 'Dla tego miasta nie mamy jeszcze listy restauracji.'}</p>`);
       $('#exl').innerHTML = list;
       $('#exf').innerHTML = st.tab === 'a' ? GROUPS.filter((g) => g[0] === 'all' || g[0] === 'indoor' || D.attractions.some((a) => g[2].includes(a.kind))).map((g) => `<button class="chip" data-g="${g[0]}" aria-pressed="${st.g === g[0]}">${g[1]}</button>`).join('') : [['', 'Każda kuchnia'], ...cuis.map((c) => [c, c])].map(([k, l]) => `<button class="chip" data-c="${esc(k)}" aria-pressed="${st.c === k}">${esc(l)}</button>`).join('');
@@ -355,7 +355,7 @@ export function initLive(x) {
   }
   function tripContext(p) {
     const l = L(p); const E = alive(l.s.exp); const o = p.option;
-    return { miejsce: p.dest.name, wylot: o.dep, powrot: o.ret, noce: o.nights, osoby: people(p), lotnisko: o.from, hotel: p.hotel?.name, sniadanie: p.hotel?.breakfast, kosztPlanowany: p.total, budzet: l.s.meta.limit?.v ?? p.total, wydane: E.reduce((n, e) => n + e.pln, 0), klimat: p.climate, days: p.days.map((d) => ({ date: d.date, pogoda: d.weather, punkty: d.stops.map((s) => (s.meal ? `${s.meal}: ${s.options?.[0]?.name || 'bez wybranego lokalu'}` : `${s.time} ${s.name}`)) })) };
+    return { miejsce: p.dest.name, wylot: o.dep, powrot: o.ret, noce: o.nights, osoby: people(p), lotnisko: o.from, hotel: p.hotel?.name, sniadanie: p.hotel?.breakfast, kosztPlanowany: p.total, budzet: l.s.meta.limit?.v ?? p.total, wydane: E.reduce((n, e) => n + e.pln, 0), klimat: p.climate, days: p.days.map((d) => ({ date: d.date, pogoda: d.weather, nazwy: d.stops.filter((s) => s.name).map((s) => s.name), punkty: d.stops.map((s) => (s.meal ? `${s.meal}: ${s.options?.[0]?.name || 'bez wybranego lokalu'}` : `${s.time} ${s.name}`)) })) };
   }
   function viewAI() {
     const p = S.plan; S.ai ||= {}; const M = (S.ai[p.option.id] ||= []);
@@ -379,7 +379,7 @@ export function initLive(x) {
       const touched = new Set();
       for (const a of acts) {
         const d = p.days.find((y) => y.date === a.date); if (!d) continue; const di = p.days.indexOf(d);
-        const low = (a.name || '').toLowerCase(); const idx = d.stops.findIndex((s) => s.name?.toLowerCase() === low);
+        const low = (a.name || '').replace(/^\d\d:\d\d\s+/, '').toLowerCase(); const idx = d.stops.findIndex((s) => s.name?.toLowerCase() === low);
         if (a.op === 'add') { const f = D.attractions.find((y) => y.name.toLowerCase() === low); if (f) { d.stops.push(stopOf(f)); touched.add(di); } }
         if (a.op === 'remove' && idx >= 0) { d.stops.splice(idx, 1); touched.add(di); }
         if (a.op === 'move' && idx >= 0) { const t = p.days.find((y) => y.date === a.to); if (t) { t.stops.push(d.stops.splice(idx, 1)[0]); touched.add(di); touched.add(p.days.indexOf(t)); } }
@@ -442,6 +442,41 @@ export function initLive(x) {
     };
     draw();
   }
+  /* ---------- Wlasna rezerwacja ---------- */
+  function viewOwnHotel(o, done, back) {
+    const f = S.ownH ||= { name: '', address: '', ci: o.dep, co: o.ret, checkin: '15:00', breakfast: false, cost: '', code: '', phone: '', hit: null };
+    app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Własna rezerwacja</h2></div><section class="page"><div class="wcard form2">
+      <p class="mute">Wpisz nocleg zarezerwowany gdziekolwiek. Plan ułożymy tak samo jak dla hotelu z listy, dojazdy policzymy od tego adresu.</p>
+      <label class="lab" for="hn">Nazwa obiektu</label><input id="hn" maxlength="100" value="${esc(f.name)}">
+      <label class="lab" for="ha">Adres, z ulicą i miastem</label><input id="ha" maxlength="160" value="${esc(f.address)}" placeholder="np. Via Carulli 62, Bari">
+      <button class="btn line small" id="hg">Sprawdź adres na mapie</button><p class="hint" id="hgr">${f.hit ? `Znaleziono: ${esc(f.hit.label)}` : ''}</p>
+      <div class="grid2"><div><label class="lab" for="hci">Zameldowanie</label><input id="hci" type="date" value="${esc(f.ci)}"></div><div><label class="lab" for="hco">Wymeldowanie</label><input id="hco" type="date" value="${esc(f.co)}"></div></div>
+      <label class="lab" for="hct">Zameldowanie od godziny</label><input id="hct" type="time" value="${esc(f.checkin)}">
+      <label class="switch">Śniadanie w cenie<input type="checkbox" id="hb" ${f.breakfast ? 'checked' : ''}></label>
+      <label class="lab" for="hp">Cena za cały pobyt (zł)</label><input id="hp" type="number" inputmode="decimal" value="${esc(f.cost)}">
+      <label class="lab" for="hc">Numer rezerwacji</label><input id="hc" maxlength="60" value="${esc(f.code)}">
+      <label class="lab" for="ht">Telefon do obiektu</label><input id="ht" type="tel" maxlength="30" value="${esc(f.phone)}">
+      <button class="btn" id="hok">Ułóż plan z tym noclegiem</button></div></section>`;
+    const g = () => { f.name = $('#hn').value.trim(); f.address = $('#ha').value.trim(); f.ci = $('#hci').value; f.co = $('#hco').value; f.checkin = $('#hct').value; f.breakfast = $('#hb').checked; f.cost = $('#hp').value; f.code = $('#hc').value.trim(); f.phone = $('#ht').value.trim(); };
+    const near = [o.dest.lat, o.dest.lon];
+    const find = async () => { g(); const r = await api('/api/geocode', { q: f.address, near }); f.hit = r.hit; $('#hgr').textContent = r.hit ? `Znaleziono: ${r.hit.label}` : 'Nie znalazłem tego adresu przy tym celu. Wpisz ulicę i miasto, np. po angielsku lub włosku.'; return r.hit; };
+    $('#b').onclick = () => { S.ownH = null; back(); };
+    $('#ha').oninput = () => { f.hit = null; };
+    $('#hg').onclick = () => find().catch((e) => toast(e.message));
+    $('#hok').onclick = async () => {
+      g(); if (!f.name) return toast('Wpisz nazwę obiektu.');
+      if (!f.address) return toast('Wpisz adres.');
+      if (!f.ci || !f.co || f.co <= f.ci) return toast('Sprawdź daty.');
+      let hit = f.hit; try { hit ||= await find(); } catch (e) { return toast(e.message); }
+      if (!hit) return toast('Popraw adres, żeby dało się policzyć dojazdy.');
+      const hotel = { key: 'own', own: true, name: f.name, address: f.address, lat: hit.lat, lon: hit.lon, ci: f.ci, co: f.co, checkin: f.checkin, breakfast: f.breakfast, bestTotal: Math.round(+f.cost) || 0, code: f.code, phone: f.phone, prices: [] };
+      S.ownH = null; S.pendingVault = hotel; done(hotel);
+    };
+  }
+  function ownToVault(p) {
+    const h = S.pendingVault; if (!h) return; S.pendingVault = null;
+    put('vault', 'own-hotel', { id: 'own-hotel', kind: 'res', title: h.name, code: h.code || h.phone, text: [h.address, h.phone, `${h.ci} – ${h.co}`].filter(Boolean).join('\n') }, null, p);
+  }
   /* ---------- Kopia i ceny ---------- */
   function exportAll() {
     const b = new Blob([JSON.stringify({ app: 'globtroter', t: Date.now(), trips: load('trips', []), fav: load('fav', []), prefs: S.q }, null, 1)], { type: 'application/json' });
@@ -465,5 +500,5 @@ export function initLive(x) {
       $$('[data-wd2]', el).forEach((b) => { b.onclick = async () => { await api('/api/watch/del', { device: device(), id: b.dataset.wd2 }); watchDraw(el); }; });
     } catch { el.innerHTML = ''; }
   }
-  return { refreshWeather, viewNew, exportAll, importAll, watchAdd, watchDraw, exploreData: explore, L, canEdit, applyDays, savePlan, syncNow, openLink, viewShare, editHtml, bindDay, viewExplore, budgetHtml, bindBudget, docsHtml, bindDocs, put, pushHtml, bindPush, linkPush, askSentence, viewAI, ensureRemote };
+  return { viewOwnHotel, ownToVault, refreshWeather, viewNew, exportAll, importAll, watchAdd, watchDraw, exploreData: explore, L, canEdit, applyDays, savePlan, syncNow, openLink, viewShare, editHtml, bindDay, viewExplore, budgetHtml, bindBudget, docsHtml, bindDocs, put, pushHtml, bindPush, linkPush, askSentence, viewAI, ensureRemote };
 }

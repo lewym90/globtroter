@@ -8,7 +8,7 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: hours
+  group: attr
   cancel-in-progress: false
 jobs:
   build:

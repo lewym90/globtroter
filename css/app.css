@@ -478,3 +478,10 @@ details.add summary{font-weight:700;cursor:pointer;margin:0}
 .pvr i.re{background:var(--gold1)}
 .pvr em{position:relative;font-style:normal;font-size:13px;line-height:24px;padding-left:8px;color:var(--ink)}
 .dmap.full{height:calc(100dvh - 190px)}
+
+.form2 .switch input{width:52px;min-height:0;height:30px;flex:none;padding:0;border:0}
+.page{overflow-x:clip}
+.page>*{min-width:0}
+.form2{grid-template-columns:minmax(0,1fr)}
+.form2 .grid2{grid-template-columns:minmax(0,1fr) minmax(0,1fr);display:grid;gap:10px}
+.form2 input[type=date],.form2 input[type=time]{min-width:0;max-width:100%}

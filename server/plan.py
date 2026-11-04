@@ -45,13 +45,19 @@ def weather(d,ci,co):
         except Exception: pass
     return out
 def sun(d,ci,co):
-    """Wschod i zachod. Dane z tych samych dat rok wczesniej, roznica to najwyzej minuty."""
+    """Wschod i zachod. Dane z tych samych dat rok wczesniej, roznica to najwyzej minuty.
+    Zrodlo podaje czas wedlug dzisiejszego przesuniecia strefy, wiec przeliczamy je na czas z danego dnia."""
+    from zoneinfo import ZoneInfo
     try:
         a=dt.date.fromisoformat(ci);b=dt.date.fromisoformat(co);ago=max(1,a.year-dt.date.today().year+1)
         f=lambda x:x.replace(year=x.year-ago,day=28 if (x.month,x.day)==(2,29) else x.day)
-        r=net.fetch_json(f"https://archive-api.open-meteo.com/v1/archive?latitude={d['lat']}&longitude={d['lon']}&start_date={f(a)}&end_date={f(b)}&daily=sunrise,sunset&timezone=auto",ttl=30*86400,tries=2,timeout=10)['daily']
-        return {x[5:]:(r['sunrise'][i][11:16],r['sunset'][i][11:16]) for i,x in enumerate(r['time'])}
+        j=net.fetch_json(f"https://archive-api.open-meteo.com/v1/archive?latitude={d['lat']}&longitude={d['lon']}&start_date={f(a)}&end_date={f(b)}&daily=sunrise,sunset&timezone=GMT",ttl=30*86400,tries=2,timeout=10)
+        r=j['daily'];z=ZoneInfo(timezone_of(d))
+        loc=lambda s:dt.datetime.fromisoformat(s).replace(tzinfo=dt.timezone.utc).astimezone(z).strftime('%H:%M')
+        return {x[5:]:(loc(r['sunrise'][i]),loc(r['sunset'][i])) for i,x in enumerate(r['time'])}
     except Exception: return {}
+def timezone_of(d):
+    return net.fetch_json(f"https://api.open-meteo.com/v1/forecast?latitude={d['lat']}&longitude={d['lon']}&timezone=auto&forecast_days=1",ttl=90*86400,tries=2,timeout=10)['timezone']
 def holidays(cc,a,b):
     res=[]
     for y in sorted({a[:4],b[:4]}):
@@ -120,7 +126,7 @@ def schedule_days(d,opt,hotel,prefs):
                 cur=add(cur,walk)
                 if not any(s.get('meal') for s in stops) and cur.hour>=13 and avail>240:
                     stops.append({'meal':'lunch','time':hm(cur),'lat':x['lat'],'lon':x['lon'],'min':60});cur=add(cur,60)
-                stops.append({'time':hm(cur),'name':x['n'][0].upper()+x['n'][1:],'type':LABEL.get(x['t'],'Zabytek'),'kind':x['t'],'min':need,'lat':x['lat'],'lon':x['lon'],'info':x.get('d'),'img':x.get('img'),'web':x.get('web'),'map':place(x['n'],x['lat'],x['lon']),'walk':walk,'q':x['q']})
+                stops.append({'time':hm(cur),'name':x['n'][0].upper()+x['n'][1:],'type':LABEL.get(x['t'],'Zabytek'),'kind':x['t'],'min':need,'lat':x['lat'],'lon':x['lon'],'info':x.get('d') or x.get('de'),'infoEn':not x.get('d') and bool(x.get('de')),'img':x.get('img'),'web':x.get('web'),'map':place(x['n'],x['lat'],x['lon']),'walk':walk,'q':x['q']})
                 used.add(x['q']);cur=add(cur,need);mins+=need+walk
             if stops and avail>240 and not any(s.get('meal') for s in stops):
                 ls=[s for s in stops if not s.get('meal')][-1]
@@ -145,7 +151,7 @@ def attach_food(days,did,likes=None):
 INDOOR={'museum','church','palace','theatre'}
 def explore(d):
     """Wszystko, co mamy o miejscu, do przegladania i dodawania do planu."""
-    A=[{'name':x['n'][0].upper()+x['n'][1:],'kind':x['t'],'type':LABEL.get(x['t'],'Zabytek'),'min':DUR.get(x['t'],45),'lat':x['lat'],'lon':x['lon'],'img':x.get('img'),'web':x.get('web'),'info':x.get('d'),'hours':x.get('h'),'indoor':x['t'] in INDOOR,'q':x['q'],'map':place(x['n'],x['lat'],x['lon'])} for x in sorted(ATTR.get(d['id'],[]),key=lambda x:-x['l'])]
+    A=[{'name':x['n'][0].upper()+x['n'][1:],'kind':x['t'],'type':LABEL.get(x['t'],'Zabytek'),'min':DUR.get(x['t'],45),'lat':x['lat'],'lon':x['lon'],'img':x.get('img'),'web':x.get('web'),'info':x.get('d') or x.get('de'),'infoEn':not x.get('d') and bool(x.get('de')),'hours':x.get('h'),'indoor':x['t'] in INDOOR,'q':x['q'],'map':place(x['n'],x['lat'],x['lon'])} for x in sorted(ATTR.get(d['id'],[]),key=lambda x:-x['l'])]
     R=[{'name':x['n'],'cuisine':x.get('c',''),'hours':x.get('h'),'web':x.get('w'),'lat':x['lat'],'lon':x['lon'],'map':place(x['n'],x['lat'],x['lon'])} for x in (restaurants(d['id']) or [])]
     return {'attractions':A,'restaurants':R}
 ROUTES={'foot':('routed-foot','foot'),'bike':('routed-bike','bike'),'car':('routed-car','driving')}
@@ -157,6 +163,15 @@ def route(b):
     if len(pts)<2: raise ValueError('Za mało punktów')
     c=';'.join(f'{lo},{la}' for la,lo in pts)
     return net.fetch_json(f'https://routing.openstreetmap.de/{a[0]}/route/v1/{a[1]}/{c}?overview=full&geometries=geojson',ttl=30*86400,tries=2,timeout=20)
+def geocode(q,near=None):
+    """Adres noclegu na wspolrzedne. None, gdy nie znaleziono: wtedy pytamy o inny zapis, zamiast zgadywac."""
+    from urllib.parse import quote
+    if not str(q).strip(): raise ValueError('Podaj adres')
+    r=net.fetch_json('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=3&q='+quote(str(q)[:160]),ttl=30*86400,tries=2,timeout=10,headers={'User-Agent':'Globtroter/1.5 (non-commercial travel planner)'})
+    for x in r:
+        la,lo=float(x['lat']),float(x['lon'])
+        if not near or geo.km(near[0],near[1],la,lo)<200: return {'lat':la,'lon':lo,'label':x.get('display_name','')[:140]}
+    return None
 def custom_dest(x):
     """Miejsce spoza bazy, z wyszukiwarki nazw. Tylko to, co potrzebne do planu."""
     try: la,lo=float(x['lat']),float(x['lon'])

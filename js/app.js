@@ -3,7 +3,7 @@ import { flapRow } from './flap.js';
 import { initLive, swapDay } from './live.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '2.7.0';
+const VERSION = '2.8.1';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -720,7 +720,8 @@ async function viewHotels() {
       for (const h of list().slice(0, S.hf.limit)) {
         if (S.hfRun !== run || S.hotels !== r || h.live || h.liveFail || !h.gkey) continue;
         try {
-          const a = await api(`/api/hotel/offers?${new URLSearchParams({ key: h.gkey, in: o.dep, out: o.ret, rooms: r.rooms })}`);
+          let a = null;
+          for (let t = 0; t < 3 && !a; t++) { try { a = await api(`/api/hotel/offers?${new URLSearchParams({ key: h.gkey, in: o.dep, out: o.ret, rooms: r.rooms })}`); } catch (er) { if (t === 2) throw er; await new Promise((ok) => setTimeout(ok, 4000)); } }
           if (a.offers.length) { const bk = a.offers.find((x) => x.site === 'Booking.com'); const top = a.offers.slice(0, 5); if (bk && !top.includes(bk)) top.push(bk); h.prices = top; h.bestTotal = a.offers[0].total; h.bestNight = a.offers[0].night; h.live = true; } else { h.noOffers = true; h.liveFail = true; }
         } catch { h.liveFail = true; }
         const el = document.querySelector(`[data-pl="${CSS.escape(String(h.key))}"]`); if (el) el.innerHTML = priceBox(h);
@@ -732,12 +733,13 @@ async function viewHotels() {
     ${h.amen?.filter((a) => a !== 'śniadanie w cenie').length ? `<p class="mute" style="font-size:14px">${esc(h.amen.filter((a) => a !== 'śniadanie w cenie').slice(0, 6).join(', '))}</p>` : ''}
     ${h.overBudget ? '<p class="warn">Ponad Twój budżet.</p>' : ''}
     <div data-pl="${esc(h.key)}">${priceBox(h)}</div>
-    ${!h.live && h.compare?.length ? `<p class="hint">Szukaj też na tych stronach. Szukamy po nazwie, więc sprawdź, czy otwarty hotel to ten sam. Nie każdy hotel jest na każdej stronie.</p><div class="linkset">${h.compare.map((c) => `<a class="btn line small" href="${url(c.url)}" target="_blank" rel="noopener">${esc(c.site)}</a>`).join('')}</div>` : ''}
+    ${h.gpage ? `<div class="linkset"><a class="btn line small" href="${url(h.gpage)}" target="_blank" rel="noopener">Ten hotel w Google, wszystkie oferty</a></div>` : ''}
     <div class="acts"><button class="btn" data-h="${esc(h.key)}">Wybieram ten hotel</button></div></div></article>`;
     const draw = () => {
       const v = list(); const f = S.hf; const L = r.hotels;
       const y = app.scrollTop;
       app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Noclegi: ${esc(o.dest.name)}</h2></div><section class="page">
+      <button class="btn line small lightb" id="ownh">Mam własną rezerwację</button>
       ${!L.length ? `<div class="note"><b>${r.sourceDown ? 'Ceny hoteli są chwilowo niedostępne.' : 'Nie mamy pewnych cen dla tych kryteriów.'}</b><p class="mute">${r.sourceDown ? 'Oba źródła nie odpowiadają. Znajdź nocleg na stronach poniżej, a plan podróży ułożymy i tak.' : 'Złagodź wymagania albo sprawdź oferty bezpośrednio.'}</p><div class="linkset">${Object.entries(r.fallback || {}).slice(0, 4).map(([k, c]) => `<a class="btn line small" href="${url(c)}" target="_blank" rel="noopener">${esc(k)}</a>`).join('')}</div><div class="acts"><button class="btn" id="noh">Ułóż plan bez wybranego hotelu</button></div></div>` : `
       <div class="note info"><b>${v.length} z ${L.length} hoteli, ${L.filter((h) => h.breakfast).length} ze śniadaniem w cenie</b>
         <div class="chips" style="margin-top:8px">
@@ -754,6 +756,7 @@ async function viewHotels() {
       $$('[data-so]').forEach((b) => { b.onclick = () => { f.sort = b.dataset.so; f.limit = 12; draw(); }; });
       const m = $('#more'); if (m) m.onclick = () => { f.limit += 12; draw(); };
       $$('[data-h]').forEach((b) => { b.onclick = () => buildPlan(L.find((h) => String(h.key) === b.dataset.h)); });
+      $('#ownh').onclick = () => LV.viewOwnHotel(o, buildPlan, viewHotels);
       const nh = $('#noh'); if (nh) nh.onclick = () => buildPlan({ name: 'centrum: ' + o.dest.name, lat: o.dest.lat, lon: o.dest.lon, bestTotal: 0 });
       app.scrollTop = y;
       fill();
@@ -768,12 +771,12 @@ async function viewHotels() {
 
 /* ---------- Kompendium ---------- */
 async function buildPlan(hotel) {
-  if (S.option.manual) { S.plan.hotel = hotel; LV.put('meta', 'hotel', { hotel }); LV.applyDays(S.plan); LV.savePlan(S.plan); S.tab = 'noc'; return viewPlan(); }
+  if (S.option.manual) { S.plan.hotel = hotel; LV.put('meta', 'hotel', { hotel }); LV.applyDays(S.plan); LV.savePlan(S.plan); LV.ownToVault(S.plan); S.tab = 'noc'; return viewPlan(); }
   app.innerHTML = `<section class="board-wrap"><h1 class="board-title">Układam plan</h1><div class="bar"><i style="width:60%"></i></div><p class="board-label">Liczę godziny, dojazdy i dni na miejscu</p></section>`;
   try {
     S.plan = await api('/api/plan', { option: S.option, hotel, home: S.q.origin, prefs: S.q.plan || {} });
     if (S.q.tripBudget) LV.L(S.plan).s.meta.limit = { v: S.q.tripBudget, u: Date.now() };
-    LV.savePlan(S.plan); LV.ensureRemote(S.plan).catch(() => {});
+    LV.ownToVault(S.plan); LV.savePlan(S.plan); LV.ensureRemote(S.plan).catch(() => {});
     S.tab = 'sum'; viewPlan();
   } catch (e) { toast(e.message); viewHotels(); }
 }
@@ -816,7 +819,7 @@ function viewPlan() {
   const bodies = {
     sum: () => `<div class="wcard pill"><h3>Twój plan w pigułce</h3>${shapeSvg}
       <div class="pr">${I.plane}<div>${fo ? `<b>Przelot: ${shortD(fo.dep)} – ${shortD(fr.dep)}</b><small>${esc(o.fromName)} (${o.from}) ↔ ${esc(o.toName)} (${o.to})</small>` : `<b>${esc(o.modeName)}: ${shortD(o.dep)} – ${shortD(o.ret)}</b><small>${esc(o.fromName)} ↔ ${esc(o.toName)}</small>`}</div></div>
-      <div class="pr">${I.bed}<div><b>Nocleg: ${esc(p.hotel.bestTotal ? p.hotel.name : 'do wyboru')}</b><small>${o.nights} nocy${p.hotel.breakfast ? ', śniadanie w cenie' : ''}</small></div><i>${I.check}</i></div>
+      <div class="pr">${I.bed}<div><b>Nocleg: ${esc(p.hotel.bestTotal || p.hotel.own ? p.hotel.name : 'do wyboru')}</b><small>${o.nights} nocy${p.hotel.breakfast ? ', śniadanie w cenie' : ''}</small></div><i>${I.check}</i></div>
       <div class="pr">${I.map}<div><b>Plan zwiedzania: ${p.days.length} dni</b><small>${stopsN} atrakcji, trasy i restauracje w pobliżu</small></div><i>${I.check}</i></div>
       <div class="pr">${I.coin}<div><b>Budżet (szacunkowy): ${zl(p.total)}</b><small>Bez jedzenia na miejscu</small></div><i>${I.check}</i></div></div>
       <button class="aibtn" id="aio">${I.bulb}<span><b>Zapytaj asystenta</b><small>Zmień plan, znajdź oszczędności, co gdy pada</small></span></button>
@@ -824,9 +827,9 @@ function viewPlan() {
       ${o.leaveHome ? `<div class="tip">${I.bulb}<p><b>Wyjazd z domu:</b> ${dateL(o.leaveHome)} o ${timeL(o.leaveHome)}.</p></div>` : ''}`,
     loty: () => `<div class="wcard">${o.flight ? `${passHtml(o.flight.out, 'Tam')}${passHtml(o.flight.back, 'Z powrotem')}${o.flight.separate ? '<p class="hint">To dwa osobne bilety w jedną stronę.</p>' : ''}` : `<h3>${esc(o.modeName)}</h3>${(o.warnings || []).map((w) => `<p class="warn">${esc(w)}</p>`).join('')}`}<div class="linkset">${o.links.map((l) => `<a class="btn line small" href="${url(l.url)}" target="_blank" rel="noopener">${esc(l.site)}</a>`).join('')}</div></div>
       <div class="wcard"><h3>Droga tam</h3>${byDay(p.timeline)}</div><div class="wcard"><h3>Droga z powrotem</h3>${byDay(p.return)}</div>`,
-    noc: () => `<div class="wcard hotelc">${p.hotel.image ? IMG(p.hotel.image, p.hotel.name) : ''}<h3>${esc(p.hotel.name)}</h3>${p.hotel.rating ? `<p><b>${String(p.hotel.rating).replace('.', ',')} / 5</b> <span class="mute">${(p.hotel.reviews || 0).toLocaleString('pl-PL')} opinii</span></p>` : ''}
+    noc: () => `<div class="wcard hotelc">${p.hotel.image ? IMG(p.hotel.image, p.hotel.name) : ''}<h3>${esc(p.hotel.name)}</h3>${p.hotel.own ? `<p><span class="sure fact">Twoja rezerwacja</span></p><p>${esc(p.hotel.address || '')}</p><p class="mute">${dateL(p.hotel.ci)} – ${dateL(p.hotel.co)}${p.hotel.code ? `, numer ${esc(p.hotel.code)}` : ''}${p.hotel.checkin ? `, zameldowanie od ${esc(p.hotel.checkin)}` : ''}</p><div class="linkset"><a class="btn line small" href="https://www.google.com/maps/search/?api=1&query=${p.hotel.lat},${p.hotel.lon}" target="_blank" rel="noopener">Pokaż na mapie</a></div>` : ''}${p.hotel.rating ? `<p><b>${String(p.hotel.rating).replace('.', ',')} / 5</b> <span class="mute">${(p.hotel.reviews || 0).toLocaleString('pl-PL')} opinii</span></p>` : ''}
       <p>${p.hotel.breakfast ? '<span class="sure fact">śniadanie w cenie</span>' : p.hotel.breakfastPaid ? '<span class="sure est">śniadanie płatne</span>' : ''}</p>${(p.hotel.amen || []).length ? `<p class="mute">${esc(p.hotel.amen.join(', '))}</p>` : ''}
-      ${p.hotel.prices?.length ? `<div class="pricelist">${p.hotel.prices.map((x, j) => `<a class="pl ${j === 0 ? 'best' : ''}" href="${url(x.url)}" target="_blank" rel="noopener"><span>${esc(x.site)}${x.via ? ' (przez Google)' : ''}</span><span>${zl(x.total)}</span></a>`).join('')}</div>` : '<p class="mute">Hotel możesz wybrać później, plan liczymy od centrum.</p>'}${o.manual && !p.dest.id.startsWith('x-') && LV.canEdit() ? '<div class="acts"><button class="btn small" id="fh">Znajdź nocleg</button></div>' : ''}</div>`,
+      ${p.hotel.prices?.length ? `<div class="pricelist">${p.hotel.prices.map((x, j) => `<a class="pl ${j === 0 ? 'best' : ''}" href="${url(x.url)}" target="_blank" rel="noopener"><span>${esc(x.site)}${x.via ? ' (przez Google)' : ''}</span><span>${zl(x.total)}</span></a>`).join('')}</div>` : (p.hotel.own ? '' : '<p class="mute">Hotel możesz wybrać później, plan liczymy od centrum.</p>')}${o.manual && !p.dest.id.startsWith('x-') && LV.canEdit() ? '<div class="acts"><button class="btn small" id="fh">Znajdź nocleg</button></div>' : ''}</div>`,
     dni: () => `<div class="wcard">${p.days.map(dayRow).join('')}</div>`,
     bud: () => { const max = Math.max(...p.cost.map((x) => x.pln)); return `${LV.budgetHtml(p)}<div class="wcard"><h3>Koszt planowany</h3><p class="big">${zl(p.total)}</p><p class="mute">cały wyjazd bez jedzenia na miejscu, ${zl(p.total / (o.pax.adults + o.pax.children))} na osobę</p>${p.cost.map((i) => `<div class="cost"><div class="kv"><span>${esc(i.label)}</span><span>${zl(i.pln)} <span class="sure ${i.sure}">${SURE[i.sure]}</span></span></div><i style="width:${(i.pln / max) * 100}%"></i></div>`).join('')}</div>${budget && p.hotel.bestTotal > budget ? `<div class="note"><b>Nocleg przekracza Twój budżet o ${zl(p.hotel.bestTotal - budget)}.</b></div>` : ''}`; },
   };
@@ -995,5 +998,5 @@ const LV = initLive({ S, app, $, $$, esc, url, zl, toast, api, load, save, I, IM
   const job = load('job', null);
   if (job && Date.now() - job.t < 3e6) { S.q = job.q; viewSearch(job.id); }
   startUpdates();
-  window.__gt = { S, viewResults, viewOption, viewPlan, viewDay, viewTrips, viewInspire, viewProfile, viewHome, VERSION };
+  window.__gt = { S, viewHotels, viewResults, viewOption, viewPlan, viewDay, viewTrips, viewInspire, viewProfile, viewHome, VERSION };
 })();

@@ -3,12 +3,17 @@ on:
   workflow_dispatch:
   push:
     paths: ['tools/build_poi.py','.github/workflows/poi.yml']
+  schedule:
+    - cron: '23 2 * * *'
+concurrency:
+  group: attr
+  cancel-in-progress: false
 permissions:
   contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
       - run: python3 tools/build_poi.py
