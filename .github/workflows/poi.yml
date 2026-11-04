@@ -21,7 +21,7 @@ jobs:
           git config user.name 'globtroter-bot'
           git config user.email 'globtroter-bot@users.noreply.github.com'
           cp data/attractions.json /tmp/new.json
-          cp data/poi_done.json /tmp/done.json
+          [ -f data/poi_done.json ] || echo '[]' > data/poi_done.json; cp data/poi_done.json /tmp/done.json
           for i in 1 2 3 4 5 6; do
             git fetch -q origin main && git reset -q --hard origin/main
             python3 tools/merge_attr.py data/attractions.json /tmp/new.json

@@ -47,5 +47,6 @@ def main():
 def left():
     ds=json.load(open(ROOT+'/data/destinations.json',encoding='utf8'));A=json.load(open(P,encoding='utf8'));done=set(json.load(open(D,encoding='utf8')) if os.path.exists(D) else [])
     return sum(1 for d in ds if d['id'] not in done and len(A.get(d['id'],[]))<MIN)
-if __name__=='__main__': main()
+if __name__=='__main__':
+    main()
     print('zostalo',left())
