@@ -25,6 +25,13 @@ python3 -m venv "$APP/venv" 2>/dev/null || { apt-get install -y python3-venv >/d
 "$APP/venv/bin/pip" -q install -r "$APP/server/requirements.txt" || die "instalacja bibliotek"
 "$APP/venv/bin/python" -c 'from fli.search import SearchFlights' || die "biblioteka lotów nie działa"
 chown -R "$USR":"$USR" "$APP/data-run"
+# Klucz Gemini: tylko na serwerze, plik czytelny dla root. Bierzemy istniejacy z innych aplikacji, jesli jest.
+ENVF=/etc/globtroter.env
+if ! grep -qs '^GEMINI_API_KEY=.' "$ENVF"; then
+  K="$(cat /etc/*.env 2>/dev/null | grep -E '^(GEMINI_API_KEY|GEMINI_KEY)=' | head -n1 | cut -d= -f2-)"
+  ( umask 077; printf 'GEMINI_API_KEY=%s\n' "$K" > "$ENVF" )
+fi
+[ -n "$(grep -s '^GEMINI_API_KEY=' "$ENVF" | cut -d= -f2-)" ] && echo "Asystent: klucz Gemini gotowy" || echo "Asystent: brak klucza Gemini, reszta aplikacji działa bez niego"
 cat > /etc/systemd/system/globtroter.service <<U
 [Unit]
 Description=Globtroter API
@@ -35,6 +42,7 @@ User=$USR
 Environment=GLOBTROTER_PORT=$PORT
 Environment=GLOBTROTER_DATA=$APP/data-run
 Environment=TZ=Europe/Warsaw
+EnvironmentFile=-/etc/globtroter.env
 WorkingDirectory=$APP/server
 ExecStart=$APP/venv/bin/python $APP/server/app.py
 Restart=always
@@ -44,7 +52,7 @@ ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
 ReadWritePaths=$APP/data-run
-MemoryMax=260M
+MemoryMax=320M
 [Install]
 WantedBy=multi-user.target
 U

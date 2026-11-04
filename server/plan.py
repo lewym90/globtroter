@@ -48,7 +48,7 @@ def sun(d,ci,co):
     """Wschod i zachod. Dane z tych samych dat rok wczesniej, roznica to najwyzej minuty."""
     try:
         a=dt.date.fromisoformat(ci);b=dt.date.fromisoformat(co);ago=max(1,a.year-dt.date.today().year+1)
-        f=lambda x:x.replace(year=x.year-ago,day=min(x.day,28))
+        f=lambda x:x.replace(year=x.year-ago,day=28 if (x.month,x.day)==(2,29) else x.day)
         r=net.fetch_json(f"https://archive-api.open-meteo.com/v1/archive?latitude={d['lat']}&longitude={d['lon']}&start_date={f(a)}&end_date={f(b)}&daily=sunrise,sunset&timezone=auto",ttl=30*86400,tries=2,timeout=10)['daily']
         return {x[5:]:(r['sunrise'][i][11:16],r['sunset'][i][11:16]) for i,x in enumerate(r['time'])}
     except Exception: return {}
@@ -141,6 +141,12 @@ def attach_food(days,did):
         s['options']=[{'name':x['n'],'cuisine':x.get('c',''),'hours':x.get('h'),'web':x.get('w'),'map':place(x['n'],x['lat'],x['lon'])} for x in near]
         used.update(x['n'] for x in near)
     return True
+INDOOR={'museum','church','palace','theatre'}
+def explore(d):
+    """Wszystko, co mamy o miejscu, do przegladania i dodawania do planu."""
+    A=[{'name':x['n'][0].upper()+x['n'][1:],'kind':x['t'],'type':LABEL.get(x['t'],'Zabytek'),'min':DUR.get(x['t'],45),'lat':x['lat'],'lon':x['lon'],'img':x.get('img'),'web':x.get('web'),'info':x.get('d'),'hours':x.get('h'),'indoor':x['t'] in INDOOR,'q':x['q'],'map':place(x['n'],x['lat'],x['lon'])} for x in sorted(ATTR.get(d['id'],[]),key=lambda x:-x['l'])]
+    R=[{'name':x['n'],'cuisine':x.get('c',''),'hours':x.get('h'),'web':x.get('w'),'lat':x['lat'],'lon':x['lon'],'map':place(x['n'],x['lat'],x['lon'])} for x in (restaurants(d['id']) or [])]
+    return {'attractions':A,'restaurants':R}
 def build(body):
     o=body['option'];h=body['hotel'];home=body['home'];prefs=body.get('prefs') or {}
     if not o.get('flight'): raise ValueError('Ten wariant nie ma potwierdzonych lotów. Wybierz potwierdzony.')

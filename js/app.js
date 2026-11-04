@@ -1,8 +1,9 @@
 import { scene, themeOf, landmarkOf } from './scene.js';
 import { flapRow } from './flap.js';
+import { initLive } from './live.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '2.4.0';
+const VERSION = '2.5.0';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -167,6 +168,7 @@ function viewHome() {
     <div class="headline"><h1>Zaplanuj idealne wakacje od <em>A do Z</em></h1>
       <p>Loty · Noclegi · Plan zwiedzania · Gastronomia · Logistyka</p></div>
     <div class="form">
+      <div class="say"><input id="say" maxlength="400" placeholder="Napisz, np. 5 dni w Rzymie, 2 osoby, 5000 zł" aria-label="Opisz wyjazd jednym zdaniem"><button id="sayb" aria-label="Uzupełnij formularz">${I.search}</button></div>
       ${field('f-dest', I.pin, 'Dokąd chcesz lecieć?', destLabel(), 'wide')}
       <div class="two">${field('f-when', I.cal, 'Kiedy?', whenLabel())}${field('f-pax', I.people, 'Ile osób?', paxLabel())}</div>
       <div class="two">${field('f-bud', I.filter, 'Budżet na nocleg', `do ${zl(s.stay.budget)}`)}${field('f-std', I.bed, 'Standard noclegu', stayLabel())}</div>
@@ -178,6 +180,8 @@ function viewHome() {
     ${h ? `<p class="credit">${esc(h.n)}. Zdjęcie: <a href="https://commons.wikimedia.org/wiki/File:${encodeURIComponent(h.f)}" target="_blank" rel="noopener">Wikimedia Commons</a></p>` : ''}
   </section>${tabbar('home')}`;
   const need = (fn) => () => { fn(); };
+  const say = async () => { const t = $('#say').value.trim(); if (!t) return; toast('Czytam…'); try { const did = await LV.askSentence(t); if (!did.length) return toast('Nie wyłapałem szczegółów. Wybierz je niżej.'); viewHome(); toast(`Uzupełnione: ${did.join(', ')}. Sprawdź i szukaj.`); } catch (e) { toast(e.message); } };
+  $('#sayb').onclick = say; $('#say').onkeydown = (e) => { if (e.key === 'Enter') say(); };
   $('#f-dest').onclick = need(() => openStep(1));
   $('#f-when').onclick = need(() => openStep(2));
   $('#f-pax').onclick = need(() => openStep(3));
@@ -202,10 +206,10 @@ const pageTop = (t, sub = '') => `<div class="ptop"><h2>${esc(t)}</h2>${sub ? `<
 function viewTrips() {
   const T = load('trips', []);
   setBackdrop({ photo: heroNow()?.src, dim: true, strong: true });
-  app.innerHTML = `<section class="tabpage">${pageTop('Moje podróże', T.length ? 'Zapisane w telefonie, działają bez internetu.' : '')}
-    ${T.length ? T.map((t, i) => { const p = photoOf(t.dest.id, 700); return `<button class="pcard" data-trip="${i}">${p ? IMG(p.src, p.n) : ''}<div><h3>${esc(t.dest.name.replace(/\s*\(.*/, ''))}</h3><p>${dateL(t.option.dep)} – ${dateL(t.option.ret)}, ${ageLabel(t.option.dep)}</p></div></button>`; }).join('') : `<div class="wcard"><h3>Tu pojawią się Twoje wyjazdy</h3><p class="mute">Po wybraniu lotu i hotelu plan zapisze się tutaj.</p><div class="acts"><button class="btn" id="st">Zaplanuj podróż</button></div></div>`}
+  app.innerHTML = `<section class="tabpage">${pageTop('Moje podróże', T.length ? 'Działają bez internetu, a kopia jest na serwerze.' : '')}
+    ${T.length ? T.map((t, i) => { const p = photoOf(t.dest.id, 700); return `<button class="pcard" data-trip="${i}">${p ? IMG(p.src, p.n) : ''}<div><h3>${esc(t.dest.name.replace(/\s*\(.*/, ''))}</h3><p>${dateL(t.option.dep)} – ${dateL(t.option.ret)}, ${ageLabel(t.option.dep)}${t.live?.own === false ? ', wspólny' : ''}</p></div></button>`; }).join('') : `<div class="wcard"><h3>Tu pojawią się Twoje wyjazdy</h3><p class="mute">Po wybraniu lotu i hotelu plan zapisze się tutaj.</p><div class="acts"><button class="btn" id="st">Zaplanuj podróż</button></div></div>`}
   </section>${tabbar('trips')}`;
-  $$('[data-trip]').forEach((b) => { b.onclick = () => { S.plan = load('trips', [])[+b.dataset.trip]; S.tab = 'sum'; viewPlan(); }; });
+  $$('[data-trip]').forEach((b) => { b.onclick = () => { S.plan = load('trips', [])[+b.dataset.trip]; LV.applyDays(S.plan); S.tab = 'sum'; viewPlan(); LV.syncNow(S.plan, () => S.tab === 'sum' && viewPlan()).catch(() => {}); }; });
   const st = $('#st'); if (st) st.onclick = viewHome;
   bindNav(); app.scrollTop = 0;
 }
@@ -245,9 +249,11 @@ function viewProfile() {
    <div class="wcard"><h3>Moje ustawienia</h3>
    ${row('p0', 'Miejsce wyjazdu', q.origin?.label || 'nie ustawiono')}${row('p3', 'Osoby i bagaż', paxLabel())}
    ${row('p4', 'Dojazd na lotnisko', { car: 'Autem', dropoff: 'Podwiezie mnie', public: 'Komunikacją' }[q.transport.mode])}${row('p5', 'Nocleg', stayLabel())}${row('p6', 'Styl zwiedzania', { slow: 'Spokojnie', normal: 'Normalnie', fast: 'Intensywnie' }[q.plan?.pace || 'normal'])}</div>
-   <div class="wcard"><h3>Skąd są dane</h3><p class="mute">Loty i część hoteli: Google. Hotele i ceny: Xotelo. Dojazd: OSRM i Transitous. Klimat: Meteostat i Open-Meteo. Atrakcje i zdjęcia: Wikidata i Wikimedia Commons. Restauracje: OpenStreetMap. Mapa lotnicza: Esri. Kursy: NBP.</p></div>
+   ${LV.pushHtml()}
+   <div class="wcard"><h3>Skąd są dane</h3><p class="mute">Loty: Google i Ryanair. Część hoteli: Google. Hotele i ceny: Xotelo. Dojazd: OSRM i Transitous. Klimat: Meteostat i Open-Meteo. Atrakcje i zdjęcia: Wikidata i Wikimedia Commons. Opisy: Wikipedia. Restauracje: OpenStreetMap. Mapa lotnicza: Esri. Kursy: NBP.</p></div>
    <p class="foot">Globtroter ${VERSION}. Aplikacja niekomercyjna.</p></section>${tabbar('prof')}`;
   [['p0', 0], ['p3', 3], ['p4', 4], ['p5', 5], ['p6', 6]].forEach(([id, i]) => { $('#' + id).onclick = () => openStep(i, viewProfile); });
+  LV.bindPush(viewProfile);
   bindNav(); app.scrollTop = 0;
 }
 
@@ -727,9 +733,8 @@ async function buildPlan(hotel) {
   app.innerHTML = `<section class="board-wrap"><h1 class="board-title">Układam plan</h1><div class="bar"><i style="width:60%"></i></div><p class="board-label">Liczę godziny, dojazdy i dni na miejscu</p></section>`;
   try {
     S.plan = await api('/api/plan', { option: S.option, hotel, home: S.q.origin, prefs: S.q.plan || {} });
-    const t = load('trips', []).filter((x) => x.option.id !== S.plan.option.id);
-    t.unshift(S.plan);
-    if (!save('trips', t.slice(0, 8))) toast('Telefon nie pozwolił zapisać planu offline.');
+    if (S.q.tripBudget) LV.L(S.plan).s.meta.limit = { v: S.q.tripBudget, u: Date.now() };
+    LV.savePlan(S.plan); LV.ensureRemote(S.plan).catch(() => {});
     S.tab = 'sum'; viewPlan();
   } catch (e) { toast(e.message); viewHotels(); }
 }
@@ -774,6 +779,7 @@ function viewPlan() {
       <div class="pr">${I.bed}<div><b>Nocleg: ${esc(p.hotel.bestTotal ? p.hotel.name : 'do wyboru')}</b><small>${o.nights} nocy${p.hotel.breakfast ? ', śniadanie w cenie' : ''}</small></div><i>${I.check}</i></div>
       <div class="pr">${I.map}<div><b>Plan zwiedzania: ${p.days.length} dni</b><small>${stopsN} atrakcji, trasy i restauracje w pobliżu</small></div><i>${I.check}</i></div>
       <div class="pr">${I.coin}<div><b>Budżet (szacunkowy): ${zl(p.total)}</b><small>Bez jedzenia na miejscu</small></div><i>${I.check}</i></div></div>
+      <button class="aibtn" id="aio">${I.bulb}<span><b>Zapytaj asystenta</b><small>Zmień plan, znajdź oszczędności, co gdy pada</small></span></button>
       <div class="wcard"><div class="rowh"><h3>Plan dnia – skrót</h3><button id="all">Zobacz cały plan ›</button></div>${p.days.slice(0, 3).map(dayRow).join('')}</div>
       ${o.leaveHome ? `<div class="tip">${I.bulb}<p><b>Wyjazd z domu:</b> ${dateL(o.leaveHome)} o ${timeL(o.leaveHome)}.</p></div>` : ''}`,
     loty: () => `<div class="wcard">${passHtml(o.flight.out, 'Tam')}${passHtml(o.flight.back, 'Z powrotem')}${o.flight.separate ? '<p class="hint">To dwa osobne bilety w jedną stronę.</p>' : ''}<div class="linkset">${o.links.map((l) => `<a class="btn line small" href="${url(l.url)}" target="_blank" rel="noopener">${esc(l.site)}</a>`).join('')}</div></div>
@@ -782,7 +788,7 @@ function viewPlan() {
       <p>${p.hotel.breakfast ? '<span class="sure fact">śniadanie w cenie</span>' : p.hotel.breakfastPaid ? '<span class="sure est">śniadanie płatne</span>' : ''}</p>${(p.hotel.amen || []).length ? `<p class="mute">${esc(p.hotel.amen.join(', '))}</p>` : ''}
       ${p.hotel.prices?.length ? `<div class="pricelist">${p.hotel.prices.map((x, j) => `<a class="pl ${j === 0 ? 'best' : ''}" href="${url(x.url)}" target="_blank" rel="noopener"><span>${esc(x.site)}</span><span>${zl(x.total)}</span></a>`).join('')}</div>` : '<p class="mute">Hotel możesz wybrać później, plan liczymy od centrum.</p>'}</div>`,
     dni: () => `<div class="wcard">${p.days.map(dayRow).join('')}</div>`,
-    bud: () => { const max = Math.max(...p.cost.map((x) => x.pln)); return `<div class="wcard"><p class="big">${zl(p.total)}</p><p class="mute">cały wyjazd bez jedzenia na miejscu, ${zl(p.total / (o.pax.adults + o.pax.children))} na osobę</p>${p.cost.map((i) => `<div class="cost"><div class="kv"><span>${esc(i.label)}</span><span>${zl(i.pln)} <span class="sure ${i.sure}">${SURE[i.sure]}</span></span></div><i style="width:${(i.pln / max) * 100}%"></i></div>`).join('')}</div>${budget && p.hotel.bestTotal > budget ? `<div class="note"><b>Nocleg przekracza Twój budżet o ${zl(p.hotel.bestTotal - budget)}.</b></div>` : ''}`; },
+    bud: () => { const max = Math.max(...p.cost.map((x) => x.pln)); return `${LV.budgetHtml(p)}<div class="wcard"><h3>Koszt planowany</h3><p class="big">${zl(p.total)}</p><p class="mute">cały wyjazd bez jedzenia na miejscu, ${zl(p.total / (o.pax.adults + o.pax.children))} na osobę</p>${p.cost.map((i) => `<div class="cost"><div class="kv"><span>${esc(i.label)}</span><span>${zl(i.pln)} <span class="sure ${i.sure}">${SURE[i.sure]}</span></span></div><i style="width:${(i.pln / max) * 100}%"></i></div>`).join('')}</div>${budget && p.hotel.bestTotal > budget ? `<div class="note"><b>Nocleg przekracza Twój budżet o ${zl(p.hotel.bestTotal - budget)}.</b></div>` : ''}`; },
   };
   app.innerHTML = `${planHead(p, { t: `Plan podróży – ${name}`, s: `${dateL(o.dep)} – ${dateL(o.ret)} (${o.nights} nocy)`, r: `<button class="ico" id="shr" aria-label="Udostępnij">${I.share}</button><button class="ico" id="mn" aria-label="Więcej">${I.dots}</button>` })}
     <section class="plan"><div class="band"><img src="${esc(hero?.src || heroNow()?.src || '')}" alt="" onerror="this.onerror=null;this.src='${esc(heroNow()?.src || '')}'"></div>
@@ -791,18 +797,15 @@ function viewPlan() {
   $('#b').onclick = viewTrips;
   $$('.ptabs button').forEach((b) => { b.onclick = () => { S.tab = b.dataset.t; viewPlan(); }; });
   $$('[data-d]').forEach((b) => { b.onclick = () => { S.day = +b.dataset.d; S.dayTab = 'plan'; viewDay(); }; });
+  const aio = $('#aio'); if (aio) aio.onclick = LV.viewAI;
+  if (S.tab === 'bud') LV.bindBudget(p);
   const all = $('#all'); if (all) all.onclick = () => { S.tab = 'dni'; viewPlan(); };
-  $('#shr').onclick = sharePlan;
-  $('#mn').onclick = () => { if (confirm0()) { save('trips', load('trips', []).filter((x) => x.option.id !== o.id)); viewTrips(); } };
+  $('#shr').onclick = LV.viewShare;
+  $('#mn').onclick = () => { if (confirm0()) { const l = p.live; if (l?.own && l.k) api('/api/trip/del', { k: l.k }).catch(() => {}); save('trips', load('trips', []).filter((x) => x.option.id !== o.id)); viewTrips(); } };
   bindPlanNav();
 }
 const confirm0 = () => { const b = S.delArm; S.delArm = true; setTimeout(() => { S.delArm = false; }, 3000); if (!b) toast('Dotknij jeszcze raz, żeby usunąć ten wyjazd.'); return b; };
 const byDay = (list) => { const m = {}; list.forEach((e) => { (m[e.at.slice(0, 10)] ||= []).push(e); }); return Object.entries(m).map(([d, L]) => `<p class="mute" style="margin-top:8px">${WEEK[new Date(d + 'T12:00').getDay()]}, ${dateL(d)}</p><div class="tl">${L.map(evHtml).join('')}</div>`).join(''); };
-function sharePlan() {
-  const p = S.plan; const o = p.option; const f = o.flight.out.legs[0];
-  const text = `${p.dest.name}, ${dateL(o.dep)} – ${dateL(o.ret)}. Lot ${f.airline} ${f.no} o ${timeL(f.dep)} z ${o.from}. Hotel: ${p.hotel.name}. Razem około ${zl(p.total)}.`;
-  if (navigator.share) navigator.share({ title: `Plan podróży: ${p.dest.name}`, text }).catch(() => {}); else navigator.clipboard?.writeText(text).then(() => toast('Skopiowano opis planu.'));
-}
 let leafletReady = null;
 function leaflet() {
   leafletReady ||= new Promise((ok, no) => {
@@ -827,13 +830,15 @@ function viewDay() {
   S.dayTab = S.dayTab || 'plan';
   const items = [];
   if (d.kind === 'full' || (d.kind === 'departure')) items.push(`<div class="tr"><time>08:00</time><i>${I.fork}</i><div><span>${hb.breakfast ? 'Śniadanie w hotelu' : 'Śniadanie'}</span></div></div>`);
-  d.stops.forEach((s) => {
-    if (s.meal) { const r = s.options?.[0]; items.push(`<div class="tr"><time>${s.time}</time><i>${I.fork}</i><div class="grow"><small>${s.meal === 'lunch' ? 'Obiad' : 'Kolacja'}${r ? ' – restauracja w pobliżu' : ''}</small>${r ? `<a href="${url(r.map)}" target="_blank" rel="noopener"><b>${esc(r.name)}</b></a>${r.cuisine ? `<small>${esc(r.cuisine)}</small>` : ''}` : `<a href="${url(s.mapSearch)}" target="_blank" rel="noopener"><b>Restauracje w pobliżu</b></a>`}</div></div>`); return; }
+  d.stops.forEach((s, si) => {
+    const dn = `<button class="dn ${s.done ? 'on' : ''}" data-dn="${si}" aria-label="Zaliczone" aria-pressed="${!!s.done}">✓</button>`;
+    const nt = s.note ? `<small class="nt">${esc(s.note)}</small>` : '';
+    if (s.meal) { const r = s.options?.[0]; items.push(`<div class="tr ${s.done ? 'isd' : ''}"><time>${s.time}</time><i>${I.fork}</i><div class="grow"><small>${s.meal === 'lunch' ? 'Obiad' : 'Kolacja'}${r ? ' – restauracja w pobliżu' : ''}</small>${r ? `<a href="${url(r.map)}" target="_blank" rel="noopener"><b>${esc(r.name)}</b></a>${r.cuisine ? `<small>${esc(r.cuisine)}</small>` : ''}` : `<a href="${url(s.mapSearch)}" target="_blank" rel="noopener"><b>Restauracje w pobliżu</b></a>`}${nt}</div>${dn}</div>`); return; }
     const src = stopSrc(s, 300);
-    items.push(`<div class="tr"><time>${s.time}</time><i>${I.walk}</i><div class="grow"><a href="${url(s.map)}" target="_blank" rel="noopener"><b>${esc(s.name)}</b></a><small>${esc(s.type)}, około ${dur(s.min)}${s.walk ? `, ${s.walk} min dojścia` : ''}</small>${s.web ? `<a class="sm" href="${url(s.web)}" target="_blank" rel="noopener">Godziny i bilety</a>` : '<span class="sure check">sprawdź godziny</span>'}</div>${src ? IMG(src, s.name, 'th') : ''}</div>`);
+    items.push(`<div class="tr ${s.done ? 'isd' : ''}"><time>${s.time}</time><i>${I.walk}</i><div class="grow"><a href="${url(s.map)}" target="_blank" rel="noopener"><b>${esc(s.name)}</b></a><small>${esc(s.type)}, około ${dur(s.min)}${s.walk ? `, ${s.walk} min dojścia` : ''}</small>${s.web ? `<a class="sm" href="${url(s.web)}" target="_blank" rel="noopener">Godziny i bilety</a>` : '<span class="sure check">sprawdź godziny</span>'}${nt}</div>${src ? IMG(src, s.name, 'th') : ''}${dn}</div>`);
   });
   const bodies = {
-    plan: () => `${st.length ? '<div class="dmap" id="dm"></div>' : ''}<div class="wbody">${d.sun ? `<p class="mute">Wschód słońca ${d.sun[0]}, zachód ${d.sun[1]}</p>` : ''}${d.weather ? `<p class="mute">Prognoza: ${Math.round(d.weather.tmin)}–${Math.round(d.weather.tmax)}°C, deszcz ${d.weather.rain ?? '?'}%</p>` : ''}<div class="tline">${items.join('') || `<p class="mute">${esc(daySub(d, p))}.</p>`}</div><div class="tip">${I.bulb}<p><b>Wskazówka:</b> ${esc(tipFor(d, p))}</p></div></div>`,
+    plan: () => `${st.length ? '<div class="dmap" id="dm"></div>' : ''}<div class="wbody">${d.sun ? `<p class="mute">Wschód słońca ${d.sun[0]}, zachód ${d.sun[1]}</p>` : ''}${d.weather ? `<p class="mute">Prognoza: ${Math.round(d.weather.tmin)}–${Math.round(d.weather.tmax)}°C, deszcz ${d.weather.rain ?? '?'}%</p>` : ''}${S.edit && LV.canEdit() ? LV.editHtml(d) : `<div class="tline">${items.join('') || `<p class="mute">${esc(daySub(d, p))}.</p>`}</div>${LV.canEdit() ? '<div class="linkset"><button class="btn line small" id="ed">Zmień plan</button><button class="btn line small" id="addS">Dodaj miejsce</button><button class="btn line small" id="planb">Plan B na deszcz</button></div>' : ''}<div class="tip">${I.bulb}<p><b>Wskazówka:</b> ${esc(tipFor(d, p))}</p></div>`}</div>`,
     mapa: () => `<div class="dmap big" id="dm"></div><div class="wbody">${st.map((s, i) => `<div class="kv"><span><b>${i + 1}.</b> ${esc(s.name)}</span><a href="${url(s.map)}" target="_blank" rel="noopener">Nawiguj</a></div>`).join('')}<p class="hint">Linia pokazuje kolejność, nie dokładną drogę pieszą.</p></div>`,
     atr: () => `<div class="wbody">${st.map((s) => `<div class="acard">${stopSrc(s, 700) ? IMG(stopSrc(s, 700), s.name) : ''}<h3>${esc(s.name)}</h3><p class="mute">${esc(s.type)}, około ${dur(s.min)}</p>${s.info ? `<p>${esc(s.info)}</p><p class="mute" style="font-size:12px">Opis: Wikipedia</p>` : ''}${s.web ? `<a href="${url(s.web)}" target="_blank" rel="noopener">Godziny i bilety</a>` : ''}</div>`).join('') || '<p class="mute">Na ten dzień nie ma atrakcji.</p>'}</div>`,
     gas: () => { const m = d.stops.filter((s) => s.meal); return `<div class="wbody">${m.map((s) => `<h3 class="gh">${s.meal === 'lunch' ? 'Obiad' : 'Kolacja'}, ${s.time}</h3>${(s.options || []).map((r) => `<div class="kv"><span><b>${esc(r.name)}</b><br><small class="mute">${esc(r.cuisine)}</small></span><a href="${url(r.map)}" target="_blank" rel="noopener">Mapa</a></div>`).join('') || '<p class="mute">Brak lokali w bazie dla tej okolicy.</p>'}<a class="sm" href="${url(s.mapSearch)}" target="_blank" rel="noopener">Więcej restauracji i ich oceny</a>`).join('') || '<p class="mute">Na ten dzień nie planujemy posiłków na mieście.</p>'}</div>`; },
@@ -845,18 +850,19 @@ function viewDay() {
   $('#b').onclick = () => { S.tab = 'dni'; viewPlan(); };
   $$('[data-x]').forEach((b) => { b.onclick = () => { S.dayTab = b.dataset.x; viewDay(); }; });
   $('#ics').onclick = () => icsDay(d);
+  if (S.dayTab === 'plan') LV.bindDay(viewDay);
   bindPlanNav();
-  const el = $('#dm'); if (el) drawMap(el, st, { drag: S.dayTab === 'mapa' });
+  const el = $('#dm'); if (el) drawMap(el, st.filter((s) => s.lat != null), { drag: S.dayTab === 'mapa' });
   app.scrollTop = 0;
 }
 function icsDay(d) {
   const fmt = (day, t) => day.replace(/-/g, '') + 'T' + t.replace(':', '') + '00';
-  const ev = dayStops(d).map((s, i) => { const [h, m] = s.time.split(':').map(Number); const e = h * 60 + m + s.min; return `BEGIN:VEVENT\r\nUID:gt-${d.date}-${i}@globtroter\r\nDTSTAMP:${fmt(d.date, '00:00')}Z\r\nDTSTART:${fmt(d.date, s.time)}\r\nDTEND:${fmt(d.date, `${String(Math.floor(e / 60) % 24).padStart(2, '0')}:${String(e % 60).padStart(2, '0')}`)}\r\nSUMMARY:${s.name.replace(/[,;]/g, ' ')}\r\nEND:VEVENT`; }).join('\r\n');
+  const ev = dayStops(d).filter((s) => s.time).map((s, i) => { const [h, m] = s.time.split(':').map(Number); const e = h * 60 + m + s.min; return `BEGIN:VEVENT\r\nUID:gt-${d.date}-${i}@globtroter\r\nDTSTAMP:${fmt(d.date, '00:00')}Z\r\nDTSTART:${fmt(d.date, s.time)}\r\nDTEND:${fmt(d.date, `${String(Math.floor(e / 60) % 24).padStart(2, '0')}:${String(e % 60).padStart(2, '0')}`)}\r\nSUMMARY:${s.name.replace(/[,;]/g, ' ')}\r\nEND:VEVENT`; }).join('\r\n');
   const b = new Blob([`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Globtroter//PL\r\n${ev}\r\nEND:VCALENDAR\r\n`], { type: 'text/calendar' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `dzien-${d.date}.ics`; a.click();
 }
 function viewTripMap() {
-  const p = S.plan; const pts = p.days.flatMap(dayStops);
+  const p = S.plan; const pts = p.days.flatMap(dayStops).filter((s) => s.lat != null);
   app.innerHTML = `${planHead(p, { t: `Mapa – ${p.dest.name.replace(/\s*\(.*/, '')}`, s: `${pts.length} miejsc w planie` })}<div class="dmap full" id="dm"></div>${planNav('m')}`;
   $('#b').onclick = () => { S.tab = 'sum'; viewPlan(); }; bindPlanNav();
   drawMap($('#dm'), pts, { drag: true });
@@ -864,12 +870,14 @@ function viewTripMap() {
 function viewDocs() {
   const p = S.plan; const o = p.option; const c = p.country;
   app.innerHTML = `${planHead(p, { t: 'Dokumenty i lista', s: c?.name || p.dest.name })}<section class="dbody"><div class="wbody">
-    <h3 class="gh">Do zrobienia</h3><div class="checks">${p.checklist.map((x, i) => `<label><input type="checkbox" data-ck="${i}" ${(load('ck.' + o.id, {})[i]) ? 'checked' : ''}><span>${esc(x.t)}<br><small class="mute">${dateL(new Date(new Date(o.dep + 'T12:00').getTime() + x.d * 864e5).toISOString())}</small>${x.url ? ` <a href="${url(x.url)}" target="_blank" rel="noopener">Otwórz</a>` : ''}</span></label>`).join('')}</div>
+    ${LV.docsHtml(p)}
+    <h3 class="gh">Do zrobienia</h3><div class="checks">${p.checklist.map((x, i) => `<label><input type="checkbox" data-ck="${i}" ${(LV.L(p).s.ck[i]?.v || load('ck.' + o.id, {})[i]) ? 'checked' : ''}><span>${esc(x.t)}<br><small class="mute">${dateL(new Date(new Date(o.dep + 'T12:00').getTime() + x.d * 864e5).toISOString())}</small>${x.url ? ` <a href="${url(x.url)}" target="_blank" rel="noopener">Otwórz</a>` : ''}</span></label>`).join('')}</div>
     ${c ? `<h3 class="gh">Na miejscu</h3><div class="kv"><span>Dokument</span><span style="text-align:right">${esc(c.docs)}</span></div><div class="kv"><span>Waluta</span><span>${esc(c.currencyName)}${c.rate ? `, 1 ${c.currency} = ${c.rate.toFixed(2).replace('.', ',')} zł` : ''}</span></div><div class="kv"><span>Język</span><span>${esc(c.language)}</span></div><div class="kv"><span>Gniazdka</span><span>${esc(c.plugs)}</span></div><div class="kv"><span>Numer alarmowy</span><span><a href="tel:${esc(c.emergency.split(' ')[0])}">${esc(c.emergency)}</a></span></div><p class="hint">${esc(c.plugNote)}</p><div class="acts"><a class="btn line small" href="${url(c.msz)}" target="_blank" rel="noopener">Ostrzeżenia i wymogi MSZ</a></div>` : ''}
     ${p.holidays?.length ? `<p class="warn">Święta w czasie pobytu: ${p.holidays.map((h) => `${esc(h.name)} (${dateL(h.date)})`).join(', ')}. Część miejsc może być zamknięta.</p>` : ''}
   </div></section>${planNav('d')}`;
   $('#b').onclick = () => { S.tab = 'sum'; viewPlan(); }; bindPlanNav();
-  $$('[data-ck]').forEach((x) => { x.onchange = () => { const m = load('ck.' + o.id, {}); m[x.dataset.ck] = x.checked; save('ck.' + o.id, m); }; });
+  $$('[data-ck]').forEach((x) => { x.onchange = () => { LV.put('ck', x.dataset.ck, { v: x.checked }); }; });
+  LV.bindDocs(p);
   app.scrollTop = 0;
 }
 
@@ -895,7 +903,8 @@ async function checkForUpdate() {
 }
 function startUpdates() {
   checkForUpdate();
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { checkForUpdate(); swReg?.update().catch(() => {}); } });
+  addEventListener('online', () => { if (S.plan) LV.syncNow(S.plan).catch(() => {}); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { if (S.plan) LV.syncNow(S.plan).catch(() => {}); checkForUpdate(); swReg?.update().catch(() => {}); } });
   addEventListener('pageshow', (e) => { if (e.persisted) checkForUpdate(); });
   if (!('serviceWorker' in navigator)) return;
   const had = !!navigator.serviceWorker.controller;
@@ -903,10 +912,14 @@ function startUpdates() {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((r) => { swReg = r; r.update().catch(() => {}); }).catch(() => {});
 }
 let swReg = null;
+const LV = initLive({ S, app, $, $$, esc, url, zl, toast, api, load, save, I, IMG, commons, dateL, dur, ICON, planHead, planNav, bindPlanNav, API_LINK: location.origin + location.pathname, viewPlan, viewDay, viewDocs });
 
 (async function boot() {
   try { await data(); } catch { toast('Nie udało się wczytać bazy miejsc. Sprawdź internet.'); }
   viewHome();
+  const lk = new URLSearchParams(location.hash.slice(1)).get('t');
+  if (lk) { history.replaceState(null, '', location.pathname); if (await LV.openLink(lk)) { viewPlan(); startUpdates(); return; } }
+  LV.linkPush();
   const job = load('job', null);
   if (job && Date.now() - job.t < 3e6) { S.q = job.q; viewSearch(job.id); }
   startUpdates();

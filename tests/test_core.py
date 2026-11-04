@@ -200,6 +200,45 @@ class Periods(unittest.TestCase):
         geo.AIRPORTS.setdefault('KRK',{'lat':50.08,'lon':19.78,'city':'Krakow'});geo.AIRPORTS.setdefault('DUB',{'lat':53.42,'lon':-6.27,'city':'Dublin'})
         f=ryanair._flight('KRK','DUB',{'price':100,'dep':'2027-05-03T10:00','arr':'2027-05-03T11:45'})
         self.assertEqual(f['min'],165);self.assertTrue(flights.valid_flight(f,['KRK'],['DUB'],'2027-05-03'))
+class Shared(unittest.TestCase):
+    PLAN={'option':{'dep':'2027-05-10','ret':'2027-05-17','leaveHome':'2027-05-10T04:00'},'dest':{'name':'Rzym (Włochy)'},'checklist':[{'t':'Paszport','d':-30},{'t':'Parking','d':-7}],'days':[{'date':'2027-05-11','stops':[{'name':'Koloseum'},{'meal':'lunch'}]}],'return':[{'at':'2027-05-17T09:00'}]}
+    def test_merge_keeps_newer_both_ways(self):
+        import trips
+        a={'exp':{'x':{'u':5,'v':1},'y':{'u':9,'v':2}}};b={'exp':{'x':{'u':7,'v':3},'y':{'u':2,'v':4},'z':{'u':1,'v':5}}}
+        m=trips.merge(a,b)['exp'];self.assertEqual((m['x']['v'],m['y']['v'],m['z']['v']),(3,2,5))
+    def test_deleted_item_does_not_return(self):
+        import trips
+        m=trips.merge({'exp':{'x':{'u':9,'x':1}}},{'exp':{'x':{'u':5,'v':1}}})['exp'];self.assertEqual(m['x'].get('x'),1)
+    def test_links_and_roles(self):
+        import trips
+        t=trips.create(self.PLAN,{});self.assertEqual(trips.get(t['edit'])['role'],'edit');self.assertEqual(trips.get(t['view'])['role'],'view');self.assertEqual(trips.get(t['edit'])['view'],t['view'])
+        with self.assertRaises(PermissionError): trips.sync(t['view'],{'exp':{'a':{'u':1}}})
+        r=trips.sync(t['edit'],{'exp':{'a':{'u':1,'n':1}}});self.assertEqual(r['rev'],2);self.assertIn('a',trips.get(t['view'])['s']['exp'])
+        with self.assertRaises(trips.Denied): trips.get('z'*24)
+        trips.delete(t['edit'])
+        with self.assertRaises(trips.Denied): trips.get(t['edit'])
+    def test_no_plain_keys_in_db(self):
+        import trips
+        t=trips.create(self.PLAN,{});r=trips._c.execute('SELECT hedit,hview FROM trips ORDER BY id DESC').fetchone();self.assertNotIn(t['edit'],r);self.assertNotIn(t['view'],r)
+    def test_reminders_skip_done(self):
+        import push
+        now=dt.datetime(2027,5,1);R=push.reminders(self.PLAN,{'ck':{'0':{'u':1,'v':True}}},now);k=[r['key'] for r in R]
+        self.assertNotIn('ck0',k);self.assertIn('ck1',k);self.assertIn('go',k);self.assertIn('day2027-05-11',k)
+        self.assertEqual(next(r for r in R if r['key']=='go')['at'],dt.datetime(2027,5,10,2,30))
+    def test_reminders_follow_changed_plan(self):
+        import push
+        R=push.reminders(self.PLAN,{'days':{'2027-05-11':{'u':1,'stops':[{'name':'Panteon'}]}}},dt.datetime(2027,5,1))
+        self.assertEqual(next(r for r in R if r['key'].startswith('day'))['body'],'Panteon')
+    def test_tick_sends_once(self):
+        import push,trips
+        t=trips.create(self.PLAN,{});sent=[];push.set_sender(lambda s,p:sent.append(p) or True)
+        push.subscribe('urzadzenie-testowe',{'endpoint':'https://x.test/a','keys':{'p256dh':'a','auth':'b'}},[t['edit']])
+        n=dt.datetime(2027,5,9,18,5);push.tick(n);push.tick(n);push.set_sender(None)
+        self.assertEqual(len([p for p in sent if p['tag']=='d1']),1);trips.delete(t['edit']);push.unsubscribe('urzadzenie-testowe')
+    def test_sentence(self):
+        import ai
+        r=ai.rules('Chcę spędzić pięć dni w Rzymie, jadę z drugą osobą, mam budżet 5000 zł');self.assertEqual((r['destIds'],r['nights'],r['adults'],r['budget']),(['rzym'],4,2,5000))
+        self.assertEqual(ai.rules('na plażę do Chorwacji w czerwcu'),{'countries':['HR'],'month':6,'style':'beach'})
 class Food(unittest.TestCase):
     D=lambda self:[{'stops':[{'meal':'lunch','lat':41.9,'lon':12.5},{'name':'X','lat':41.9,'lon':12.5}]}]
     def test_source_down_no_invented_names(self):
