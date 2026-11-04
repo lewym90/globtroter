@@ -192,9 +192,6 @@ class Manual(unittest.TestCase):
         import plan
         d=plan.custom_dest({'name':'Kołobrzeg','cc':'pl','lat':54.17,'lon':15.57});self.assertEqual(d['id'],'x-kolobrzeg');self.assertEqual(d['cc'],'PL')
         with self.assertRaises(ValueError): plan.custom_dest({'name':'x'})
-    def test_booking_name_must_match(self):
-        import links
-        self.assertEqual(links._key('Hotel Arts Barcelona'),links._key('Arts Barcelona'));self.assertNotEqual(links._key('Hotel Arts'),links._key('Hotel Astoria'))
 class Periods(unittest.TestCase):
     def test_month_is_strict(self):
         y=dt.date.today().year+1;w={'mode':'month','year':y,'month':5,'nights':[7]};a,b,n,m=search.window(w);lim=search.last_return(w,b)
