@@ -5,7 +5,7 @@ from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import parse_qs,urlsplit
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 import ai,flights,geo,hotels,net,plan,push,ryanair,search,store,trips
-VERSION='1.5.0'
+VERSION='1.5.1'
 _hits={}
 def limited(ip,kind,n,win):
     """Prosty limit zapytan na adres, zeby nikt nie zapchal bazy ani darmowego limitu AI."""
@@ -42,6 +42,7 @@ class H(BaseHTTPRequestHandler):
                 import ghotels
                 d=geo.BYID.get(q.get('dest','hvar'));r=ghotels.search(d,q.get('in','2027-06-10'),q.get('out','2027-06-17'))
                 return self.out(200,{'found':len(r or []),'last':ghotels.last})
+            if p=='/api/ai/diag': return self.out(200,ai.diag())
             if p=='/api/ryanair': return self.out(200,{'routes':len(ryanair.routes(q.get('o','KRK'))),'may':len(ryanair.month(q.get('o','KRK'),q.get('d','BCN'),q.get('ym','2027-05')))})
             if p=='/api/fx':
                 if q.get('c'):
