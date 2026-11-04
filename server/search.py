@@ -235,7 +235,54 @@ def run(job,q):
             o=build(c,rt,checked,q,drive,mode,cfg,A,C,adest,lat,lon,month,best)
             opts.append(o)
         opts.sort(key=lambda o:(not o['verified'],o['hotelEst'] is None,o['totalWithHotel']))
-        compare_airports(opts,best,drive,mode,cfg,P,codes,lat,lon,fr,long_)
+        # Kazde lotnisko dostaje prawdziwa cene z kalendarza zamiast wstepnej z rozpoznania
+        checked={**fr,**grids};tried=set();calls=0;seenw=set();wins=[]
+        for o in opts:
+            mk=(o['dest']['id'],o['dep'][:7] if long_ else '')
+            if mk not in seenw: seenw.add(mk);wins.append((o,mk))
+        gone=False
+        for o,(did,ym) in wins:
+            d=geo.BYID[did];n=o['nights']
+            have=lambda c:any(x for k,v in checked.items() if k[0]==c and k[1] in d['air'] and k[2]==n for x in v if x['dep'].startswith(ym))
+            for c in sorted([c for c in codes if any((c,x) in best for x in d['air'])],key=lambda c:min(best[(c,x)]['price'] for x in d['air'] if (c,x) in best)):
+                if have(c): tried.add((c,did,ym));continue
+                if calls>=10 or gone: continue
+                for dd in [x for x in d['air'] if (c,x) in best]:
+                    if ym:
+                        y,m0=int(ym[:4]),int(ym[5:7]);p0=max(a,dt.date(y,m0,1));p1=min(b,dt.date(y,m0,cal.monthrange(y,m0)[1]));use=[(p0,p1)]
+                    else: use=parts
+                    step(f'Sprawdzam lotnisko {c}',.97)
+                    for p in use:
+                        calls+=1
+                        try:
+                            r,_=gq(flights.calendar,c,dd,p[0].isoformat(),p[0].isoformat() if a==b else p[1].isoformat(),n,1,0,st)
+                            checked[(c,dd,n)]=merge(checked.get((c,dd,n)),[x for x in r if ok(x)]);stat['ok']+=1;tried.add((c,did,ym))
+                        except flights.Unavailable: stat['failed']+=1;gone=True
+        # Gdy inne lotnisko wychodzi taniej, liczymy je w pelni i moze wygrac
+        extra=0
+        for o,(did,ym) in wins:
+            d=geo.BYID[did];n=o['nights'];alts={}
+            for (c,dd,k),v in checked.items():
+                if k!=n or dd not in d['air'] or c==o['from']: continue
+                g=[x for x in v if x['dep'].startswith(ym)]
+                if not g: continue
+                top=min(g,key=lambda x:x['price']);cost=top['price']*P+access.cost(mode,c,drive[c],n+1,P,{**cfg,'tollOneWay':0})['total']
+                if cost<o['total']-50 and (c not in alts or cost<alts[c][0]): alts[c]=(cost,dd,top,g)
+            for c,(cost,dd,top,g) in sorted(alts.items(),key=lambda z:z[1][0])[:1]:
+                if extra>=2 or any(x['from']==c and x['dep']==top['dep'] for x in opts): continue
+                extra+=1;e={'o':c,'d':dd,'n':n,'dep':top['dep'],'ret':top['ret'],'grid':checked[(c,dd,n)],'pool':g,'one':top['price']}
+                step(f'Potwierdzam loty {c} → {dd}',.98)
+                best_dates(e,d,A,C,P);rt=None;when_=None
+                try:
+                    r,age=gq(confirm,e,A,C,st)
+                    if r: rt=prefer(r,q);when_=time.time()-age
+                except flights.Unavailable: stat['failed']+=1
+                if not rt and (c,dd,n) in fr:
+                    rt=ryanair.trip(c,dd,e['dep'],e['ret'],P) or None
+                    if rt: when_=time.time()
+                if rt: opts.append(build(e,rt,when_,q,drive,mode,cfg,A,C,adest,lat,lon,month,best))
+        opts.sort(key=lambda o:(not o['verified'],o['hotelEst'] is None,o['totalWithHotel']))
+        compare_airports(opts,best,drive,mode,cfg,P,codes,lat,lon,checked,long_,tried)
         step('Gotowe',1)
         summary=month_summary(yms,{**fr,**grids},adest,style) if len(yms)>1 else None
         job.update(state='done',result={'options':opts,'notes':notes,'coverage':stat,'empty':not opts,'month':month,'at':time.time(),'months':summary,
@@ -350,7 +397,7 @@ def best_dates(c,d,A,C,P):
     if bestv:
         c['dep'],c['ret'],c['one']=bestv[1]['dep'],bestv[1]['ret'],bestv[1]['price']
         c['hotelEst']=bestv[2]
-def compare_airports(opts,best,drive,mode,cfg,P,codes,lat,lon,fr=None,bymonth=False):
+def compare_airports(opts,best,drive,mode,cfg,P,codes,lat,lon,fr=None,bymonth=False,tried=None):
     """Porownanie lotnisk na jednej zasadzie: bilety, bagaz i dojazd, ta sama dlugosc pobytu, najtanszy termin
     z kazdego lotniska. Noclegu tu nie liczymy: nie zalezy od lotniska, a roznice terminow by wszystko zamazaly."""
     by={}
@@ -372,12 +419,9 @@ def compare_airports(opts,best,drive,mode,cfg,P,codes,lat,lon,fr=None,bymonth=Fa
                 if mode in('car','dropoff'): c2['tollOneWay']=access.tolls(lat,lon,c) or 0
                 ac=access.cost(mode,c,drive[c],days,P,c2)['total']+win.get('bags',0);t=round(x['price']*P)
                 rows[c]={'from':c,'to':to,'city':aname(c),'km':drive[c]['km'],'min':drive[c]['min'],'tickets':t,'access':ac,'total':t+ac,'dep':x['dep'],'ret':x['ret'],'verified':False,'state':'fare','stops':0,'nights':win['nights'],'drive':drive[c]}
-            elif ps:
-                c2=dict(cfg)
-                if mode in('car','dropoff'): c2['tollOneWay']=access.tolls(lat,lon,c) or 0
-                ac=access.cost(mode,c,drive[c],days,P,c2)['total']+win.get('bags',0);t=round(min(ps)*2*P)
-                rows[c]={'from':c,'city':aname(c),'km':drive[c]['km'],'min':drive[c]['min'],'tickets':t,'access':ac,'total':t+ac,'verified':False,'state':'estimate'}
+            elif ps and tried is not None and (c,did,ym) not in tried: continue
             else:
+                # Sprawdzone i brak lotow w tym okresie. Nie zgadujemy ceny.
                 rows[c]={'from':c,'city':aname(c),'km':drive[c]['km'],'min':drive[c]['min'],'state':'none'}
         R=sorted(rows.values(),key=lambda r:(r['state']=='none',r.get('total',0),r['km']))
         win['compare']=R;win['compareNights']=win['nights']
@@ -395,10 +439,6 @@ def compare_airports(opts,best,drive,mode,cfg,P,codes,lat,lon,fr=None,bymonth=Fa
         if fare:
             c=min(fare,key=lambda r:r['total'])
             out.append(f"Z {agen(c['from'])} bilety i dojazd wychodzą {w['total']-c['total']} zł taniej w terminie {int(c['dep'][8:])}.{c['dep'][5:7]}. Dotknij tego lotniska, sprawdzę loty i nocleg.")
-        est=[r for r in priced if r['state']=='estimate' and w['total']-r['total']>=100]
-        if est:
-            c=min(est,key=lambda r:r['total'])
-            out.append(f"{aname(c['from'])} może wyjść około {w['total']-c['total']} zł taniej na bilety i dojazd, ale to wstępna cena, loty nie są potwierdzone.")
         if out: win['insight']=' '.join(out)
 def recheck(body):
     """Uzytkownik dotknal dnia w kalendarzu: potwierdzamy loty na ten termin."""

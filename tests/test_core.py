@@ -174,6 +174,16 @@ class Compare(unittest.TestCase):
     def test_no_negative_and_hotel_excluded(self):
         a=self.opt('KRK',7,1668,1000,'a');b=self.opt('WMI',7,1200,4000,'b');self.run_([a,b])
         self.assertEqual(a['compare'][0]['from'],'WMI');self.assertNotIn('-',a['insight']);self.assertIn('468 zł',a['insight'])
+class CompareReal(unittest.TestCase):
+    def test_unchecked_airport_is_not_guessed(self):
+        o={'id':'a','dest':{'id':'bcn'},'from':'KRK','nights':7,'drive':{'km':300,'min':200},'tickets':800,'access':{'total':200},'bags':0,'total':1000,'dep':'2027-05-11','ret':'2027-05-18','verified':True,'hotelEst':{'total':2000},'totalWithHotel':3000}
+        geo.BYID['bcn']={'id':'bcn','air':['BCN'],'cc':'ES'};geo.AIRPORTS.setdefault('KTW',{'city':'Katowice'})
+        search.compare_airports([o],{('KTW','BCN'):{'price':10}},{'KTW':{'km':100,'min':60}},'public',{},2,['KTW'],51,22,{},False,set())
+        self.assertEqual([r['from'] for r in o['compare']],['KRK']);self.assertNotIn('insight',o)
+    def test_checked_without_flights_says_none(self):
+        o={'id':'a','dest':{'id':'bcn'},'from':'KRK','nights':7,'drive':{'km':300,'min':200},'tickets':800,'access':{'total':200},'bags':0,'total':1000,'dep':'2027-05-11','ret':'2027-05-18','verified':True,'hotelEst':{'total':2000},'totalWithHotel':3000}
+        search.compare_airports([o],{('KTW','BCN'):{'price':10}},{'KTW':{'km':100,'min':60}},'public',{},2,['KTW'],51,22,{},False,{('KTW','bcn','')})
+        self.assertEqual(next(r for r in o['compare'] if r['from']=='KTW')['state'],'none')
 class Periods(unittest.TestCase):
     def test_month_is_strict(self):
         y=dt.date.today().year+1;w={'mode':'month','year':y,'month':5,'nights':[7]};a,b,n,m=search.window(w);lim=search.last_return(w,b)
