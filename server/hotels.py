@@ -27,14 +27,18 @@ def _list(d):
     r=list(seen.values());store.put(k,r,6*3600)
     return r
 _rl=threading.Lock();_last=[0.0]
-def _rates(key,ci,co):
+def _rates(key,ci,co,quick=False):
     with _rl:
         w=_last[0]+.45-time.time()
         if w>0:time.sleep(w)
         _last[0]=time.time()
-    j=net.fetch_json(f'{API}/rates?hotel_key={key}&chk_in={ci}&chk_out={co}&currency=EUR',ttl=4*3600,tries=2)
+    j=net.fetch_json(f'{API}/rates?hotel_key={key}&chk_in={ci}&chk_out={co}&currency=EUR',ttl=4*3600,tries=1 if quick else 2,timeout=8 if quick else 20)
     if j.get('error'): return None
     return (j.get('result') or {}).get('rates') or []
+def _quick(key,ci,co):
+    # Przy szacunku jeden wolny hotel nie moze trzymac calego wyszukiwania
+    try: return _rates(key,ci,co,True) or []
+    except Exception: return []
 def estimate(d,ci,co,A,C):
     """Koszt noclegu na konkretny termin: mediana zywych cen pieciu dobrze ocenianych hoteli.
     Liczy sie data: targi albo swieta potrafia podniesc ceny kilkukrotnie."""
@@ -44,7 +48,7 @@ def estimate(d,ci,co,A,C):
         if not L: return _est_google(d,ci,co,A,C)
         eur=net.fx('EUR');vals=[]
         # Rownolegle: kolejka w _rates pilnuje odstepow, a nie czekamy na kazdy hotel po kolei
-        with ThreadPoolExecutor(5) as ex: res=list(ex.map(lambda h:_safe(h['key'],ci,co) or [],L))
+        with ThreadPoolExecutor(5) as ex: res=list(ex.map(lambda h:_quick(h['key'],ci,co),L))
         for r in res:
             p=[x['rate'] for x in r if x.get('rate') and x['rate']>0]
             if p: vals.append(min(p)*eur)

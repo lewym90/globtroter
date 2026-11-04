@@ -340,8 +340,10 @@ def best_dates(c,d,A,C,P):
         day=dt.date.fromisoformat(x['dep'])
         if all(abs((day-dt.date.fromisoformat(y['dep'])).days)>=6 for y in picks): picks.append(x)
         if len(picks)==3: break
-    bestv=None
+    bestv=None;t0=time.time()
     for x in picks:
+        # Limit czasu na porownanie terminow: lepiej mniej terminow niz minuty czekania
+        if bestv and time.time()-t0>25: break
         e=hotels.estimate(d,x['dep'],x['ret'],A,C)
         v=x['price']*P+(e['total'] if e else 0)
         if bestv is None or v<bestv[0]: bestv=(v,x,e)
