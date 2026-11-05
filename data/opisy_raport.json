@@ -1,0 +1,287 @@
+{
+"C": {
+"opisy": 2519,
+"strona ok": 2342,
+"brak strony": 0,
+"blad": 151,
+"liczby": 2638,
+"zgodne": 2604,
+"inne zrodla": 26
+},
+"B": [
+{
+"c": "palermo",
+"n": "Palazzo Chiaramonte",
+"u": "https://en.wikipedia.org/wiki/Palazzo_Chiaramonte",
+"p": [
+"1604",
+"1943"
+],
+"d": "Czternastowieczny pałac zbudowany dla możnego rodu Chiaramonte, później rezydencja wicekrólów Sycylii. W latach 1604–1782 mieściła się tu siedziba inkwizycji, a od 1943 roku rektorat uniwersytetu."
+},
+{
+"c": "cortina-d-ampezzo",
+"n": "Averau",
+"u": "https://en.wikipedia.org/wiki/Averau",
+"p": [
+"2649"
+],
+"d": "Najwyższy szczyt grupy Nuvolau w Dolomitach, o wysokości 2649 metrów, między przełęczami Falzarego i Giau. Ze szczytu widać Civettę, Pelmo, Antelao i Sorapiss, a od północy prowadzi na niego via ferrata."
+},
+{
+"c": "livigno",
+"n": "Lago Bianco",
+"u": "https://pl.wikipedia.org/wiki/Lago_Bianco",
+"p": [
+"1912"
+],
+"d": "Sztuczne jezioro na przełęczy Bernina o powierzchni 1,98 kilometra kwadratowego i głębokości do 85 metrów. Zamykają je dwie zapory z 1912 roku, a tafla leży na wysokości 2234 metrów."
+},
+{
+"c": "livigno",
+"n": "Alpy Livigno",
+"u": "https://en.wikipedia.org/wiki/Livigno_Alps",
+"p": [
+"3439"
+],
+"d": "Pasmo Alp Wschodnich wokół Livigno, rozciągające się między wschodnią Szwajcarią a północnymi Włochami. Najwyższy szczyt, Cima de' Piazzi, ma 3439 metrów."
+},
+{
+"c": "malaga",
+"n": "Jardín Botánico La Concepción",
+"u": "https://en.wikipedia.org/wiki/Jard%C3%ADn_Bot%C3%A1nico_La_Concepci%C3%B3n",
+"p": [
+"150"
+],
+"d": "Krajobrazowy ogród z ponad 150-letnią historią przy północnym wjeździe do Malagi, jeden z niewielu ogrodów subtropikalnych w Europie. Rośnie w nim ponad 50 tysięcy roślin, w tym ponad sto gatunków palm."
+},
+{
+"c": "madera-funchal",
+"n": "Museu de Arte Sacra",
+"u": "https://en.wikipedia.org/wiki/Sacred_Art_Museum_of_Funchal",
+"p": [
+"1955"
+],
+"d": "Muzeum założone w 1955 roku w Pałacu Biskupim w Funchal. Prezentuje prace flamandzkich malarzy, między innymi Dierica Boutsa, Joosa van Cleve i Gerarda Davida."
+},
+{
+"c": "chamonix",
+"n": "Le Brévent",
+"u": "https://pl.wikipedia.org/wiki/Le_Br%C3%A9vent",
+"p": [
+"2525"
+],
+"d": "Szczyt o wysokości 2525 metrów w masywie Aiguilles Rouges, w Alpach Zachodnich we wschodniej Francji. Na wierzchołek kursuje kolejka linowa, a pieszo można dojść do niego ze schroniska Bellachat."
+},
+{
+"c": "liverpool",
+"n": "The Bluecoat",
+"u": "https://en.wikipedia.org/wiki/Bluecoat_Chambers",
+"p": [
+"1717"
+],
+"d": "Budynek przy School Lane z lat 1716–1717, zbudowany jako szkoła dobroczynna. Jest najstarszym zachowanym budynkiem w centrum Liverpoolu, a dziś mieści centrum sztuki Bluecoat."
+},
+{
+"c": "kolonia",
+"n": "Hansahochhaus",
+"u": "https://en.wikipedia.org/wiki/Hansahochhaus",
+"p": [
+"1925"
+],
+"d": "Biurowiec w dzielnicy Neustadt-Nord, zbudowany w latach 1924–1925 w stylu ekspresjonistycznym. Był pierwszym wieżowcem Kolonii i jednym z pierwszych w Niemczech, a powstał w zaledwie 135 dni roboczych."
+},
+{
+"c": "salzburg",
+"n": "Schloss Hellbrunn",
+"u": "https://en.wikipedia.org/wiki/Hellbrunn_Palace",
+"p": [
+"1619"
+],
+"d": "Wczesnobarokowa willa wielkości pałacu, zbudowana w latach 1613–1619 przez arcybiskupa Markusa Sittikusa von Hohenems. Miała być tylko letnią rezydencją na jeden dzień, a nazwę wzięła od czystego źródła."
+},
+{
+"c": "budapeszt",
+"n": "Wieża widokowa Elżbiety",
+"u": "https://en.wikipedia.org/wiki/Elizabeth_Lookout",
+"p": [
+"1911"
+],
+"d": "Zabytkowa wieża widokowa z 1911 roku na Wzgórzu Jánosa, zaprojektowana przez Frigyesa Schuleka i nazwana od cesarzowej Elżbiety. Wzgórze jest najwyższym punktem Budapesztu, a ze szczytu widać całą okolicę."
+},
+{
+"c": "lublana",
+"n": "Potrójny Most",
+"u": "https://pl.wikipedia.org/wiki/Potr%C3%B3jny_Most",
+"p": [
+"1842"
+],
+"d": "Most na placu Prešerena przebudowany według projektu Jože Plečnika. Pierwsza wzmianka o przeprawie w tym miejscu pochodzi z 1280 roku, a kamienny most oddano do użytku w 1842 roku."
+},
+{
+"c": "lublana",
+"n": "Biblioteka Narodowa i Uniwersytecka w Lublanie",
+"u": "https://en.wikipedia.org/wiki/National_and_University_Library_of_Slovenia",
+"p": [
+"1931"
+],
+"d": "Gmach zaprojektowany przez Jože Plečnika w latach 1930–1931 i wznoszony do 1941 roku na planie kwadratu wokół dziedzińca. W 2021 roku wpisano go na listę UNESCO jako część dzieł Plečnika w Lublanie."
+},
+{
+"c": "lublana",
+"n": "Šmarna gora",
+"u": "https://en.wikipedia.org/wiki/Mount_Saint_Mary",
+"p": [
+"1712"
+],
+"d": "Najwyższe wzgórze Lublany, z najwyższym punktem Grmada o wysokości 676 metrów, popularne wśród wędrowców. Na szczycie stoi barokowy kościół pielgrzymkowy z lat 1711–1712, a jego freski namalował Matevž Langus."
+},
+{
+"c": "rovinj",
+"n": "Balbijev luk",
+"u": "https://en.wikipedia.org/wiki/Balbi's_Arch",
+"p": [
+"1679"
+],
+"d": "Łuk z lat 1678–1679 w Rovinju, prowadzący do ulicy Grisia i stojący na miejscu dawnej bramy miejskiej. Po jednej stronie ma rzeźbioną głowę Turka, po drugiej głowę Wenecjanina."
+},
+{
+"c": "belgrad",
+"n": "Konak księcia Miłosza",
+"u": "https://pl.wikipedia.org/wiki/Konak_ksi%C4%99cia_Mi%C5%82osza",
+"p": [
+"1833"
+],
+"d": "Rezydencja księcia Miłosza Obrenowicia w dolinie Topčider, zbudowana w latach 1831–1833 w stylu osmańskim z klasycystycznymi elementami. Wokół niej założono park, w którym rośnie jeden z najstarszych platanów Europy."
+},
+{
+"c": "saranda",
+"n": "Zamek Libohovë",
+"u": "https://en.wikipedia.org/wiki/Libohov%C3%AB_Castle",
+"p": [
+"1741",
+"1822"
+],
+"d": "Osmański zamek zbudowany w latach 1741–1822 przez Ali Paszę z Janiny dla jego siostry Shanish jako prezent ślubny. Dziś wnętrze jest puste, ale mury wciąż stoją."
+},
+{
+"c": "skopje",
+"n": "cerkiew św. Spasa w Skopje",
+"u": "https://en.wikipedia.org/wiki/Church_of_the_Ascension_of_Jesus,_Skopje",
+"p": [
+"1964"
+],
+"d": "Trójnawowa cerkiew prawosławna na wschód od twierdzy, zbudowana w połowie XVI wieku. Ikonostas ukończono w 1824 roku, a podczas remontu w latach 1963–1964 odkryto malowidło z XVI–XVII wieku."
+},
+{
+"c": "skopje",
+"n": "Tumba Madžari",
+"u": "https://en.wikipedia.org/wiki/Tumba_Mad%C5%BEari",
+"p": [
+"1962"
+],
+"d": "Neolityczna osada w północno-wschodniej części Skopje, odkryta w latach 1961–1962. Jest najważniejszą osadą neolityczną w kotlinie Skopje, a życie toczyło się tu nieprzerwanie od 6000 do 4300 roku przed Chrystusem."
+},
+{
+"c": "rodos",
+"n": "Starożytny most w Rodos",
+"u": "https://en.wikipedia.org/wiki/Rhodes_Footbridge",
+"p": [
+"1967"
+],
+"d": "Starożytny most łukowy w mieście Rodos, odkryty w latach 1966–1967 blisko wschodniego portu. Pochodzi z czwartego wieku przed naszą erą i jest najstarszym znanym greckim mostem z łukiem klinowym."
+},
+{
+"c": "zakynthos",
+"n": "Laganas",
+"u": "https://en.wikipedia.org/wiki/Laganas",
+"p": [
+"2021",
+"7192"
+],
+"d": "Miejscowość na południu Zakintos, gdzie w czerwcu, lipcu i sierpniu żółwie karetta składają jaja na chronionej plaży. Jednostka administracyjna liczyła w 2021 roku 7192 mieszkańców, a we wsi działa ponad 100 barów."
+},
+{
+"c": "kefalonia",
+"n": "Asos",
+"u": "https://en.wikipedia.org/wiki/Asos",
+"p": [
+"2021"
+],
+"d": "Wieś na zachodnim wybrzeżu Kefalinii, 36 km na północ od Argostoli, licząca w 2021 roku 61 mieszkańców. Od 1593 roku była stolicą północy wyspy, a Wenecjanie zbudowali tu jedną z największych twierdz w Grecji."
+},
+{
+"c": "larnaka",
+"n": "Pano Lefkara",
+"u": "https://en.wikipedia.org/wiki/Pano_Lefkara",
+"p": [
+"500"
+],
+"d": "Wieś w górach Troodos, na wysokości 500 metrów, znana z koronek lefkaritika i srebrnej filigranowej biżuterii. Według tradycji Leonardo da Vinci kupił tu w 1481 roku obrus dla katedry w Mediolanie."
+},
+{
+"c": "sofia",
+"n": "Pomnik Cara Wyzwoliciela",
+"u": "https://en.wikipedia.org/wiki/Monument_to_the_Tsar_Liberator",
+"p": [
+"1878"
+],
+"d": "Neoklasycystyczny pomnik konny ku czci rosyjskiego cesarza Aleksandra II, zwycięzcy wojny rosyjsko-tureckiej 1877–1878. Autor to włoski rzeźbiarz Arnoldo Zocchi, materiał to czarny granit z Witoszy."
+},
+{
+"c": "krakow",
+"n": "Kopalnia Soli Wieliczka",
+"u": "https://pl.wikipedia.org/wiki/Kopalnia_Soli_%E2%80%9EWieliczka%E2%80%9D",
+"p": [
+"1978"
+],
+"d": "Kopalnia soli kamiennej w Wieliczce pod Krakowem, od XIII wieku wchodząca w skład żup krakowskich. W 1978 roku wpisano ją na pierwszą Listę światowego dziedzictwa UNESCO, a w 2007 roku uznano za cud Polski."
+},
+{
+"c": "kutaisi",
+"n": "Kutaisi State Historical Museum",
+"u": "https://en.wikipedia.org/wiki/Kutaisi_State_Historical_Museum",
+"p": [
+"1922"
+],
+"d": "Muzeum założone w latach 1921–1922 w dawnym budynku Banku Narodowego Gruzji. Zgromadziło ponad 200 000 zabytków, a szczególnie interesująca jest sala Skarbca Złota."
+},
+{
+"c": "batumi",
+"n": "Kościół Trzech Świętych Hierarchów",
+"u": "https://en.wikipedia.org/wiki/The_Church_of_the_Three_Bishops_of_Kobuleti",
+"p": [
+"2009"
+],
+"d": "Cerkiew w wiosce Bobokvati, poświęcona świętym Bazylemu Wielkiemu, Grzegorzowi Teologowi i Janowi Chryzostomowi, ukończona w 2009 roku. Przechowuje relikwie dwudziestu ośmiu świętych."
+},
+{
+"c": "batumi",
+"n": "Park Narodowy Mtirala",
+"u": "https://en.wikipedia.org/wiki/Mtirala_National_Park",
+"p": [
+"2006",
+"281"
+],
+"d": "Obszar chroniony w zachodnim Małym Kaukazie, utworzony w 2006 roku, o powierzchni 281 kilometrów kwadratowych. Opady często przekraczają 4 metry rocznie, a w 2021 roku park wpisano na listę UNESCO."
+},
+{
+"c": "marrakesz",
+"n": "Meczet Ben Youssef",
+"u": "https://en.wikipedia.org/wiki/Ben_Youssef_Mosque",
+"p": [
+"1820"
+],
+"d": "Meczet w medynie nazwany na cześć władcy Almorawidów Alego ibn Jusufa, założony jako główny meczet miasta. Z pierwotnej budowli prawie nic nie zostało, a obecny budynek ukończono w latach 1819–1820."
+},
+{
+"c": "agadir",
+"n": "Memory of Agadir Museum",
+"u": "https://en.wikipedia.org/wiki/Agadir",
+"p": [
+"2002"
+],
+"d": "Muzeum z ekspozycją złożoną głównie ze zdjęć, poświęconą trzęsieniu ziemi z 29 lutego 1960 roku. Wstrząs zniszczył też kasbę Agadir Oufla, odbudowaną dopiero w 2002 roku."
+}
+]
+}
