@@ -1,0 +1,25 @@
+name: Kontrola opisow
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 320
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/check_opisy.py
+      - run: |
+          git config user.name 'globtroter-bot'
+          git config user.email 'globtroter-bot@users.noreply.github.com'
+          cp data/opisy_raport.json /tmp/r.json
+          for i in 1 2 3 4 5 6; do
+            git fetch -q origin main && git reset -q --hard origin/main
+            cp /tmp/r.json data/opisy_raport.json
+            git add data/opisy_raport.json
+            git commit -qm 'Raport kontroli opisow'
+            git push -q origin HEAD:main && exit 0
+            sleep 15
+          done
+          exit 1
