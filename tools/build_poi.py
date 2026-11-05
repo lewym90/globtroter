@@ -23,7 +23,10 @@ def kind(t):
     if t.get('amenity')=='place_of_worship': return 'church'
     if t.get('leisure') in('park','garden','nature_reserve'): return 'park'
     return 'sight'
-def norm(s): return re.sub(r'[^a-z0-9]','',unicodedata.normalize('NFKD',s.lower()).encode('ascii','ignore').decode())
+def norm(s):
+    t=str(s).replace('ł','l').replace('Ł','l').lower()
+    a=re.sub(r'[^a-z0-9]','',unicodedata.normalize('NFKD',t).encode('ascii','ignore').decode())
+    return a or re.sub(r'\W','',t)
 def main():
     ds=json.load(open(ROOT+'/data/destinations.json',encoding='utf8'));A=json.load(open(P,encoding='utf8'));t0=time.time()
     for d in sorted(ds,key=lambda d:len(A.get(d['id'],[]))):

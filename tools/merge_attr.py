@@ -2,7 +2,10 @@
 """Dolacza wynik automatu do najnowszej bazy atrakcji. Plik to jedna linia, wiec git nie umie go scalic,
 a kilka automatow pracuje rownolegle. Tylko dodajemy i uzupelniamy, nic nie kasujemy."""
 import json,re,sys,unicodedata
-def norm(s): return re.sub(r'[^a-z0-9]','',unicodedata.normalize('NFKD',str(s).lower()).encode('ascii','ignore').decode())
+def norm(s):
+    t=str(s).replace('ł','l').replace('Ł','l').lower()
+    a=re.sub(r'[^a-z0-9]','',unicodedata.normalize('NFKD',t).encode('ascii','ignore').decode())
+    return a or re.sub(r'\W','',t)
 def merge(base,new):
     n=0
     for city,L in new.items():

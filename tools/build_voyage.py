@@ -20,7 +20,10 @@ def kind(tag,n):
     for k,w in (('church','church|cathedral|basilica|chapel|monastery|mosque|abbey|synagogue'),('museum','museum|gallery|pinacoteca'),('castle','castle|fortress|fort |citadel'),('palace','palace|palazzo'),('ruins','ruin|roman|archaeolog|amphitheat'),('park','park|garden'),('beach','beach|plage|playa|spiaggia'),('square','square|piazza|plaza'),('theatre','theatre|theater|opera')):
         if re.search(w,x): return k
     return 'sight' if tag=='see' else 'nature'
-def norm(s): return re.sub(r'[^a-z0-9]','',unicodedata.normalize('NFKD',s.lower()).encode('ascii','ignore').decode())
+def norm(s):
+    t=str(s).replace('ł','l').replace('Ł','l').lower()
+    a=re.sub(r'[^a-z0-9]','',unicodedata.normalize('NFKD',t).encode('ascii','ignore').decode())
+    return a or re.sub(r'\W','',t)
 def main():
     ds=json.load(open(ROOT+'/data/destinations.json',encoding='utf8'));A=json.load(open(P,encoding='utf8'));t0=time.time();tot=0
     for d in ds:
