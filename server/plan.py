@@ -126,7 +126,7 @@ def schedule_days(d,opt,hotel,prefs):
                 cur=add(cur,walk)
                 if not any(s.get('meal') for s in stops) and cur.hour>=13 and avail>240:
                     stops.append({'meal':'lunch','time':hm(cur),'lat':x['lat'],'lon':x['lon'],'min':60});cur=add(cur,60)
-                stops.append({'time':hm(cur),'name':x['n'][0].upper()+x['n'][1:],'type':LABEL.get(x['t'],'Zabytek'),'kind':x['t'],'min':need,'lat':x['lat'],'lon':x['lon'],'info':x.get('d') or x.get('de'),'infoEn':not x.get('d') and bool(x.get('de')),'img':x.get('img'),'web':x.get('web'),'map':place(x['n'],x['lat'],x['lon']),'walk':walk,'q':x['q']})
+                stops.append({'time':hm(cur),'name':x['n'][0].upper()+x['n'][1:],'type':LABEL.get(x['t'],'Zabytek'),'kind':x['t'],'min':need,'lat':x['lat'],'lon':x['lon'],'info':x.get('d') or x.get('de'),'infoEn':not x.get('d') and bool(x.get('de')),'src':x.get('src'),'img':x.get('img'),'web':x.get('web'),'map':place(x['n'],x['lat'],x['lon']),'walk':walk,'q':x['q']})
                 used.add(x['q']);cur=add(cur,need);mins+=need+walk
             if stops and avail>240 and not any(s.get('meal') for s in stops):
                 ls=[s for s in stops if not s.get('meal')][-1]
@@ -151,7 +151,7 @@ def attach_food(days,did,likes=None):
 INDOOR={'museum','church','palace','theatre'}
 def explore(d):
     """Wszystko, co mamy o miejscu, do przegladania i dodawania do planu."""
-    A=[{'name':x['n'][0].upper()+x['n'][1:],'kind':x['t'],'type':LABEL.get(x['t'],'Zabytek'),'min':DUR.get(x['t'],45),'lat':x['lat'],'lon':x['lon'],'img':x.get('img'),'web':x.get('web'),'info':x.get('d') or x.get('de'),'infoEn':not x.get('d') and bool(x.get('de')),'hours':x.get('h'),'indoor':x['t'] in INDOOR,'q':x['q'],'map':place(x['n'],x['lat'],x['lon'])} for x in sorted(ATTR.get(d['id'],[]),key=lambda x:-x['l'])]
+    A=[{'name':x['n'][0].upper()+x['n'][1:],'kind':x['t'],'type':LABEL.get(x['t'],'Zabytek'),'min':DUR.get(x['t'],45),'lat':x['lat'],'lon':x['lon'],'img':x.get('img'),'web':x.get('web'),'info':x.get('d') or x.get('de'),'infoEn':not x.get('d') and bool(x.get('de')),'src':x.get('src'),'hours':x.get('h'),'indoor':x['t'] in INDOOR,'q':x['q'],'map':place(x['n'],x['lat'],x['lon'])} for x in sorted(ATTR.get(d['id'],[]),key=lambda x:-x['l'])]
     R=[{'name':x['n'],'cuisine':x.get('c',''),'hours':x.get('h'),'web':x.get('w'),'lat':x['lat'],'lon':x['lon'],'map':place(x['n'],x['lat'],x['lon'])} for x in (restaurants(d['id']) or [])]
     return {'attractions':A,'restaurants':R}
 ROUTES={'foot':('routed-foot','foot'),'bike':('routed-bike','bike'),'car':('routed-car','driving')}
