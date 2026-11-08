@@ -292,7 +292,7 @@ function drawTours() {
   const busy = R.state === 'running';
   const card = (x) => `<div class="tcard"><div class="th"><div><h3>${esc(x.name)}</h3><p class="ts">${starsL(x.stars)} ${esc(x.place || '')}</p></div><span class="tbo">${esc(name(x.op))}</span></div>
     <div class="tg"><span>${I.cal}${dateL(x.dep)}${x.ret ? ` – ${dateL(x.ret)}` : ''}${x.nights ? `, ${nightsL(x.nights)}` : ''}</span>${x.board ? `<span>${I.fork}${esc(x.board)}</span>` : ''}${x.from ? (/^[A-Z]{3}$/.test(x.from) ? `<span>${I.plane}wylot: ${esc(S.tmeta.origins.find(([c]) => c === x.from)?.[1] || S.airports.find((a) => a.iata === x.from)?.city || x.from)}</span>` : `<span>${I.car}wyjazd: ${esc(x.from)}</span>`) : ''}${x.kind && x.kind !== 'wypoczynek' ? `<span>${I.map}${esc(x.kind)}</span>` : ''}${x.rating ? `<span>${I.star}ocena ${String(x.rating).replace('.', ',')}/10</span>` : ''}</div>
-    <div class="tp"><div><b>${zl(x.ppp)}</b> <small>za osobę${x.approx ? ', orientacyjnie' : ''}</small>${x.total && x.adults ? `<p class="hint">${zl(x.total)} za ${x.adults} ${osob(x.adults)}</p>` : ''}</div><a class="btn small" href="${url(x.url)}" target="_blank" rel="noopener">Zobacz w biurze</a></div><button class="sm tbuy" data-buy="${R.offers.indexOf(x)}">Kupiłem tę ofertę: ułóż plan</button></div>`;
+    <div class="tp"><div><b>${zl(x.ppp)}</b> <small>za osobę${x.approx ? ', orientacyjnie' : ''}</small>${x.total && x.adults ? `<p class="hint">${zl(x.total)} za ${x.adults} ${osob(x.adults)}</p>` : ''}</div><a class="btn small" href="${url(x.url)}" target="_blank" rel="noopener">Zobacz w biurze</a></div><div class="tacts"><button class="sm tbuy" data-cmp="${R.offers.indexOf(x)}">Ile wyjdzie samemu?</button><button class="sm tbuy" data-buy="${R.offers.indexOf(x)}">Kupiłem: ułóż plan</button></div><div class="tcmp" id="cmp${R.offers.indexOf(x)}">${cmpHtml(x)}</div></div>`;
   el.innerHTML = `<div class="wcard tbar"><div class="tops">${opLine}</div>
     ${busy ? `<p class="hint"><span class="tspin"></span> Przeglądam strony biur. Pierwsze wyszukiwanie może potrwać do dwóch minut, potem wyniki są od razu.</p>` : ''}
     ${R.state === 'error' ? `<p class="hint">${esc(R.err)}</p>` : ''}
@@ -309,12 +309,40 @@ function drawTours() {
   $$('[data-tst]').forEach((b) => { b.onclick = () => { R.stars = +b.dataset.tst; R.show = 40; drawTours(); }; });
   $$('[data-tl]').forEach((b) => { b.onclick = () => { R.len = b.dataset.tl; R.show = 40; drawTours(); }; });
   const sm = $('#tsm'); if (sm) sm.onclick = () => { R.show += 40; drawTours(); };
+  $$('[data-cmp]').forEach((b) => { b.onclick = () => compareOffer(R.offers[+b.dataset.cmp], +b.dataset.cmp); });
   $$('[data-buy]').forEach((b) => { b.onclick = () => {
     const x = R.offers[+b.dataset.buy]; const bo = boardOf(x.board) || (/bez/i.test(x.board || '') ? 'ro' : 'ai');
     S.tourF = null;
     LV.viewTour({ agency: S.tmeta.ops.find((o) => o.id === x.op)?.name || '', hq: `${x.name}, ${(x.place || '').split(',').pop().trim()}`, od: x.dep, bd: x.ret || '', of: /^[A-Z]{3}$/.test(x.from || '') ? x.from : '', bto: /^[A-Z]{3}$/.test(x.from || '') ? x.from : '', board: bo, price: x.total ? String(x.total) : '', url: x.url });
   }; });
   drawOthers();
+}
+function cmpHtml(x) {
+  const c = x._cmp; if (!c) return '';
+  if (c.state === 'run') return `<p class="hint"><span class="tspin"></span> ${esc(c.step || 'Sprawdzam')}… To trwa zwykle do minuty.</p>`;
+  if (c.state === 'err') return `<p class="hint">${esc(c.error)}</p>`;
+  const r = c.res; const f = r.flight; const h = r.hotel;
+  const stops = (n) => (n ? `${n} ${n === 1 ? 'przesiadka' : 'przesiadki'}` : 'bez przesiadek');
+  return `<div class="cmpbox">
+    ${f ? `<div class="kv"><span>Lot ${esc(f.from)} ↔ ${esc(f.to)}, ${esc(f.airlines.join(', '))}<br><small>tam ${stops(f.stops)}, powrót ${stops(f.backStops)}</small></span><a href="${url(f.url)}" target="_blank" rel="noopener"><b>${zl(f.total)}</b></a></div>` : ''}
+    ${h ? `<div class="kv"><span>Ten hotel w Google<br><small>${esc(h.name)}</small></span><a href="${url(h.url)}" target="_blank" rel="noopener"><b>${zl(h.total)}</b></a></div>` : ''}
+    ${r.own ? `<div class="kv"><span><b>Samemu razem</b><br><small>za ${x.adults || 2} ${osob(x.adults || 2)}</small></span><b>${zl(r.own)}</b></div>` : ''}
+    ${r.own && r.agency ? `<p class="cmpv ${r.diff > 0 ? 'cheap' : 'dear'}">${r.diff > 0 ? `Samemu taniej o ${zl(r.diff)}` : r.diff < 0 ? `Z biurem taniej o ${zl(-r.diff)}` : 'Wychodzi tyle samo'}</p>` : ''}
+    ${r.notes.map((n) => `<p class="hint">${esc(n)}</p>`).join('')}</div>`;
+}
+async function compareOffer(x, i) {
+  if (x._cmp && x._cmp.state !== 'err') return;
+  x._cmp = { state: 'run', step: 'Start' }; const el = () => $(`#cmp${i}`); if (el()) el().innerHTML = cmpHtml(x);
+  try {
+    const { id } = await api('/api/tours/compare', { op: x.op, name: x.name, place: x.place, dep: x.dep, ret: x.ret, from: x.from, adults: x.adults || 2, total: x.total, board: x.board });
+    for (let k = 0; k < 60; k++) {
+      await new Promise((r) => setTimeout(r, 3000));
+      const s = await api(`/api/tours/compare?id=${id}`); x._cmp = s; if (el()) el().innerHTML = cmpHtml(x);
+      if (s.state !== 'run') return;
+    }
+    x._cmp = { state: 'err', error: 'Porównanie trwa za długo. Spróbuj ponownie.' };
+  } catch (e) { x._cmp = { state: 'err', error: e.message }; }
+  if (el()) el().innerHTML = cmpHtml(x);
 }
 function drawOthers() {
   const el = $('#tmore'); if (!el) return; const tq = S.tq; const m = +tq.ym.slice(5);

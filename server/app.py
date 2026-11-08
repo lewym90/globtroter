@@ -37,6 +37,10 @@ class H(BaseHTTPRequestHandler):
                 if not j: return self.out(404,{'error':'Wyszukiwanie wygasło. Uruchom je jeszcze raz.'})
                 return self.out(200,j)
             if p=='/api/tours/meta': return self.out(200,tours.meta())
+            if p=='/api/tours/compare':
+                from tours import compare
+                if q.get('id','') not in compare.JOBS: return self.out(404,{'error':'Porównanie wygasło. Uruchom je jeszcze raz.'})
+                return self.out(200,compare.status(q['id']))
             if p=='/api/tours/job':
                 if q.get('id','') not in tours.JOBS: return self.out(404,{'error':'Wyszukiwanie wygasło. Uruchom je jeszcze raz.'})
                 return self.out(200,tours.status(q['id'],int(q.get('n',0) or 0)))
@@ -75,6 +79,10 @@ class H(BaseHTTPRequestHandler):
             if p=='/api/plan': return self.out(200,plan.build(b))
             if p=='/api/tours': return self.out(200,{'id':tours.start(b)})
             ip=(self.headers.get('X-Forwarded-For') or self.client_address[0]).split(',')[0].strip()
+            if p=='/api/tours/compare':
+                from tours import compare
+                if limited(ip,'cmp',60,3600): return self.out(429,{'error':'Za dużo porównań. Spróbuj za godzinę.'})
+                return self.out(200,{'id':compare.start(b)})
             if p=='/api/trip/new':
                 if limited(ip,'new',40,86400): return self.out(429,{'error':'Za dużo nowych wyjazdów dziś. Spróbuj jutro.'})
                 return self.out(200,trips.create(b.get('plan'),b.get('s')))

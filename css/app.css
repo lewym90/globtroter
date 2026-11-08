@@ -537,4 +537,8 @@ details.add summary{font-weight:700;cursor:pointer;margin:0}
 .tabbar button span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .tform .btn svg{width:22px;height:22px;flex:none}
 .tbar .pills{margin-top:-2px}
-.tbuy{justify-self:start;font-weight:700;color:var(--deep);text-decoration:underline;font-size:14px}
+.tbuy{font-weight:700;color:var(--deep);text-decoration:underline;font-size:14px}
+.tacts{display:flex;flex-wrap:wrap;gap:6px 18px}
+.cmpbox{background:var(--paper2);border-radius:12px;padding:8px 12px}
+.cmpbox .kv a{color:var(--ink);text-decoration:underline}
+.cmpv{font-weight:800;font-size:17px;margin:6px 0}.cmpv.cheap{color:var(--ok,#0a7d5a)}.cmpv.dear{color:var(--warn,#b4530a)}
