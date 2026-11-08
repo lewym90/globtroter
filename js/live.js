@@ -444,6 +444,68 @@ export function initLive(x) {
     };
     draw();
   }
+
+  /* ---------- Wakacje z biurem ---------- */
+  const BOARD_L = [['ai', 'All inclusive'], ['fb', 'Pełne wyżywienie'], ['hb', 'Śniadania i obiadokolacje'], ['bb', 'Śniadania'], ['ro', 'Bez wyżywienia']];
+  const kmTo = (a, b) => dist(a, b);
+  function viewTour(pre = {}) {
+    const f = S.tourF ||= { agency: '', hq: '', hotel: null, hits: null, od: '', ot: '', oa: '', of: '', oto: '', ono: '', bd: '', bt: '', ba: '', bf: '', bto: '', bno: '', board: 'ai', transfer: true, mix: 'half', price: '', ref: '', url: '' };
+    Object.assign(f, pre);
+    const PLN = { WAW: 'Warszawa Chopin', WMI: 'Warszawa Modlin', RDO: 'Radom', KRK: 'Kraków', KTW: 'Katowice', GDN: 'Gdańsk', WRO: 'Wrocław', POZ: 'Poznań', RZE: 'Rzeszów', LUZ: 'Lublin', BZG: 'Bydgoszcz', LCJ: 'Łódź', SZZ: 'Szczecin', SZY: 'Olsztyn-Mazury', IEG: 'Zielona Góra' };
+    const PL = S.airports.filter((a) => a.cc === 'PL').map((a) => ({ ...a, city: PLN[a.iata] || a.city })).sort((a, b) => a.city.localeCompare(b.city, 'pl'));
+    if (!f.of) { const h = S.q.origin; f.of = h?.lat ? PL.map((a) => [kmTo(h, a), a]).sort((a, b) => a[0] - b[0])[0]?.[1].iata : 'WAW'; } if (!f.bto) f.bto = f.of;
+    const apOpt = (L2, v) => L2.map((a) => `<option value="${a.iata}" ${a.iata === v ? 'selected' : ''}>${esc(a.city || a.name)} (${a.iata})</option>`).join('');
+    const draw = () => {
+      const near = f.hotel ? S.airports.filter((a) => a.cc !== 'PL').map((a) => [kmTo(f.hotel, a), a]).filter(([k]) => k < 350).sort((a, b) => a[0] - b[0]).slice(0, 6).map(([, a]) => a) : [];
+      if (f.hotel && near.length) { if (!near.some((a) => a.iata === f.oto)) f.oto = near[0].iata; if (!near.some((a) => a.iata === f.bf)) f.bf = f.oto; }
+      app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Wakacje z biurem</h2></div><section class="page"><div class="wcard form2">
+      <p class="mute">Wpisz to, co masz w umowie z biurem. Ułożę dojazd na lotnisko, przylot, dni ze zwiedzaniem i odpoczynkiem oraz powrót.</p>
+      <label class="lab" for="tag">Biuro podróży</label><input id="tag" list="tagl" maxlength="40" value="${esc(f.agency)}" placeholder="Na przykład Itaka"><datalist id="tagl">${(S.tmeta?.ops || []).map((o) => `<option value="${esc(o.name)}">`).join('')}<option value="Coral Travel"><option value="Anex Tour"><option value="Join UP!"></datalist>
+      <label class="lab" for="thq">Hotel</label><input id="thq" maxlength="120" value="${esc(f.hq)}" placeholder="Nazwa hotelu i miejscowość albo adres">
+      ${f.hotel ? `<p class="hint">${I.pin} ${esc(f.hotel.label)} <button class="sm" id="thx">Zmień</button></p>` : `<button class="btn line small" id="thf">Znajdź hotel na mapie</button><div id="thl" style="display:grid;gap:6px"></div>`}
+      ${f.hotel ? `
+      <span class="lab">Wylot</span>
+      <div class="grid2"><div><label class="lab" for="tod">Data</label><input id="tod" type="date" value="${esc(f.od)}"></div><div><label class="lab" for="tot">Godzina wylotu</label><input id="tot" type="time" value="${esc(f.ot)}"></div></div>
+      <div class="grid2"><div><label class="lab" for="tof">Z lotniska</label><select id="tof">${apOpt(PL, f.of)}</select></div><div><label class="lab" for="toto">Do lotniska</label><select id="toto">${apOpt(near, f.oto)}</select></div></div>
+      <div class="grid2"><div><label class="lab" for="toa">Przylot, czas lokalny</label><input id="toa" type="time" value="${esc(f.oa)}"></div><div><label class="lab" for="tono">Numer lotu, jeśli znasz</label><input id="tono" maxlength="10" value="${esc(f.ono)}"></div></div>
+      <span class="lab">Powrót</span>
+      <div class="grid2"><div><label class="lab" for="tbd">Data</label><input id="tbd" type="date" value="${esc(f.bd)}"></div><div><label class="lab" for="tbt">Godzina wylotu, lokalna</label><input id="tbt" type="time" value="${esc(f.bt)}"></div></div>
+      <div class="grid2"><div><label class="lab" for="tbf">Z lotniska</label><select id="tbf">${apOpt(near, f.bf)}</select></div><div><label class="lab" for="tbto">Do lotniska</label><select id="tbto">${apOpt(PL, f.bto)}</select></div></div>
+      <div class="grid2"><div><label class="lab" for="tba">Przylot do Polski</label><input id="tba" type="time" value="${esc(f.ba)}"></div><div><label class="lab" for="tbno">Numer lotu, jeśli znasz</label><input id="tbno" maxlength="10" value="${esc(f.bno)}"></div></div>
+      <label class="lab" for="tbo">Wyżywienie</label><select id="tbo">${BOARD_L.map(([k, l]) => `<option value="${k}" ${k === f.board ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      <label class="switch"><input type="checkbox" id="ttr" ${f.transfer ? 'checked' : ''}><span>Transfer z lotniska zapewnia biuro</span></label>
+      <span class="lab">Ile zwiedzania</span><div class="seg">${[['many', 'Dużo'], ['half', 'Pół na pół'], ['rest', 'Głównie odpoczynek']].map(([k, l]) => `<button data-tmx="${k}" aria-pressed="${f.mix === k}">${l}</button>`).join('')}</div>
+      <label class="lab" for="tpr">Cena całej wycieczki (zł), jeśli chcesz w budżecie</label><input id="tpr" type="number" inputmode="numeric" value="${esc(f.price)}">
+      <label class="lab" for="trf">Numer rezerwacji, jeśli chcesz mieć pod ręką</label><input id="trf" maxlength="40" value="${esc(f.ref)}">
+      <button class="btn" id="tok">Ułóż plan wakacji</button>` : ''}
+      </div></section>`;
+      const g = () => { const v = (id) => $(id)?.value ?? ''; f.agency = v('#tag'); f.hq = v('#thq'); if (!f.hotel) return; f.od = v('#tod'); f.ot = v('#tot'); f.of = v('#tof'); f.oto = v('#toto'); f.oa = v('#toa'); f.ono = v('#tono'); f.bd = v('#tbd'); f.bt = v('#tbt'); f.bf = v('#tbf'); f.bto = v('#tbto'); f.ba = v('#tba'); f.bno = v('#tbno'); f.board = v('#tbo'); f.transfer = !!$('#ttr')?.checked; f.price = v('#tpr'); f.ref = v('#trf'); };
+      $('#b').onclick = () => { g(); x.viewTrips(); };
+      const hx = $('#thx'); if (hx) hx.onclick = () => { g(); f.hotel = null; draw(); };
+      const hf = $('#thf'); if (hf) hf.onclick = async () => {
+        g(); if (f.hq.trim().length < 3) return toast('Wpisz nazwę hotelu i miejscowość.');
+        hf.disabled = true;
+        try {
+          const r = await (await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=pl&q=${encodeURIComponent(f.hq.trim())}`)).json();
+          $('#thl').innerHTML = r.length ? r.map((y, i) => `<button class="kvb" data-th="${i}"><span>${esc(y.name || y.display_name.split(',')[0])}</span><b>${esc(y.display_name.split(',').slice(1, 3).join(','))}</b></button>`).join('') : '<p class="mute">Nie znalazłem. Dopisz miejscowość albo wpisz adres z vouchera.</p>';
+          $$('[data-th]').forEach((b) => { b.onclick = () => { const y = r[+b.dataset.th]; f.hotel = { lat: +y.lat, lon: +y.lon, label: y.display_name.split(',').slice(0, 2).concat(y.display_name.split(',').slice(-1)).join(',').slice(0, 120), name: f.hq.split(',')[0].trim() || y.name }; draw(); }; });
+        } catch { toast('Wyszukiwanie hotelu wymaga internetu.'); }
+        hf.disabled = false;
+      };
+      $$('[data-tmx]').forEach((b) => { b.onclick = () => { g(); f.mix = b.dataset.tmx; draw(); }; });
+      const ok = $('#tok'); if (ok) ok.onclick = async () => {
+        g();
+        if (!f.od || !f.ot || !f.oa || !f.bd || !f.bt || !f.ba) return toast('Uzupełnij daty i godziny obu lotów.');
+        if (f.bd < f.od) return toast('Powrót musi być po wylocie.');
+        ok.disabled = true; toast('Układam plan…');
+        try {
+          const p = await api('/api/plan/tour', { agency: f.agency, hotel: f.hotel, out: { date: f.od, time: f.ot, arr: f.oa, from: f.of, to: f.oto, no: f.ono }, back: { date: f.bd, time: f.bt, arr: f.ba, from: f.bf, to: f.bto, no: f.bno }, board: f.board, transfer: f.transfer, mix: f.mix, price: f.price, ref: f.ref, url: f.url, home: S.q.origin, pax: S.q.pax, transport: S.q.transport, prefs: S.q.plan || {} });
+          S.plan = p; S.tourF = null; savePlan(p); ensureRemote(p).catch(() => {}); S.tab = 'sum'; x.viewPlan();
+        } catch (e) { ok.disabled = false; toast(e.message); }
+      };
+    };
+    draw();
+  }
   /* ---------- Wlasna rezerwacja ---------- */
   function viewOwnHotel(o, done, back) {
     const f = S.ownH ||= { name: '', address: '', ci: o.dep, co: o.ret, checkin: '15:00', breakfast: false, cost: '', code: '', phone: '', hit: null };
@@ -502,5 +564,5 @@ export function initLive(x) {
       $$('[data-wd2]', el).forEach((b) => { b.onclick = async () => { await api('/api/watch/del', { device: device(), id: b.dataset.wd2 }); watchDraw(el); }; });
     } catch { el.innerHTML = ''; }
   }
-  return { viewOwnHotel, ownToVault, refreshWeather, viewNew, exportAll, importAll, watchAdd, watchDraw, exploreData: explore, L, canEdit, applyDays, savePlan, syncNow, openLink, viewShare, editHtml, bindDay, viewExplore, budgetHtml, bindBudget, docsHtml, bindDocs, put, pushHtml, bindPush, linkPush, askSentence, viewAI, ensureRemote };
+  return { viewOwnHotel, ownToVault, refreshWeather, viewNew, viewTour, exportAll, importAll, watchAdd, watchDraw, exploreData: explore, L, canEdit, applyDays, savePlan, syncNow, openLink, viewShare, editHtml, bindDay, viewExplore, budgetHtml, bindBudget, docsHtml, bindDocs, put, pushHtml, bindPush, linkPush, askSentence, viewAI, ensureRemote };
 }

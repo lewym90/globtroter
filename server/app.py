@@ -95,6 +95,7 @@ class H(BaseHTTPRequestHandler):
             if p=='/api/geocode': return self.out(200,{'hit':plan.geocode(b.get('q'),b.get('near'))})
             if p=='/api/route': return self.out(200,plan.route(b))
             if p=='/api/plan/manual': return self.out(200,plan.manual(b))
+            if p=='/api/plan/tour': return self.out(200,plan.tour(b))
             if p=='/api/car':
                 return self.out(200,plan.car_route(float(b['lat']),float(b['lon']),float(b['la']),float(b['lo']),b.get('transport')))
             if p=='/api/watch/add': return self.out(200,{'id':push.watch_add(b.get('device',''),b['from'],b['to'],b['ym'],b['nights'],b.get('name',''),b['price'])})
