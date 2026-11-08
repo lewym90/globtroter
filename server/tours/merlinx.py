@@ -29,7 +29,7 @@ Jak dziala strona biura (sprawdzone 2026-11-08):
 robots.txt (dertour.pl, toptouristik.pl, matimpex.pl, 2026-11-08): reguly tylko dla wybranych botow
 (Crawl-delay), nic dla User-agent * - sciezki /index/... dozwolone.
 """
-import calendar,datetime,json,re,threading,urllib.parse
+import calendar,datetime,html,json,re,threading,urllib.parse
 from . import http
 
 ADULTS=2
@@ -121,7 +121,8 @@ def parse(text,op,base,ym=None,kind='wypoczynek',origin=None):
         if not ppp: continue
         if not total: total=ppp*ADULTS
         place=', '.join(dict.fromkeys(v for v in (o.get('obj_region'),o.get('obj_city')) if v))
-        out.append({'op':op,'name':o['obj_name'].strip(),'stars':_stars(o.get('obj_category')),'place':place,
+        out.append({'op':op,'name':html.unescape(o['obj_name']).strip(),   # bywa '&amp' bez srednika
+            'stars':_stars(o.get('obj_category')),'place':place,
             'dep':dep,'ret':ret,'nights':nights,'board':_board(o.get('obj_xServiceIdAsDesc') or o.get('obj_xServiceDesc')),
             'from':frm,'ppp':ppp,'adults':ADULTS,'total':total,'rating':None,
             'kind':KIND.get((o.get('obj_typeAsDesc') or '').strip().lower(),kind),
