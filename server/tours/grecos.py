@@ -11,8 +11,10 @@ DurationInterval = dlugosc pobytu liczona w dniach kalendarzowych (data powrotu 
 Dla miesiaca M pytamy osobno o kazda dlugosc n: wylot >= 1. dzien M, powrot <= ostatni dzien M + n,
 dlugosc dokladnie n. Wtedy wylot <= ostatni dzien M, czyli dostajemy dokladnie wyloty w M
 (lacznie z wyjazdami, ktore wracaja w nastepnym miesiacu), najtanszy na hotel dla kazdej dlugosci.
-Powrot = wylot + n. Noclegi: Grecos podaje 'Duration' (tyle 'dni' pokazuje strona oferty); liczba noclegow
-na stronie oferty = min(Duration, n) (sprawdzone na 110 terminach z HotelAllOffersAsJson).
+Powrot = wylot + n. Grecos podaje tez 'Duration' (tyle 'dni' pokazuje strona oferty). Gdy Duration == n, strona oferty
+pokazuje 'n dni / n nocy'. Wiersze z Duration != n (np. lot 13:25 z Katowic na Korfu: 'Duration' 8 przy 7 dniach,
+albo lot 09:15 z Wroclawia: 7 przy 8) sprawdzone 2026-11-08: zadna z 10 takich ofert nie otwiera sie na stronie Grecos
+('Dostosuj parametry, aby wyświetlić ofertę'), wiec je pomijamy.
 
 Ceny: Merlin_AdultPrice = cena za 1 doroslego, Merlin_FullPriceParsed = razem za 2 doroslych
 (Adults=2&Children=0). Strona oferty pokazuje te same kwoty ('X ZŁ' i 'Y ZŁ / 1 DOROSŁY'); Grecos nie dolicza
@@ -66,7 +68,7 @@ def _get(cc,first,ret_max,span,origin):
 
 def parse(text,span=None,adults=2):
     """Wiersze z LoadMoreOffers -> oferty. span = dokladna liczba dni wylot->powrot uzyta w zapytaniu (DurationInterval n:n);
-    bez niej nie znamy daty powrotu i liczby noclegow (ret/nights = None)."""
+    bez niej nie znamy daty powrotu i liczby noclegow (ret/nights = None). Wiersze z Duration != span sa pomijane."""
     rows=json.loads(text) if isinstance(text,str) else text
     out=[]
     for r in rows or []:
@@ -75,8 +77,9 @@ def parse(text,span=None,adults=2):
             ppp=_num(r.get('Merlin_AdultPrice'));tot=_num(r.get('Merlin_FullPriceParsed'))
             if not(dep and ppp and r.get('Hotel_Name') and r.get('Merlin_Id') and r.get('Hotel_OfferUrlWithOfferCode')): continue
             d=_num(r.get('Merlin_Duration'))
+            if span and d!=span: continue   # link z listy nie otwiera takiej oferty (patrz opis modulu)
             ret=dep+dt.timedelta(days=span) if span else None
-            nights=(min(d,span) if d else span) if span else None
+            nights=span if span else None
             city=(r.get('Merlin_FlightFrom') or '').strip()
             b=(r.get('Merlin_BoardStandardDesc') or '').strip()
             place=', '.join(x for x in [(r.get('Hotel_Location_Name') or '').strip(),(r.get('Merlin_City') or '').strip()] if x)

@@ -40,6 +40,9 @@ class Tours(unittest.TestCase):
     def test_warsaw_modlin(self):
         r=run({'cc':'ES','ym':YM,'origin':'WAW'},{'a':fake('A',[offer(**{'from':'WMI'})])})
         self.assertEqual(len(r['offers']),1)
+    def test_szymany(self):
+        r=run({'cc':'ES','ym':YM,'origin':'OSZ'},{'a':fake('A',[offer(**{'from':'SZY'})])})
+        self.assertEqual(len(r['offers']),1)
     def test_country_not_sold(self):
         r=run({'cc':'GR','ym':YM,'origin':None},{'a':fake('A',[offer()])})
         self.assertEqual(r['ops']['a']['state'],'none')

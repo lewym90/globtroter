@@ -11,6 +11,7 @@ NAMES={'ES':'Hiszpania','GR':'Grecja','TR':'Turcja','EG':'Egipt','BG':'Bułgaria
  'BA':'Bośnia i Hercegowina','RO':'Rumunia','PL':'Polska','SK':'Słowacja','LV':'Łotwa','LT':'Litwa','EE':'Estonia','CH':'Szwajcaria','OM':'Oman','DO':'Dominikana','MX':'Meksyk','TH':'Tajlandia','KE':'Kenia','TZ':'Tanzania (Zanzibar)','LK':'Sri Lanka','MU':'Mauritius','CV':'Wyspy Zielonego Przylądka','MV':'Malediwy','CU':'Kuba','ID':'Indonezja','VN':'Wietnam','US':'Stany Zjednoczone','JM':'Jamajka','SC':'Seszele','IN':'Indie','QA':'Katar','BH':'Bahrajn','SA':'Arabia Saudyjska'}
 ORIGINS={'KTW':'Katowice','WAW':'Warszawa','KRK':'Kraków','GDN':'Gdańsk','WRO':'Wrocław','POZ':'Poznań','RZE':'Rzeszów','LUZ':'Lublin','BZG':'Bydgoszcz','LCJ':'Łódź','SZZ':'Szczecin','OSZ':'Olsztyn-Mazury'}
 TTL=6*3600
+SAME={'WAW':{'WAW','WMI','RDO'},'OSZ':{'OSZ','SZY'}}
 MODS={};_done=[False]
 def _load():
     if _done[0]: return MODS
@@ -58,7 +59,7 @@ def _ok(x,ym,o):
     try:
         if not(x.get('url','').startswith('https://') and x.get('name') and x.get('dep','').startswith(ym)): return False
         if not(isinstance(x.get('ppp'),int) and 150<=x['ppp']<=100000): return False
-        if o and x.get('from') and len(x['from'])==3 and x['from']!=o and not(o=='WAW' and x['from'] in('WMI','RDO')): return False
+        if o and x.get('from') and len(x['from'])==3 and x['from'] not in SAME.get(o,{o}): return False
         return True
     except Exception: return False
 def _run(job,cc,ym,o):

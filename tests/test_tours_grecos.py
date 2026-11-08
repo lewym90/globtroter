@@ -11,7 +11,7 @@ class Parse(unittest.TestCase):
     def setUpClass(cls):
         with open(FX,encoding='utf-8') as f: cls.text=f.read()
         cls.offers=grecos.parse(cls.text,span=7)
-    def test_all_rows(self): self.assertEqual(len(self.offers),len(json.loads(self.text)))
+    def test_all_rows(self): self.assertEqual(len(self.offers),len(json.loads(self.text))-1)   # bez Hotel Monika (Duration 8)
     def test_well_formed(self):
         for o in self.offers:
             self.assertEqual(set(o),KEYS)
@@ -29,10 +29,10 @@ class Parse(unittest.TestCase):
         o=self.offers[0]
         self.assertEqual((o['name'],o['dep'],o['ret'],o['from'],o['ppp'],o['total'],o['board'],o['place'],o['stars']),
                          ('Coralli Beach','2027-05-03','2027-05-10','KTW',1967,3934,'Bez wyżywienia','Rodos, Pefki',3))
-    def test_nights_from_duration(self):
-        # Duration 8 ('8 dni') przy 7 dniach wylot->powrot: 7 noclegow
-        o=[x for x in self.offers if x['name']=='Hotel Monika'][0]
-        self.assertEqual((o['dep'],o['ret'],o['nights']),('2027-05-29','2027-06-05',7))
+    def test_inconsistent_duration_skipped(self):
+        # Duration 8 przy 7 dniach wylot->powrot: link z listy nie otwiera oferty na grecos.pl
+        self.assertFalse(any(x['name']=='Hotel Monika' for x in self.offers))
+        self.assertTrue(any(x['name']=='Hotel Monika' for x in grecos.parse(self.text)))
     def test_half_star_and_board(self):
         self.assertTrue(any(o['stars']==3.5 for o in self.offers))
         self.assertTrue(any(o['board']=='Śniadania i obiadokolacje' for o in self.offers))

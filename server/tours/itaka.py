@@ -127,7 +127,11 @@ def search(cc,ym,origin=None,limit_pages=40):
     for p in range(1,limit_pages+1):
         t=http.get(list_url(cc,ym,origin,p))
         if total is None: total=total_count(t)
-        n=len(_data(t).get('list') or [])
+        rows=_data(t).get('list') or [];n=len(rows)
+        if p==1 and origin and rows and not any(city_code(([x for x in r.get('segments') or [] if x.get('type')=='flight'] or [{}])[0]
+                                                         .get('departure',{}).get('title'))==origin for r in rows):
+            # Itaka nie ma lotow z tego lotniska do tego kraju i zignorowala filtr (pokazuje wszystko) - koniec
+            return {'offers':[],'total':0,'complete':True,'url':first}
         for o in parse(t,cc,ym,origin):
             if o['url'] not in seen: seen.add(o['url']);offers.append(o)
         if n<PER_PAGE or p*PER_PAGE>=(total or 0): complete=True;break
