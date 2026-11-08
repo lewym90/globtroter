@@ -14,11 +14,20 @@ C={
 'BG':('Bułgaria','EUR','euro','C, F','bułgarski','+359',EU_ID),'RO':('Rumunia','RON','lej rumuński','C, F','rumuński','+40',EU_ID),
 'ME':('Czarnogóra','EUR','euro','C, F','czarnogórski','+382',EU_ID+' (sprawdź wymogi)'),'BA':('Bośnia i Hercegowina','BAM','marka zamienna','C, F','bośniacki','+387',EU_ID+' (sprawdź wymogi)'),
 'RS':('Serbia','RSD','dinar serbski','C, F','serbski','+381',EU_ID+' (sprawdź wymogi)'),'AL':('Albania','ALL','lek','C, F','albański','+355',EU_ID+' (sprawdź wymogi)'),'MK':('Macedonia Północna','MKD','denar','C, F','macedoński','+389',EU_ID+' (sprawdź wymogi)'),
-'MD':('Mołdawia','MDL','lej mołdawski','C, F','rumuński','+373',PASS),'TR':('Turcja','TRY','lira turecka','C, F','turecki','+90',PASS),'GE':('Gruzja','GEL','lari','C, F','gruziński','+995',PASS),'MA':('Maroko','MAD','dirham','C, E','arabski, francuski','+212',PASS)}
-EMERG={'GB':'999 lub 112','MA':'19 (policja), 15 (pogotowie)','TR':'112','GE':'112'}
+'MD':('Mołdawia','MDL','lej mołdawski','C, F','rumuński','+373',PASS),'TR':('Turcja','TRY','lira turecka','C, F','turecki','+90',PASS),'GE':('Gruzja','GEL','lari','C, F','gruziński','+995',PASS),'MA':('Maroko','MAD','dirham','C, E','arabski, francuski','+212',PASS),
+# Ponizej: nazwy, waluty i numery alarmowe z MSZ (odyseusz.gov.pl, profile krajow, XI 2026), nazwy walut z tabeli B NBP,
+# wtyczki z zestawienia Wikipedii "Mains electricity by country", jezyki urzedowe i numery kierunkowe z Wikidata.
+'EG':('Egipt','EGP','funt egipski','C, F','arabski','+20',PASS+' oraz wiza (wymagana, sprawdź na gov.pl)'),'TN':('Tunezja','TND','dinar tunezyjski','C, E','arabski','+216',PASS),
+'AE':('Zjednoczone Emiraty Arabskie','AED','dirham ZEA','G','arabski','+971',PASS),'JO':('Jordania','JOD','dinar jordański','B, C, D, F, G, J','arabski','+962',PASS+' oraz wiza (wymagana, sprawdź na gov.pl)'),
+'CV':('Wyspy Zielonego Przylądka','CVE','escudo Zielonego Przylądka','C, F','portugalski, kreolski','+238',PASS)}
+EMERG={'GB':'999 lub 112','MA':'19 (policja), 15 (pogotowie)','TR':'112','GE':'112',
+  'EG':'122 (policja), 123 (pogotowie), 180 (straż pożarna), 126 (policja turystyczna)','TN':'197 (policja), 190 (pogotowie), 198 (straż pożarna)',
+  'AE':'999 (policja), 998 (pogotowie), 997 (straż pożarna)','JO':'911','CV':'132 (policja), 130 (pogotowie), 131 (straż pożarna)'}
+# Profil kraju w serwisie MSZ Odyseusz (tam prowadzi tez gov.pl/web/<kraj>/idp)
+MSZ={cc:'https://odyseusz.gov.pl/'+cc for cc in('EG','TN','AE','JO','CV')}
 def info(cc):
     c=C.get(cc)
     if not c: return None
     return {'name':c[0],'currency':c[1],'currencyName':c[2],'plugs':c[3],'language':c[4],'dial':c[5],'docs':c[6],'emergency':EMERG.get(cc,'112'),
       'plugNote':'Polska ma wtyczki C i E. Weź adapter.' if 'C' not in c[3] else 'Polska ładowarka powinna pasować.',
-      'msz':'https://www.gov.pl/web/dyplomacja/informacje-dla-podrozujacych','ekuz':cc in 'IT ES PT FR DE AT NL BE CH CZ SK HU SI HR GR CY MT IE NO SE DK FI IS EE LV LT BG RO'.split()}
+      'msz':MSZ.get(cc,'https://www.gov.pl/web/dyplomacja/informacje-dla-podrozujacych'),'ekuz':cc in 'IT ES PT FR DE AT NL BE CH CZ SK HU SI HR GR CY MT IE NO SE DK FI IS EE LV LT BG RO'.split()}

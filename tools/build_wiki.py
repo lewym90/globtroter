@@ -3,13 +3,14 @@
 import json,os,re,sys,time,urllib.parse,urllib.request
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 P=ROOT+'/data/attractions.json'
+ONLY=set(filter(None,os.environ.get('ONLY','').split(',')))  # np. ONLY=hurghada,side: tylko te kierunki
 def get(u):
     for i in range(4):
         try: return json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'User-Agent':'Globtroter/1.0 (non-commercial; github.com/lewym90/globtroter)'}),timeout=30))
         except Exception as e: print(str(e)[:70],flush=True);time.sleep(5*(i+1))
     return {}
 def main():
-    A=json.load(open(P,encoding='utf8'));items=[x for v in A.values() for x in v if 'd' not in x and str(x['q']).startswith('Q')]
+    A=json.load(open(P,encoding='utf8'));items=[x for k,v in A.items() if not ONLY or k in ONLY for x in v if 'd' not in x and str(x['q']).startswith('Q')]
     t0=time.time();titles={}
     qs=sorted({x['q'] for x in items})
     for i in range(0,len(qs),50):

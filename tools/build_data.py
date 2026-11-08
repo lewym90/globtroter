@@ -17,7 +17,7 @@ def sparql(q):
 def dist(a,b,c,d):
     R=6371;p=math.radians;x=math.sin(p(c-a)/2)**2+math.cos(p(a))*math.cos(p(c))*math.sin(p(d-b)/2)**2
     return 2*R*math.asin(math.sqrt(x))
-EU='AL AD AT BA BE BG BY CH CY CZ DE DK EE ES FI FR GB GE GR HR HU IE IS IT LT LU LV MA MD ME MK MT NL NO PL PT RO RS SE SI SK TR XK'.split()
+EU='AL AD AT BA BE BG BY CH CY CZ DE DK EE ES FI FR GB GE GR HR HU IE IS IT LT LU LV MA MD ME MK MT NL NO PL PT RO RS SE SI SK TR XK EG TN AE JO CV'.split()
 PLN={'pl':'Polska'}
 def airports():
     rows=list(csv.DictReader(io.StringIO(get('https://raw.githubusercontent.com/davidmegginson/ourairports-data/main/airports.csv').decode())))

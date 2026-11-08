@@ -4,6 +4,7 @@ wiec trzymamy ostatnia dobra wersje, a ceny i tak pobieramy na zywo. Nigdy nie k
 import json,os,sys,time,urllib.request
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAX_AGE=25*86400;BUDGET=float(os.environ.get('BUDGET_S','1500'))
+ONLY=set(filter(None,os.environ.get('ONLY','').split(',')))  # np. ONLY=hurghada,side: tylko te kierunki
 KEEP=('name','key','accommodation_type','url','review_summary','price_ranges','geo','image','merchandising_labels')
 def page(ta,sort,lim=50):
     u=f'https://data.xotelo.com/api/list?location_key=g{ta}&limit={lim}&offset=0&sort={sort}'
@@ -13,6 +14,7 @@ def page(ta,sort,lim=50):
     except Exception as e: print(' ',str(e)[:60],flush=True);return []
 def main():
     ds=json.load(open(ROOT+'/data/destinations.json',encoding='utf8'));t0=time.time();ok=bad=skip=0
+    ds=[d for d in ds if not ONLY or d['id'] in ONLY]
     os.makedirs(ROOT+'/data/hotels',exist_ok=True)
     for d in ds:
         if not d.get('ta'): continue

@@ -69,6 +69,9 @@ def norm(s):
     return ''.join(c for c in s if not unicodedata.combining(c))
 NUM={'dwa':2,'dwie':2,'dwoch':2,'trzy':3,'trzech':3,'cztery':4,'czterech':4,'piec':5,'pieciu':5,'szesc':6,'siedem':7,'osiem':8,'dziewiec':9,'dziesiec':10}
 MON={'stycz':1,'lut':2,'marz':3,'marc':3,'kwie':4,'maj':5,'maj':5,'czerw':6,'lip':7,'sierp':8,'wrze':9,'pazdz':10,'listop':11,'grud':12}
+# Nazwy, ktorych poczatek jest zwyklym slowem (salon, makaron, sloneczne, szary, marsz): tylko pelna nazwa
+STRICT={'sal':r'\bsal\b','salou':r'\bsalou\b','makadi-bay':r'\bmakadi\b','marsa-alam':r'\bmarsa\W+alam\b','sloneczny-brzeg':r'\bsloneczn\w*\W+brzeg','szarm-el-szejk':r'\bszarm\b|\bszejk\b|\bsharm\b','boa-vista':r'\bboa\W+vist'}
+CSTRICT={'CV':r'zielon\w*\W+przyl|\bcabo\W+verde|\bcape\W+verde','AE':r'\bemirat|\bzea\b'}
 def rules(text):
     """Rozumie zdania typu: 5 dni w Rzymie, 2 osoby, 5000 zl, w maju. Nic nie zgaduje poza tym, co padlo."""
     t=norm(text);out={};words=re.findall(r'[a-z0-9]+',t)
@@ -76,14 +79,16 @@ def rules(text):
     for d in geo.DESTS:
         n=norm(d['name'].split(' (')[0]);main=n.split()[0]
         stem=main[:max(4,len(main)-2)]
-        if len(n)>=3 and (re.search(r'\b'+re.escape(n)+r'\b',t) or any(w.startswith(stem) for w in words)):
+        if d['id'] in STRICT: hit=bool(re.search(STRICT[d['id']],t))
+        else: hit=len(n)>=3 and (re.search(r'\b'+re.escape(n)+r'\b',t) or any(w.startswith(stem) for w in words))
+        if hit:
             if not best or len(n)>best[0]: best=(len(n),d['id'])
     if best: out['destIds']=[best[1]]
     else:
         import countries
         for cc,c in countries.C.items():
             n=norm(c[0]).split()[0];stem=n[:max(4,len(n)-2)]
-            if any(w.startswith(stem) for w in words): out['countries']=[cc];break
+            if (re.search(CSTRICT[cc],t) if cc in CSTRICT else any(w.startswith(stem) for w in words)): out['countries']=[cc];break
     for w,n in NUM.items(): t=re.sub(r'\b'+w+r'\b',str(n),t)
     if m:=re.search(r'(\d{1,2})\s*(?:dni|dzien|dnia)',t): out['nights']=max(1,int(m[1])-1) if 'noc' not in t else int(m[1])
     if m:=re.search(r'(\d{1,2})\s*noc',t): out['nights']=int(m[1])

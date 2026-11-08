@@ -3,6 +3,7 @@
 import json,os,re,sys,time,unicodedata,urllib.parse,urllib.request
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 P=ROOT+'/data/attractions.json';D=ROOT+'/data/poi_done.json';MIN=70
+ONLY=set(filter(None,os.environ.get('ONLY','').split(',')))  # np. ONLY=hurghada,side: tylko te kierunki
 URLS=['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter','https://overpass.kumi.systems/api/interpreter']
 def ask(q):
     for u in URLS:
@@ -29,6 +30,7 @@ def norm(s):
     return a or re.sub(r'\W','',t)
 def main():
     ds=json.load(open(ROOT+'/data/destinations.json',encoding='utf8'));A=json.load(open(P,encoding='utf8'));t0=time.time()
+    ds=[d for d in ds if not ONLY or d['id'] in ONLY]
     for d in sorted(ds,key=lambda d:len(A.get(d['id'],[]))):
         L=A.setdefault(d['id'],[])
         done=json.load(open(D,encoding='utf8')) if os.path.exists(D) else []

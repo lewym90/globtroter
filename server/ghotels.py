@@ -5,7 +5,7 @@ from urllib.parse import quote,unquote
 import geo,net,store
 log=logging.getLogger('ghotels')
 MONTHS='January February March April May June July August September October November December'.split()
-ALIAS={'Thira':'Santorini','Arrecife':'Lanzarote','Puerto del Rosario':'Fuerteventura','Faro':'Algarve','Argostoli':'Kefalonia','Sarandë':'Saranda','Valletta':'Malta','Chamonix-Mont-Blanc':'Chamonix','Funchal':'Madeira','Ponta Delgada':'Azores Sao Miguel'}
+ALIAS={'Thira':'Santorini','Arrecife':'Lanzarote','Puerto del Rosario':'Fuerteventura','Faro':'Algarve','Argostoli':'Kefalonia','Sarandë':'Saranda','Valletta':'Malta','Chamonix-Mont-Blanc':'Chamonix','Funchal':'Madeira','Ponta Delgada':'Azores Sao Miguel','Sal (Cape Verde)':'Sal Cape Verde','Boa Vista (Cape Verde)':'Boa Vista Cape Verde'}
 _l=threading.Lock();_last=[0.0];_blocked=[0.0]
 _dec=json.JSONDecoder()
 def query(name,ci,co):
