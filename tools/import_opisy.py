@@ -4,7 +4,7 @@ Nowe wchodza tylko z pewnym polozeniem. Kazde odrzucenie jest liczone w raporcie
 import collections,json,math,os,re,sys,unicodedata
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 KIND={'muzeum':'museum','świątynia':'church','pałac':'palace','zamek':'castle','ruiny':'ruins','pomnik':'monument','plac':'square','ulica':'street','park':'park','przyroda':'nature','plaża':'beach','most':'bridge','teatr':'theatre','zoo':'zoo','targ':'food','zabytek':'sight'}
-LIMIT={'Teneryfa':70,'Gran Canaria':70,'Fuerteventura':70,'Lanzarote':60,'Ibiza':50,'Palma de Mallorca':80,'Madera (Funchal)':60,'Kreta (Heraklion)':80,'Kreta (Chania)':80,'Korfu':70,'Rodos':70,'Kefalonia':60,'Zakynthos':50,'Sardynia (Cagliari)':80,'Sardynia (Olbia)':80,'Ajaccio (Korsyka)':80,'Ponta Delgada (Azory)':70}
+LIMIT={'Teneryfa':70,'Gran Canaria':70,'Fuerteventura':70,'Lanzarote':60,'Ibiza':50,'Palma de Mallorca':80,'Madera (Funchal)':60,'Kreta (Heraklion)':80,'Kreta (Chania)':80,'Korfu':70,'Rodos':70,'Kefalonia':60,'Zakynthos':50,'Sardynia (Cagliari)':80,'Sardynia (Olbia)':80,'Ajaccio (Korsyka)':80,'Ponta Delgada (Azory)':70,'Chalkidiki':80,'Akaba':120,'Hurghada':60,'Makadi Bay':60,'Marsa Alam':80,'Szarm el-Szejk':70,'Dżerba':45,'Sousse i Monastir':50,'Hammamet':50,'Mahdia':50,'Side':50,'Alanya':50,'Belek':50,'Marmaris':50,'Dubaj':60,'Sal':40,'Boa Vista':40,'Lloret de Mar':45,'Salou':45,'Benidorm':45,'Słoneczny Brzeg':45}
 def norm(s):
     t=str(s).replace('ł','l').replace('Ł','l').lower()
     a=re.sub(r'[^a-z0-9]','',unicodedata.normalize('NFKD',t).encode('ascii','ignore').decode())
