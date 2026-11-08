@@ -4,8 +4,8 @@ import json,logging,os,sys,threading,time
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import parse_qs,urlsplit
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
-import ai,flights,geo,hotels,net,plan,push,ryanair,search,store,trips
-VERSION='1.8.2'
+import ai,flights,geo,hotels,net,plan,push,ryanair,search,store,tours,trips
+VERSION='1.9.0'
 _hits={}
 def limited(ip,kind,n,win):
     """Prosty limit zapytan na adres, zeby nikt nie zapchal bazy ani darmowego limitu AI."""
@@ -36,6 +36,10 @@ class H(BaseHTTPRequestHandler):
                 j=search.JOBS.get(q.get('id',''))
                 if not j: return self.out(404,{'error':'Wyszukiwanie wygasło. Uruchom je jeszcze raz.'})
                 return self.out(200,j)
+            if p=='/api/tours/meta': return self.out(200,tours.meta())
+            if p=='/api/tours/job':
+                if q.get('id','') not in tours.JOBS: return self.out(404,{'error':'Wyszukiwanie wygasło. Uruchom je jeszcze raz.'})
+                return self.out(200,tours.status(q['id'],int(q.get('n',0) or 0)))
             if p=='/api/hotel/offers': return self.out(200,hotels.offers(q.get('key'),q.get('in'),q.get('out'),q.get('rooms',1)))
             if p=='/api/hotels':
                 return self.out(200,hotels.search(q['dest'],q['in'],q['out'],int(q.get('adults',2)),int(q.get('children',0)),int(q['budget']) if q.get('budget') else None,q.get('pref','balanced'),q.get('minRating',0),q.get('kind','all'),q.get('breakfast')=='1'))
@@ -69,6 +73,7 @@ class H(BaseHTTPRequestHandler):
             b=self.body()
             if p=='/api/search': return self.out(200,{'id':search.start(b)})
             if p=='/api/plan': return self.out(200,plan.build(b))
+            if p=='/api/tours': return self.out(200,{'id':tours.start(b)})
             ip=(self.headers.get('X-Forwarded-For') or self.client_address[0]).split(',')[0].strip()
             if p=='/api/trip/new':
                 if limited(ip,'new',40,86400): return self.out(429,{'error':'Za dużo nowych wyjazdów dziś. Spróbuj jutro.'})

@@ -1,0 +1,306 @@
+[
+ {
+  "Hotel_Features": [],
+  "Hotel_Tags": [
+   {
+    "Name": "PRAWDZIWE SIGA-SIGA",
+    "ColorCSS": "#009FE3"
+   },
+   {
+    "Name": "PLAŻOWY HIT",
+    "ColorCSS": "#ffc000"
+   },
+   {
+    "Name": "PIĘKNE WIDOKI",
+    "ColorCSS": "#7EC07B"
+   }
+  ],
+  "Hotel_SubBrands": [],
+  "Hotel_AverageRating": "0",
+  "Hotel_Id": "a836fce5-57ec-4a99-8ba5-7368fad98807",
+  "Hotel_Name": "Coralli Beach",
+  "Hotel_GPS_Latitude": "36.07755",
+  "Hotel_GPS_Longitude": "28.04304",
+  "Hotel_Location_Name": "Rodos",
+  "Hotel_OfferUrlWithOfferCode": "/wakacje/grecja/coralli-beach?offercode=",
+  "Hotel_Standard_Stars_Css": "three-stars",
+  "Hotel_Local_Standard_Stars_Css": "three-stars",
+  "Hotel_Keys_Value": "",
+  "Hotel_LocalStandard": "local-standard",
+  "Hotel_Type_Name": "Inny",
+  "Hotel_TextCategory": "",
+  "Hotel_Teaser_Highlights_1": "",
+  "Hotel_Teaser_Highlights_2": "",
+  "Hotel_Teaser_Highlights_3": "",
+  "Hotel_Is_New": false,
+  "Query_AdultsChildenQueryString": "&Adults=2&Children=0",
+  "Query_AdditionalFiltersQueryString": "&DateOfDeparture=20270501&DateOfReturn=20270607&DurationInterval=7:7&From=KTW",
+  "Merlin_Id": "pOCge8scgx2esAMqWJ60SBAAog-BrwmhuQX-Ug8fbLdgg_VNZOoGHX_tJqjSQBmjjcI8QqBEdSQ1MwzaTB1wZI3h5QQVj1IGACcjsVBxcAWAhWAlwNQL0GHUsPF2G3ywFLAF6nMFKRE1MAW5oMAayjkgENtdXACCAAUa_Nme3eAQESYwECYyExkN0",
+  "Merlin_AdultPrice": "1 967",
+  "Merlin_BoardStandardDesc": "Bez wyżywienia",
+  "Merlin_City": "Pefki",
+  "Merlin_Duration": "7",
+  "Merlin_FlightFrom": "Katowice",
+  "Merlin_FullPriceParsed": "3 934",
+  "Merlin_HotelCode": "RHOCORA",
+  "Merlin_OfferTypeSitecore": {
+   "Name": "Rabat Dziecko",
+   "ShortName": "D",
+   "Color": "#0d8ccd"
+  },
+  "Merlin_ParsedDepartureTime": "00:05",
+  "Merlin_ParsedStartDate": "Pn 3.05",
+  "Merlin_ParsedStartFullDate": "Pn 3.05.2027"
+ },
+ {
+  "Hotel_Features": [],
+  "Hotel_Tags": [
+   {
+    "Name": "RAJ DLA RODZIN",
+    "ColorCSS": "#007580"
+   },
+   {
+    "Name": "AQUAPARK",
+    "ColorCSS": "#4393D0"
+   }
+  ],
+  "Hotel_SubBrands": [],
+  "Hotel_AverageRating": "0",
+  "Hotel_Id": "6a4c5b5e-c2fa-461e-a4c8-92dbb281951b",
+  "Hotel_Name": "Hotel Saint Nikolas Resort",
+  "Hotel_GPS_Latitude": "35.52003",
+  "Hotel_GPS_Longitude": "23.93288",
+  "Hotel_Location_Name": "Kreta Zachodnia",
+  "Hotel_OfferUrlWithOfferCode": "/wakacje/grecja/hotel-saint-nikolas-resort?offercode=",
+  "Hotel_Standard_Stars_Css": "three-stars",
+  "Hotel_Local_Standard_Stars_Css": "three-stars",
+  "Hotel_Keys_Value": "",
+  "Hotel_LocalStandard": "local-standard",
+  "Hotel_Type_Name": "Hotel",
+  "Hotel_TextCategory": "",
+  "Hotel_Teaser_Highlights_1": "",
+  "Hotel_Teaser_Highlights_2": "",
+  "Hotel_Teaser_Highlights_3": "",
+  "Hotel_Is_New": false,
+  "Query_AdultsChildenQueryString": "&Adults=2&Children=0",
+  "Query_AdditionalFiltersQueryString": "&DateOfDeparture=20270501&DateOfReturn=20270607&DurationInterval=7:7&From=KTW",
+  "Merlin_Id": "ptS9PrHOyQ0G3urOWmRFBnAAogCWQet31KXY-JrQZ5yIISgd5UcSlyqO2_W6ZgJlalahIqBEdSQ1MwzaTB1wZI8CFQQVidJWACcjoVBxcAWAhWAlwNHdYBDw9A2ARS43dTAGG2VEsAXqcwW7sgAffIngEN8a60CCAAUYrcvZ1lARJjAQJjVeXinw",
+  "Merlin_AdultPrice": "2 168",
+  "Merlin_BoardStandardDesc": "Bez wyżywienia",
+  "Merlin_City": "Kamissiana",
+  "Merlin_Duration": "7",
+  "Merlin_FlightFrom": "Katowice",
+  "Merlin_FullPriceParsed": "4 336",
+  "Merlin_HotelCode": "CHQNIKO",
+  "Merlin_OfferTypeSitecore": {
+   "Name": "Rabat Dziecko",
+   "ShortName": "D",
+   "Color": "#0d8ccd"
+  },
+  "Merlin_ParsedDepartureTime": "13:15",
+  "Merlin_ParsedStartDate": "Śr 26.05",
+  "Merlin_ParsedStartFullDate": "Śr 26.05.2027"
+ },
+ {
+  "Hotel_Features": [],
+  "Hotel_Tags": [
+   {
+    "Name": "BEZTROSKIE ODKRYWANIE",
+    "ColorCSS": "#6D7D9D"
+   },
+   {
+    "Name": "ŻYCIE NOCNE",
+    "ColorCSS": "#D15097"
+   }
+  ],
+  "Hotel_SubBrands": [
+   {
+    "Amenities_Name": "DODAJ AUTO DO KOMPLETU",
+    "Description": "<strong>Przed wylotem możliwość zarezerwowania auta na cały pobyt.</strong> \nDodaj samochód do swojej rezerwacji na cały pobyt jeszcze przed wyjazdem i zyskaj preferencyjne warunki wynajmu!",
+    "Grey_Logo_Src": "/-/media/atrakcje/auto-do-kompletu/dodaj_auto_do_kompletu_grey.ashx"
+   }
+  ],
+  "Hotel_AverageRating": "0",
+  "Hotel_Id": "b6fdae68-3d49-4f07-9e9a-f21a87172138",
+  "Hotel_Name": "Hotel Grand Akrotiri",
+  "Hotel_GPS_Latitude": "38.6285",
+  "Hotel_GPS_Longitude": "20.611058",
+  "Hotel_Location_Name": "Lefkada",
+  "Hotel_OfferUrlWithOfferCode": "/wakacje/grecja/hotel-grand-akrotiri?offercode=",
+  "Hotel_Standard_Stars_Css": "three-stars stars-plus",
+  "Hotel_Local_Standard_Stars_Css": "",
+  "Hotel_Keys_Value": "",
+  "Hotel_LocalStandard": "none",
+  "Hotel_Type_Name": "Hotel",
+  "Hotel_TextCategory": "",
+  "Hotel_Teaser_Highlights_1": "",
+  "Hotel_Teaser_Highlights_2": "",
+  "Hotel_Teaser_Highlights_3": "",
+  "Hotel_Is_New": false,
+  "Query_AdultsChildenQueryString": "&Adults=2&Children=0",
+  "Query_AdditionalFiltersQueryString": "&DateOfDeparture=20270501&DateOfReturn=20270607&DurationInterval=7:7&From=KTW",
+  "Merlin_Id": "peR_L5FCTq3CuCyk2lMZxBAAogaOSQD33wTlXOFsNOj5qnqRbw4lUXPq0zUJF3SU6duYQqBEdSQ1MwzaTB1wZI2CJQQViVJmACcjsXBxUAXAhYAFYCQMoGHQYPD1uBgAFhg0xLAF6nMFLlAlMAAYjtnQENu6i1CCAAUeHz1OHRAQESYwECY6x9WCY",
+  "Merlin_AdultPrice": "2 220",
+  "Merlin_BoardStandardDesc": "Śniadanie",
+  "Merlin_City": "Vassiliki",
+  "Merlin_Duration": "7",
+  "Merlin_FlightFrom": "Katowice",
+  "Merlin_FullPriceParsed": "4 440",
+  "Merlin_HotelCode": "PVKAKRO",
+  "Merlin_OfferTypeSitecore": {
+   "Name": "F!RST DEAL!",
+   "ShortName": "FD",
+   "Color": "#e4266b"
+  },
+  "Merlin_ParsedDepartureTime": "18:25",
+  "Merlin_ParsedStartDate": "Pn 31.05",
+  "Merlin_ParsedStartFullDate": "Pn 31.05.2027"
+ },
+ {
+  "Hotel_Features": [],
+  "Hotel_Tags": [
+   {
+    "Name": "GRECKI VIBE",
+    "ColorCSS": "#F18700"
+   },
+   {
+    "Name": "ŻYCIE NOCNE",
+    "ColorCSS": "#D15097"
+   }
+  ],
+  "Hotel_SubBrands": [],
+  "Hotel_AverageRating": "0",
+  "Hotel_Id": "7f4a75c6-cd0b-4b07-91f2-1cef80e75269",
+  "Hotel_Name": "Hotel Monika",
+  "Hotel_GPS_Latitude": "39.788266",
+  "Hotel_GPS_Longitude": "19.715287",
+  "Hotel_Location_Name": "Korfu",
+  "Hotel_OfferUrlWithOfferCode": "/wakacje/grecja/hotel-monika?offercode=",
+  "Hotel_Standard_Stars_Css": "three-stars",
+  "Hotel_Local_Standard_Stars_Css": "three-stars",
+  "Hotel_Keys_Value": "",
+  "Hotel_LocalStandard": "local-standard",
+  "Hotel_Type_Name": "Hotel",
+  "Hotel_TextCategory": "All Inclusive",
+  "Hotel_Teaser_Highlights_1": "",
+  "Hotel_Teaser_Highlights_2": "",
+  "Hotel_Teaser_Highlights_3": "",
+  "Hotel_Is_New": false,
+  "Query_AdultsChildenQueryString": "&Adults=2&Children=0",
+  "Query_AdditionalFiltersQueryString": "&DateOfDeparture=20270501&DateOfReturn=20270607&DurationInterval=7:7&From=KTW",
+  "Merlin_Id": "pvXavrlnhyCSI-BoUofA1IAAogciByBWZuJhwNe65d1PFVfAAv31Z0FoocBS-rOBjgmvAqBEdSQ1MwzaTB1wZIgidQQVjlJWACcjoXBxUAXANYBVYCHYUEDxFAtAJSn3dTAFv3CGGDTEsAXqcwAZfGkwENj9K_CCAAUY2lgOdkARJjAQJjwXAulQ",
+  "Merlin_AdultPrice": "2 497",
+  "Merlin_BoardStandardDesc": "All inclusive",
+  "Merlin_City": "Sidari",
+  "Merlin_Duration": "8",
+  "Merlin_FlightFrom": "Katowice",
+  "Merlin_FullPriceParsed": "4 994",
+  "Merlin_HotelCode": "CFUMONI",
+  "Merlin_OfferTypeSitecore": {
+   "Name": "Rabat Dziecko",
+   "ShortName": "D",
+   "Color": "#0d8ccd"
+  },
+  "Merlin_ParsedDepartureTime": "13:25",
+  "Merlin_ParsedStartDate": "So 29.05",
+  "Merlin_ParsedStartFullDate": "So 29.05.2027"
+ },
+ {
+  "Hotel_Features": [],
+  "Hotel_Tags": [
+   {
+    "Name": "GRECKI VIBE",
+    "ColorCSS": "#F18700"
+   },
+   {
+    "Name": "PIĘKNE WIDOKI",
+    "ColorCSS": "#7EC07B"
+   }
+  ],
+  "Hotel_SubBrands": [],
+  "Hotel_AverageRating": "0",
+  "Hotel_Id": "cfbffa85-9c37-45f1-ae05-7b71c23a6687",
+  "Hotel_Name": "Hotel Oasis",
+  "Hotel_GPS_Latitude": "",
+  "Hotel_GPS_Longitude": "",
+  "Hotel_Location_Name": "Korfu",
+  "Hotel_OfferUrlWithOfferCode": "/wakacje/grecja/hotel-oasis?offercode=",
+  "Hotel_Standard_Stars_Css": "three-stars stars-plus",
+  "Hotel_Local_Standard_Stars_Css": "three-stars",
+  "Hotel_Keys_Value": "",
+  "Hotel_LocalStandard": "local-standard",
+  "Hotel_Type_Name": "Hotel",
+  "Hotel_TextCategory": "",
+  "Hotel_Teaser_Highlights_1": "",
+  "Hotel_Teaser_Highlights_2": "",
+  "Hotel_Teaser_Highlights_3": "",
+  "Hotel_Is_New": true,
+  "Query_AdultsChildenQueryString": "&Adults=2&Children=0",
+  "Query_AdditionalFiltersQueryString": "&DateOfDeparture=20270501&DateOfReturn=20270607&DurationInterval=7:7&From=KTW",
+  "Merlin_Id": "pxK6qk68fS-VsJAHzqxh7PAAogGbUWn60qQh5GoEWnZae2lpj5_ENRrdQfKi4NWMqfGr8qBEdSQ1MwzaTB1wZIkipQQVidJWACcjoVBxcAWAhcAlYAHbADDw9AiwNSn3dTAFv3CGGDTEsAXqcwAbWLnwEN7oy0CCAAUeTxhOdkARJjAQJjhRXzPw",
+  "Merlin_AdultPrice": "2 697",
+  "Merlin_BoardStandardDesc": "Śniadanie i obiadokolacja",
+  "Merlin_City": "Perama",
+  "Merlin_Duration": "7",
+  "Merlin_FlightFrom": "Katowice",
+  "Merlin_FullPriceParsed": "5 394",
+  "Merlin_HotelCode": "CFUOASI",
+  "Merlin_OfferTypeSitecore": {
+   "Name": "F!RST DEAL!",
+   "ShortName": "FD",
+   "Color": "#e4266b"
+  },
+  "Merlin_ParsedDepartureTime": "13:05",
+  "Merlin_ParsedStartDate": "Śr 26.05",
+  "Merlin_ParsedStartFullDate": "Śr 26.05.2027"
+ },
+ {
+  "Hotel_Features": [],
+  "Hotel_Tags": [
+   {
+    "Name": "GRECKI VIBE",
+    "ColorCSS": "#F18700"
+   },
+   {
+    "Name": "ŻYCIE NOCNE",
+    "ColorCSS": "#D15097"
+   }
+  ],
+  "Hotel_SubBrands": [],
+  "Hotel_AverageRating": "0",
+  "Hotel_Id": "e94d7b80-5cc1-478e-8448-232509137a61",
+  "Hotel_Name": "Hotel Bohemian Gardens",
+  "Hotel_GPS_Latitude": "35.02590750918588",
+  "Hotel_GPS_Longitude": "34.04327558417087",
+  "Hotel_Location_Name": "Cypr - Larnaka",
+  "Hotel_OfferUrlWithOfferCode": "/wakacje/cypr/hotel-bohemian-gardens?offercode=",
+  "Hotel_Standard_Stars_Css": "four-stars",
+  "Hotel_Local_Standard_Stars_Css": "four-stars",
+  "Hotel_Keys_Value": "",
+  "Hotel_LocalStandard": "local-standard",
+  "Hotel_Type_Name": "",
+  "Hotel_TextCategory": "All Inclusive",
+  "Hotel_Teaser_Highlights_1": "",
+  "Hotel_Teaser_Highlights_2": "",
+  "Hotel_Teaser_Highlights_3": "",
+  "Hotel_Is_New": false,
+  "Query_AdultsChildenQueryString": "&Adults=2&Children=0",
+  "Query_AdditionalFiltersQueryString": "&DateOfDeparture=20270401&DateOfReturn=20271130&DurationInterval=7:7",
+  "Merlin_Id": "ppESiqLvUvcKeEAhbsZsUeAAogSMBzM28kUtE_7n5M2839SS8a43GoQ8Gl4yp5BTEsFTMqBEdSQ1Mw56TB1wZIyC1QQVidH2ACcjwVBxcAWAhcAlYAHb8CDy5A3QNbloABYYNMSwBSlgVTAF6RKwGR3ZsBDay6twggAFGymv39rAEBEmMBAmNTb09Q",
+  "Merlin_AdultPrice": "2 916",
+  "Merlin_BoardStandardDesc": "Śniadanie i obiadokolacja",
+  "Merlin_City": "Protaras",
+  "Merlin_Duration": "7",
+  "Merlin_FlightFrom": "Katowice",
+  "Merlin_FullPriceParsed": "5 832",
+  "Merlin_HotelCode": "LCABOGA",
+  "Merlin_OfferTypeSitecore": {
+   "Name": "Rabat Dziecko",
+   "ShortName": "D",
+   "Color": "#0d8ccd"
+  },
+  "Merlin_ParsedDepartureTime": "17:50",
+  "Merlin_ParsedStartDate": "So 24.04",
+  "Merlin_ParsedStartFullDate": "So 24.04.2027"
+ }
+]

@@ -511,3 +511,29 @@ details.add summary{font-weight:700;cursor:pointer;margin:0}
 .band.hart img{object-position:center 34%}
 .say{background:#071a3dcc;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 .headline{padding-top:7vh}
+/* Biura podróży */
+.tform{display:grid;gap:12px}
+.tform label{display:grid;gap:5px;font-weight:700;font-size:14px;color:var(--ink2)}
+.tbar{display:grid;gap:10px;margin-top:12px}
+.tops{display:flex;flex-wrap:wrap;gap:6px}
+.top{font-size:13px;font-weight:600;padding:5px 10px;border-radius:99px;background:var(--paper2);color:var(--ink2)}
+.top.ok{background:#e7f5ea;color:#1d6b33}.top.err{background:#fdeaea;color:#a02525}
+.pills.dark button{color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+.pills.dark .on{color:var(--night);box-shadow:none}
+.tcard{background:#fff;color:var(--ink);border-radius:18px;padding:15px 16px;margin-top:12px;box-shadow:0 8px 24px #03122f22;display:grid;gap:10px}
+.tcard .th{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.tcard h3{font:800 18px/1.25 var(--disp)}
+.tcard .ts{font-size:14px;color:var(--ink2);margin-top:2px}
+.tbo{flex:none;font-size:12.5px;font-weight:700;padding:4px 9px;border-radius:8px;background:var(--night);color:var(--sun)}
+.tg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px}
+.tg span{display:inline-flex;align-items:center;gap:5px}
+.tg svg{width:16px;height:16px;flex:none}
+.tp{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid var(--line);padding-top:10px}
+.tp b{font:800 24px/1 var(--disp)}
+.tp small{font-size:13px;color:var(--ink2)}
+.tp .btn{width:auto;flex:none}
+.tspin{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--sun);animation:tspin 1s linear infinite;vertical-align:-2px;margin-right:4px}
+@keyframes tspin{to{transform:rotate(360deg)}}
+.tabbar button span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.tform .btn svg{width:22px;height:22px;flex:none}
+.tbar .pills{margin-top:-2px}

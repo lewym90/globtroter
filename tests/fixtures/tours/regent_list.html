@@ -1,0 +1,2057 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <title>CITY BREAK - MAGIA HISZPANII</title>
+
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html/css; charset=utf-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Każdy z nas zapewne marzy o wycieczce do urokliwej Hiszpanii, kraju corridy i flamenco, gdzie słońce ogrzewa tłumy turystów prawie przez cały rok. Zapraszamy Państwa w niezwykłą podróż do głównych miast tego cudownego kraju - Barcelony, Madrytu i Alicante, gdzie zabytkowa architektura i malownicze krajobrazy zapierają dech w piersiach. Zapewniamy, iż poczują Państwo zapach i smak Hiszpanii, Kraju przepysznej paelli i czerwonej sangrii.">
+    <meta name="keywords" content="Hiszpania, samolot, wakacje, wczasy,">
+    <meta name="page-topic" content="">
+
+    <link href="/css/bootstrap-4/bootstrap.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+    <link rel="stylesheet" type="text/css" href="/css/general.css?v=202504" media="screen">
+    <link rel="stylesheet" type="text/css" href="/css/search.css?v=202504" media="screen">
+    <link rel="shortcut icon" href="/gfx/favicon.ico" type="image/x-icon">
+
+            <script src="/gdl/sykon_js/jquery-1.5.1.js"></script>
+    
+    <script type="text/javascript" src="/js/jquery.ui.calendar.min.js"></script>
+    <script type="text/javascript" src="/js/jquery.jcarousel.min.js"></script>
+    <script type="text/javascript" src="/js/jquery.colorbox.min.js"></script>
+    <script type="text/javascript" src="/js/base.js?v=1.1"></script>
+
+    <script type="text/javascript" src="/gdl/sykon_js/linkscript.js"></script>
+    <script src="/gdl/sykon_js/ui/jquery.ui.datepicker.js"></script>
+    <script type="text/javascript" src="/gdl/sykon_js/ui/i18n/jquery.ui.datepicker-pl.js"></script>
+
+    <script>
+        function usunq() {
+            document.cookie = 'akceptacja_regent="tak"';
+            document.getElementById("wezcookie").style.display = 'none';
+        }
+
+        $(document).ready(function() {
+            var myCookie = document.cookie.replace(/(?:(?:^|.*;\s*)akceptacja_regent\s*\=\s*((?:[^;](?!;))*[^;]?).*)|.*/, "$1");
+
+            if (myCookie == '"tak"') document.getElementById("wezcookie").style.display = 'none';
+            else document.getElementById("wezcookie").style.display = 'block';
+
+            var dates = $("#sykoni_from, #sykoni_to").datepicker({
+                defaultDate: "+1w",
+                changeMonth: true,
+                changeYear: true,
+                numberOfMonths: 2,
+                dateFormat: "dd.mm.yyyy",
+                onSelect: function(selectedDate) {
+                    var option = this.id == "sykoni_from" ? "minDate" : "maxDate",
+                        instance = $(this).data("datepicker"),
+                        date = $.datepicker.parseDate(
+                            instance.settings.dateFormat ||
+                            $.datepicker._defaults.dateFormat,
+                            selectedDate,
+                            instance.settings
+                        );
+                    dates.not(this).datepicker("option", option, date);
+                }
+            });
+            dates.datepicker("option", "dateFormat", "dd.mm.yyyy");
+            if ($("#ui-datepicker-div")) $("#ui-datepicker-div").hide();
+        });
+    </script>
+
+    <!-- JAVA SCRIPT -->
+<script type="text/javascript">
+
+function bind_events() {
+    if(typeof(document.getElementsByName("change_comb")[0]) == 'object')
+        document.getElementsByName("change_comb")[0].value = 0;
+}
+
+window.onload = bind_events;
+
+</script>
+
+<script type="text/javascript">
+	$(document).ready(function(){
+	   var sdpl = new SubmitGDL();
+	   var translateArray = new Array(new Array('kierunek', 'destination'), new Array('miasto', 'city'), new Array('wylot', 'from'), new Array('powrot', 'to'), new Array('doroslych', 'dorosly'), new Array('wiek_dziecka', 'child1'), new Array('hotel', 'hotel'), new Array('wyzywienie', 'meal'), new Array('transport', 'transport'), new Array('wylot_z', 'departure_place'), new Array('type1', 'type1'), new Array('type2', 'type2'), new Array('type3', 'type3')	    );
+	   var getParams = new Array(new Array('destinationto', 'REGENT|HISZPANIA|'), new Array('wylot', '01.05.2027'), new Array('powrot', '31.05.2027')	    );
+	   var deleteParamSearch = new Array('par', 'par2', 'tourop_hotel', 'md', 'onepage', 'city', 'uniquehotel', 'unique_hotel_place', 'page', 'khotel', 'ftransport', 'fhotel', 'transport_group', 'adults', 'par', 'idx');
+
+	    sdpl.initialize(translateArray, false, ',,rezerwacja.html', ',', ',', getParams, '\/webit.php');
+	    $('#searchbutton').click(function(event){
+	    event.preventDefault();
+	    sdpl.doSubmit('sykon_search_form', deleteParamSearch); 
+	    } );
+	    $('#submit_zmien').click(function(event){
+	    	event.preventDefault();
+	    	sdpl.doSubmit('ileosob_zmien', new Array()); 	
+	    } );
+	    $('.select_mini').change(function(event){
+	    	event.preventDefault();
+	    	sdpl.doSubmit('fhotel_zmien', new Array()); 	
+	    } );
+	    $('#select_getprice_fhotel').change(function(event){
+	    	event.preventDefault();
+	    	sdpl.doSubmit('fhotel_zmien', new Array()); 	
+	    } );
+	 });
+</script>
+    <link rel="stylesheet" type="text/css" href="/gfx/kp/slick/slick.css">
+    <link rel="stylesheet" type="text/css" href="/gfx/kp/slick/slick-theme.css">
+    <style type="text/css">
+        
+            .uppercase {text-transform:uppercase}
+            #kp-slider {
+                padding: 0;
+                float: left;
+                width: 100%;
+                height: 226px;
+                margin: 0;
+            }
+
+            #kp-slider * {
+                box-sizing: border-box;
+            }
+
+            .slider {
+                width: 100%;
+                margin: 0 auto;
+            }
+
+            .slick-slide {
+                margin: 0px 10px;
+                width: 297px;
+            }
+
+            .slick-slide img,
+            .kp-slider-img {
+                width: 100%;
+            }
+
+            .slick-next,
+            .slick-prev {
+                display: block;
+                height: 30%;
+                width: 40px;
+            }
+
+            .slick-next {
+                right: -40px;
+            }
+
+            .slick-prev {
+                left: -40px;
+            }
+
+            .slick-next::before,
+            .slick-prev::before {
+                display: none !important;
+            }
+
+            .slick-dots {display: none!important;}
+            body {
+                background: #fff;
+            }
+
+            #infoline {
+                background-color: #fff;
+                /*#F0F0F0;*/
+                border: none;
+                /*border:1px solid #CCCCCC;*/
+                /*border-radius:10px;*/
+                border-radius: 0px;
+                width: 100%;
+                height: 89px;
+                margin-top: 14px;
+                float: right;
+                padding: 3px;
+            }
+
+            #logo {
+                margin-top: 0;
+            }
+
+            #kontakt {
+                float: left;
+                width: 687px;
+                height: 100%;
+                white-space: nowrap;
+            }
+
+            #kontakt td {
+                color: #6b6b6b;
+                font-size: 16px;
+            }
+
+            #kontakt .gray a {
+                color: #6b6b6b;
+            }
+
+            .art-vmenublock {
+                margin-left: 0;
+            }
+
+            #redmenu {
+                margin-top: 10px;
+                margin-bottom: 10px;
+                background: #FE0000;
+            }
+
+            #redmenuul li a {
+                /*padding: 0 33px;*/
+                padding: 0 56px;
+            }
+
+            #silvermenu {
+                float: left;
+                width: 100%;
+                margin: 20px 0px 0px;
+                background: #ccc;
+            }
+
+            #silvermenuul li a {
+                padding: 9px 9px;
+            }
+
+            #ofertywybrane {
+                background-color: #ffffff;
+                border-radius: 10px;
+                clear: both;
+                font-family: verdana, helvetica, tahoma, arial;
+                /*margin: 12px 0 20px;*/
+                margin: 20px 0 20px;
+                padding: 0;
+                float: left;
+                width: 931px;
+                position: relative;
+            }
+
+            #ofertywybrane>table,
+            #ofertywybrane tr {
+                width: 100%;
+            }
+
+            #ofertywybrane table,
+            #ofertywybrane tr,
+            #ofertywybrane td {
+                border-collapse: collapse;
+                border: none;
+                padding: 0;
+            }
+
+            table.kp tr {
+                width: 100%;
+            }
+
+            table.kp,
+            table.kp tr,
+            table.kp td {
+                border-collapse: collapse;
+                border: none;
+                padding: 0;
+            }
+
+            #ofertywybrane .oferta-prop {
+                /*width: 310px;*/
+                width: 297px;
+                font-size: 18px;
+                vertical-align: top;
+            }
+
+            #ofertywybrane .oferta-tr>td:first-child {
+                width: 317px;
+                padding-right: 20px;
+            }
+
+            #ofertywybrane .oferta-tr>td:last-child {
+                width: 317px;
+                padding-left: 20px;
+            }
+
+            .img-rezerwacja {
+                width: 297px;
+                height: 186px;
+                position: relative;
+                /*border-radius: 10px;*/
+            }
+
+            #ofertywybrane .pnazwa,
+            #kp-slider .pnazwa {
+                font-size: 13px;
+                line-height: 1.3;
+                text-align: left;
+                padding: 1px 2px 4px 7px;
+            }
+
+            #ofertywybrane .pcena,
+            .jasniej .pcena {
+                padding-right: 2px;
+                text-align: right;
+                font-size: 15px;
+                line-height: 1;
+                vertical-align: middle;
+            }
+
+            .jasniej {
+                width: 100%;
+                height: 100%;
+                position: relative;
+            }
+
+            .jasniej:hover {
+                background-color: rgba(255, 255, 255, 0.2);
+            }
+
+            .rowImg {
+                width: auto;
+                height: 226px;
+                margin: 0;
+            }
+
+            .of3,
+            .of2,
+            of1 {
+                height: 226px;
+                margin: auto 0;
+                position: relative;
+                /*border-radius: 10px;*/
+            }
+
+            .of3{width: 219px;}
+            .of2{width: 297px;}
+            .of1{width: 614px;}
+            .oferta-th {
+                position: relative;
+                /*border-radius: 10px 10px 0 0;*/
+                /*height: 23px; width: 100%;*/
+                text-align: center;
+                font-size: 13px;
+                /*padding-top: 6px;
+                margin-bottom: 2px;*/
+                padding: 5px;
+                margin-bottom: 8px;
+                clear: both;
+                background-color: #CCC;
+                color: #444;
+                /*#888888;*/
+            }
+
+            .bottomFreePlace {
+                width: 297px;
+                height: auto;
+            }
+
+            .bottomLinks {
+                width: 334px;
+                height: auto;
+                padding: 8px 0 8px;
+                margin: 5px;
+            }
+
+            #bottomIn .bottomLinks:first-child {
+                margin: 0 20px 0 15px;
+                width: 282px;
+
+            }
+
+            #bottomIn .bottomLinks:nth-child(2) {
+                margin: 0 20px 0 4px;
+                width: 293px;
+            }
+
+            .bottomFreeItem {
+                padding: 10px 0 0 0;
+            }
+
+            .bottomFreeItem img {
+                margin-top: 20px;
+            }
+
+            .bottomFreeContent {
+                /*border-radius: 0 0 10px 10px;*/
+                /*height: 133px;*/
+                width: 237px;
+                height: 173px;
+                margin: 16px 30px 0 30px;
+                background: rgba(0, 0, 0, 0) url("/gfx/bottomFreeBackground.gif") no-repeat scroll right top;
+                background-size: 100% auto;
+            }
+
+            #bottom {
+                /*border-radius: 0 0 10px 10px;*/
+                /*height: 166px;*/
+                height: 226px;
+                background: #eee;
+            }
+
+            #bottomIn {
+                margin: 8px 0 0 0;
+            }
+
+            .bottomLinks ul li {
+                /*padding: 12px 0 9px;*/
+                padding: 7px 0;
+                background-size: 105% 2px;
+                list-style-type: disc;
+                font-size: 14px;
+            }
+
+            .bottomLinks ul li a {
+                font-size: 11px;
+            }
+
+            #bottomIn .bottomLinks:nth-child(2) ul li {
+                background-size: 104% 2px;
+            }
+
+            .bottomLinks h3 {/*margin: 5px 0;*/}
+            .wyszukiwarka {
+                float: left;
+                margin-top: 0px;
+                padding-top: 0px;
+                padding-left: 0px;
+            }
+
+            #middlepage {
+                margin: 0px 20px 15px 0;
+                float: left;
+                padding: 0;
+                /* width: 614px; */
+                /*height: 226px;*/
+                border-radius: 0px;
+            }
+
+            #center {padding-top:0;}
+            #wezcookie {
+                background-color: #fff;
+                font-size: 11px;
+                bottom: 8px;
+                right: 8px;
+                display: none;
+                font-family: inherit;
+                position: fixed;
+                padding: 8px 10px 8px 18px;
+                text-align: center;
+                z-index: 9999;
+                -webkit-box-shadow: 0 9px 25px 0 rgba(0, 0, 0, 0.4);
+                -moz-box-shadow: 0 9px 25px 0 rgba(0, 0, 0, 0.4);
+                box-shadow: 0 9px 25px 0 rgba(0, 0, 0, 0.4);
+            }
+
+            .btn_cookie {
+                cursor: pointer;
+                background: #ddd;
+                border-radius: 10px;
+                padding: 2px 10px 4px;
+                font-size: 13px;
+                margin: -2px 3px 0;
+            }
+
+            .cookieTekst {
+                color: #444;
+            }
+
+            #cboxClose {
+                background-position: -53px -3px;
+                border-radius: 10px;
+                left: -4px;
+                right: auto;
+            }
+
+            #cboxSlideshow,
+            #cboxPrevious,
+            #cboxNext,
+            #cboxClose {
+                height: 20px;
+                position: absolute;
+                text-indent: -9999px;
+                top: -4px;
+                width: 20px;
+            }
+
+            #cboxPrevious,
+            #cboxNext,
+            #cboxClose,
+            #cboxSlideshow {
+                cursor: pointer;
+            }
+
+            .rowButtons {
+                width: 297px;
+                height: 226px;
+                margin: 0px 0 20px 0;
+                padding: 0;
+            }
+
+            .rowButtons a.row1 {
+                background: rgba(0, 0, 0, 0) url("/gfx/kp/bigButton1.gif") no-repeat scroll 0 0;
+            }
+
+            .rowButtons a.row2 {
+                background: rgba(0, 0, 0, 0) url("/gfx/kp/bigButton2.gif") no-repeat scroll 0 0;
+            }
+
+            .rowButtons a.row3 {
+                background: rgba(0, 0, 0, 0) url("/gfx/kp/bigButton3.gif") no-repeat scroll 0 0;
+                margin-bottom: 0;
+            }
+
+            .rowButtons a.row1,
+            .rowButtons a.row2,
+            .rowButtons a.row3 {
+                background-size: 297px 70px;
+            }
+
+            .rowButtons a {
+                width: 297px;
+                text-indent: 1px;
+                position: relative;
+                padding-left: 0;
+                font-weight: normal;
+            }
+
+            .oferta-table {
+                width: 297px;
+                height: 35px;
+                border-collapse: collapse;
+                border: none;
+                background: #EEE;
+            }
+
+            .cena-duza-div {
+                position: absolute;
+                bottom: 0;
+                right: 0;
+                text-align: right;
+                vertical-align: text-bottom;
+                line-height: 1.15;
+                background: rgba(245, 245, 245, 0.7);
+                margin-bottom: 12px;
+                padding: 3px 7px 3px 5px;
+                text-shadow: 2px 1px 2px rgba(255, 255, 255, 0.65);
+                font-size: 18px;
+            }
+
+            #searchbutton {
+                background: rgba(0, 0, 0, 0) url("/gfx/kp/searchButton.gif") no-repeat scroll center center;
+            }
+
+            .rowpodpis {
+                position: absolute;
+                bottom: 0;
+                right: 0;
+                line-height: 1.15;
+                background: #EEE;
+                padding: 3px 7px 5px 7px;
+                width: 172px;
+                text-align: center;
+            }
+
+            .art-vmenublock {background: #FE0000;}
+            #oferty-lewo,
+            #oferty-prawo {
+                position: absolute;
+                margin-top: 90px;
+            }
+
+            #oferty-lewo {
+                left: 0;
+                margin-left: -40px;
+            }
+
+            #oferty-prawo {
+                right: 0;
+                margin-right: -40px;
+            }
+
+            #left {float: right;}
+
+            .off_img_maska {display:none;}
+
+            .thoffers_no, .thoffers_link {border-radius:0px;}
+
+            .boxBackgroundhead {
+                background: rgb(179, 179, 179);
+                border-radius: 0;
+                width: auto;
+            }
+
+            .offers_hotnam>div:first-of-type {
+                width: 760px !important;
+            }
+        
+
+                    
+                #middlepage {
+                    margin: 20px 20px 15px 0;
+                    width: 100% !important;
+                }
+
+            
+            </style>
+
+    <link href="/css/rwd_fix.min.css?v=202504" rel="stylesheet" type="text/css">
+</head>
+
+<body>
+    <!-- start INFO cookie -->
+    <div id="wezcookie">
+        <button type="button" id="cboxClose" onclick="usunq()">close</button>
+        <span class="cookieTekst">Korzystanie z tej witryny oznacza wyrażenie zgody na wykorzystanie plików
+            <b>cookies</b>.<br>Więcej informacji możesz znaleźć w naszej Polityce prywatności.</span>
+    </div>
+    <!-- end INFO cookie -->
+
+    <div id="fb-root"></div>
+    <!-- script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+        js.src = "//connect.facebook.net/pl_PL/all.js#xfbml=1";
+	  fjs.parentNode.insertBefore(js, fjs);
+	  }(document, 'script', 'facebook-jssdk'));</script -->
+
+    <script type="text/javascript">
+
+  var _gaq = _gaq || [];
+var pluginUrl =
+ '//www.google-analytics.com/plugins/ga/inpage_linkid.js';
+_gaq.push(['_require', 'inpage_linkid', pluginUrl]);
+  _gaq.push(['_setAccount', 'UA-37167873-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+    <div class="container" id="container">
+        <!--begin header -->
+        <div id="header">
+            <!--begin menu_header -->
+            <div class="menu_top_div">
+                <ul id="top-menu">
+                    <li><a href='/'>STRONA GŁÓWNA</a></li>
+                    <li><a href='/aboutus/page.html'>O NAS</a></li>
+                </ul>
+            </div>
+            <!--end menu_header-->
+
+            <!--begin comunicators -->
+            <div class="tmp-vscroll" id="infoline">
+                <!--begin logo -->
+                <div id="logo">
+                    <a href="/" name="top">
+                        <img src="/gfx/logo.gif" alt="REGENT - Magia Podróżowania"
+                            title="REGENT - Magia Podróżowania">
+                    </a>
+                </div>
+                <!--end logo -->
+
+                <div id="kontakt">
+                    <table style="width:100%; float: right; margin-top: 12px;">
+                        <tr>
+                            <td align="right" style="width: 240px; padding-right: 35px;">
+                                <div style="width: 138px; padding-right: 3px;">
+                                    <div class="kontakt-i">
+                                        <img src="/gfx/info_tel.png" alt="">
+                                    </div>
+                                    <div class="gray">
+                                        <span class="gray">61</span>
+                                        <span class="gray">851-31-18</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td align="right" style="width: 188px;">
+                                <div style="width: 156px;  padding-right: 3px;">
+                                    <div class="kontakt-i">
+                                        <img src="/gfx/info_mail.png" alt="">
+                                    </div>
+                                    <div class="gray">
+                                        <a href="mailto:biuro@regent.pl"
+                                            style="text-decoration:none">biuro@regent.pl</a>
+                                    </div>
+                                </div>
+                            </td>
+                            <!-- td align="right" style="width: 207px; padding-right: 20px;">
+                                <div style="width: 98px;">
+                                    <div class="kontakt-i">
+                                        <img src="/gfx/facebook.png" alt="">
+                                    </div>
+                                    <div class="">
+                                        <a href="https://www.facebook.com/regent.biuropodrozy"  target=_blank style="text-decoration:none">facebook</a>
+                                    </div>
+                                </div>
+                            </td -->
+
+                            <td align="right" style="width: 207px; padding-right: 20px;">
+                                <div style="width: 154px;">
+                                    <div class="kontakt-i">
+                                        <img src="/gfx/info_klient.png" alt="">
+                                    </div>
+                                    <div class="">
+                                        <a href="/client/page.html" target=_blank style="text-decoration:none">Biura
+                                            sprzedaży</a>
+                                    </div>
+                                </div>
+
+                            </td>
+                        </tr>
+                        <!-- tr>
+                            <td colspan="3" align="right" style="padding-top: 12px; padding-right: 20px;">
+                                <div style="width: 154px;">
+                                    <div class="kontakt-i">
+                                        <img src="/gfx/info_klient.png" alt="">
+                                    </div>
+                                    <div class="">
+                                        <a href="/client/page.html"  target=_blank style="text-decoration:none">Biura sprzedaży</a>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr -->
+                    </table>
+                </div>
+            </div>
+            <!--end comunicators-->
+        </div>
+
+        <div class="tmp-vscroll" id="redmenu">
+            <ul id="redmenuul">
+                <li><a href="/pelna_oferta/page.html">PEŁNA OFERTA</a></li>
+                <li><a href="/client/page.html">STREFA KLIENTA</a></li>
+                <li><a href="/login/page.html">STREFA AGENTA</a></li>
+                <li><a href="/opinie/page.html">OPINIE O NAS</a></li>
+                <!--<li><a href="/incentive/page.html">INCENTIVE TRAVEL</a></li>
+                <li><a href="/incoming/page.html">INCOMING</a></li>-->
+            </ul>
+        </div>
+        <!--end header-->
+
+        <div id="main">
+            <!--begin main -->
+            <div>
+                                <!--end carousel_big-->
+
+                                    <!-- obrazek -->
+                    <div id="left" style="position:relative;">
+                                                    <div class="baner_img tmp-vscroll">
+
+                                <img src="/gfx/images/magia-hiszpanii.jpg" alt="city break" class="baner_img1" height="277"
+                                    width="684">
+                                <h1 class="baner_temat2">CITY BREAK - MAGIA HISZPANII</h1>
+                                <h1 class="baner_temat">CITY BREAK - MAGIA HISZPANII</h1>
+                                                                    <div class="baner_text">Każdy z nas zapewne marzy o wycieczce do urokliwej Hiszpanii, kraju corridy i flamenco, gdzie słońce ogrzewa tłumy turystów prawie przez cały rok. Zapraszamy Państwa w niezwykłą podróż do głównych miast tego cudownego kraju - Barcelony, Madrytu i Alicante, gdzie zabytkowa architektura i malownicze krajobrazy zapierają dech w piersiach. Zapewniamy, iż poczują Państwo zapach i smak Hiszpanii, Kraju przepysznej paelli i czerwonej sangrii.</div>
+                                                            </div>
+                                            </div>
+                    <!-- end obrazek -->
+                
+                <div class="wyszukiwarka">
+                    <!-- to cat. :   xx --><!-- regentwww, 08.11.2026 11:47:59 --><!-- ========== SEARCH .========== -->
+
+
+<div class="art-box art-vmenublock">
+    <div class="art-box-body art-vmenublock-body" style="padding-left: 20px;">
+    <div class="art-bar art-vmenublockheader">
+        <h3 class="t">Wyszukaj ofertę</h3>
+	</div><div class="art-box art-vmenublockcontent">
+	    <div class="art-box-body art-vmenublockcontent-body">
+	    
+	    
+	    
+<style>
+#sykoni_destinationto
+{
+width: 86px;
+}
+</style>	    
+	    
+
+<div class="sykon_search_form">
+<form id="sykon_search_form">
+    <!-- sykon_form_start -->
+	
+		<!-- sykon_destinationto_start -->
+	    <div id="sykond_destination">
+		<div id="sykonk_destination">Kierunek: </div>
+		<div id="sykonv_destination">
+		    <select id="sykoni_destinationto" name="destinationto">
+ <option value=""></option>
+ <option value="REGENT|FRANCJA|">Francja</option>
+ <option value="REGENT|FRANCJA|Paryż">&nbsp;&nbsp;&nbsp;Paryż</option>
+ <option value="REGENT|GRECJA|">Grecja</option>
+ <option value="REGENT|GRECJA|Ateny">&nbsp;&nbsp;&nbsp;Ateny</option>
+ <option value="REGENT|HISZPANIA|" selected="selected">Hiszpania</option>
+ <option value="REGENT|HISZPANIA|Madryt">&nbsp;&nbsp;&nbsp;Madryt</option>
+ <option value="REGENT|HISZPANIA|Alicante">&nbsp;&nbsp;&nbsp;Alicante</option>
+ <option value="REGENT|HISZPANIA|Teneryfa">&nbsp;&nbsp;&nbsp;Teneryfa</option>
+ <option value="REGENT|HISZPANIA|Barcelona">&nbsp;&nbsp;&nbsp;Barcelona</option>
+ <option value="REGENT|HISZPANIA|Lloret de Mar">&nbsp;&nbsp;&nbsp;Lloret de Mar</option>
+ <option value="REGENT|WIELKA BRYTANIA|">Wielka Brytania</option>
+ <option value="REGENT|WIELKA BRYTANIA|Londyn">&nbsp;&nbsp;&nbsp;Londyn</option>
+ <option value="REGENT|WIELKA BRYTANIA|Edynburg">&nbsp;&nbsp;&nbsp;Edynburg</option>
+ <option value="REGENT|WLOCHY|">Włochy</option>
+ <option value="REGENT|WLOCHY|Neapol">&nbsp;&nbsp;&nbsp;Neapol</option>
+ <option value="REGENT|WLOCHY|Rzym">&nbsp;&nbsp;&nbsp;Rzym</option>
+ <option value="REGENT|WLOCHY|Mediolan">&nbsp;&nbsp;&nbsp;Mediolan</option>
+ <option value="REGENT|WLOCHY|Florencja">&nbsp;&nbsp;&nbsp;Florencja</option>
+ <option value="REGENT|WLOCHY|Wenecja">&nbsp;&nbsp;&nbsp;Wenecja</option>
+</select>
+		
+		</div>
+	    </div>
+	<!-- sykon_destinationto_end -->
+
+        <!-- sykon_from_start -->
+		<div id="sykond_from" style="float: left; width: 100px;">
+		    <div id="sykonk_from">od: </div>
+		    <div id="sykonv_from"><input class="submit_param" type="text" id="sykoni_from" name="from"  size=10 maxlength=10  value="01.05.2027"></div>
+		</div>
+	<!-- sykon_from_end -->
+
+	<!-- sykon_to_start -->
+		<div id="sykond_to">
+		    <div id="sykonk_to">do: </div>
+		    <div id="sykonv_to"><input class="submit_param" type="text" id="sykoni_to" name="to"  size=10 maxlength=10  value="31.05.2027"></div>
+		</div>
+	<!-- sykon_to_end -->
+
+	
+	<!-- sykon_adults_start -->
+	    <div id="sykond_adults"  style="float: left; width: 100px;">
+		<div id="sykonk_adults">Dorosłych:</div>
+		<div id="sykonv_adults">
+		    <select id="sykoni_adults" name="adults">
+  <option value="1">1</option>
+  <option value="2" selected="selected">2</option>
+  <option value=""></option>
+ </select><!-- xxxx 2-->
+		</div>
+	    </div>
+	<!-- sykon_adults_end -->
+		<!-- sykon_child1_start -->
+	    <div id="sykond_child1">
+		<div id="sykonk_child1">Wiek dziecka 1: </div>
+		<div id="sykonv_child1">
+		    <select id="sykoni_child1" name="child1">
+  <option></option>
+  <option value="0">0</option>
+  <option value="1">1</option>
+  <option value="2">2</option>
+  <option value="3">3</option>
+  <option value="4">4</option>
+  <option value="5">5</option>
+  <option value="6">6</option>
+  <option value="7">7</option>
+  <option value="8">8</option>
+  <option value="9">9</option>
+  <option value="10">10</option>
+  <option value="11">11</option>
+  <option value="12">12</option>
+  <option value="13">13</option>
+  <option value="14">14</option>
+  <option value="15">15</option>
+  <option value="16">16</option>
+  <option value="17">17</option>
+  <option value="18">18</option>
+  <option value="19">19</option>
+  <option value="20">20</option>
+  <option value="21">21</option>
+  <option value="22">22</option>
+  <option value="23">23</option>
+  <option value="24">24</option>
+  <option value="25">25</option>
+  <option value="26">26</option>
+  <option value="27">27</option>
+  <option value="28">28</option>
+  <option value="29">29</option>
+ </select>
+		</div>
+	    </div>
+	<!-- sykon_child1_end -->
+	
+
+
+	<!-- sykon_departure_place_start -->
+	    <div id="sykond_departure_place">
+		<div id="sykonk_departure_place">Wylot z: </div>
+		<div id="sykonv_departure_place">
+		    <select id="sykoni_departure_place" name="departure_place">
+  <option></option>
+ <option value="BZG">Bydgoszcz</option>
+ <option value="GDN">Gdańsk</option>
+ <option value="KRK">Kraków</option>
+ <option value="KTW">Katowice</option>
+ <option value="LCJ">Łódź</option>
+ <option value="LUZ">Lublin</option>
+ <option value="POZ">Poznań</option>
+ <option value="RZE">Rzeszów</option>
+ <option value="SZZ">Szczecin</option>
+ <option value="WAW">Warszawa-Okęcie</option>
+ <option value="WMI">Warszawa-Modlin</option>
+ <option value="WRO">Wrocław</option>
+ </select>
+		</div>
+	    </div>
+	<!-- sykon_departure_place_end -->
+
+    
+        <!-- sykon_doptions_end -->
+	    <br>
+	<div class="sykon_form_submit" style="text-align: right;"><input id="searchbutton" name="sykon_submit" value="" type="submit">
+	</div>
+    </form>
+</div>
+<div class="sykon_form_end"></div>
+<!-- ========== SEARCH ========== -->
+
+
+
+	<div class="cleared"></div>
+	    </div>
+	    </div>
+		    <div class="cleared"></div>
+		        </div>
+			</div>
+			
+                </div>
+
+                <div>
+                    <div class="tmp-vscroll">
+                        <!--begin menu_silver -->
+                        <div id="silvermenu">
+                            <ul id="silvermenuul">
+                                <li>
+                                    <!--begin sub_portugalia -->
+                                    <ul class="subcountry">
+                                        <li><a href='/oferta_portugalia_lizbona/page.html'>LIZBONA</a></li>
+                                        <!--<li><a href='/oferta_portugalia_porto/page.html'>PORTO</a></li>-->
+                                    </ul>
+                                    <!--end sub_portugalia-->
+                                    <a href='/oferta_portugalia/page.html'>PORTUGALIA</a>
+                                </li>
+                                <li>
+                                    <!--begin sub_hiszpania -->
+                                    <ul class="subcountry">
+                                        <li><a href='/oferta_hiszpania_barcelona/page.html'>BARCELONA</a></li>
+                                        <li><a href='/oferta_hiszpania_madryt/page.html'>MADRYT</a></li>
+                                    </ul>
+                                    <!--end sub_hiszpania-->
+                                    <a href='/oferta_hiszpania/page.html'>HISZPANIA</a>
+                                </li>
+                                <li>
+                                    <!--begin sub_wlochy -->
+                                    <ul class="subcountry">
+                                        <li><a href='/oferta_wlochy_rzym/page.html'>RZYM</a></li>
+                                        <li><a href='/oferta_wlochy_mediolan/page.html'>MEDIOLAN</a></li>
+                                        <li><a href='/oferta_wlochy_florencja/page.html'>FLORENCJA</a></li>
+                                        <li><a href='/oferta_wlochy_wenecja/page.html'>WENECJA</a></li>
+                                        <li><a href='/oferta_wlochy_neapol/page.html'>NEAPOL</a></li>
+                                    </ul>
+                                    <!--end sub_wlochy-->
+                                    <a href='/oferta_wlochy/page.html'>WŁOCHY</a>
+                                </li>
+                                <li>
+                                    <!--begin sub_francja -->
+                                    <ul class="subcountry">
+                                        <li><a href='/oferta_francja_paryz/page.html'>PARYŻ</a></li>
+                                        <li><a href='/oferta_francja_paryskie_parki_rozrywki/page.html'>PARYSKIE PARKI
+                                                ROZRYWKI</a></li>
+                                    </ul>
+                                    <!--end sub_francja-->
+                                    <a href='/oferta_francja/page.html'>FRANCJA</a>
+                                </li>
+                                <li>
+                                    <!--begin sub_wielkabrytania -->
+                                    <ul class="subcountry">
+                                        <li><a href='/oferta_wielka_brytania_londyn/page.html'>LONDYN</a></li>
+                                    </ul>
+                                    <!--end sub_wielkabrytania-->
+                                    <a href='/oferta_wielka_brytania/page.html'>WIELKA BRYTANIA</a>
+                                </li>
+                                <li>
+                                    <!--begin sub_grecja -->
+                                    <ul class="subcountry">
+                                        <li><a href='/oferta_grecja_ateny/page.html'>ATENY</a></li>
+                                    </ul>
+                                    <!--end sub_grecja-->
+                                    <a href='/oferta_grecja/page.html'>GRECJA</a>
+                                </li>
+                                <li>
+                                    <!--begin sub_irlandia -->
+                                    <ul class="subcountry">
+                                        <li><a href='/oferta_irlandia_dublin/page.html'>DUBLIN</a></li>
+                                    </ul>
+                                    <!--end sub_irlandia-->
+                                    <a href='/oferta_irlandia/page.html'>IRLANDIA</a>
+                                </li>
+                                <li>
+                                    <!--begin sub_norwegia -->
+                                    <ul class="subcountry">
+                                        <li><a href='/oferta_norwegia_oslo/page.html'>OSLO</a></li>
+                                    </ul>
+                                    <!--end sub_norwegia-->
+                                    <a href='/oferta_norwegia/page.html'>NORWEGIA</a>
+                                </li>
+                                <li>
+                                    <!--begin sub_szwecja -->
+                                    <ul class="subcountry">
+                                        <li><a href='/oferta_szwecja_sztokholm/page.html'>SZTOKHOLM</a></li>
+                                    </ul>
+                                    <!--end sub_szwecja-->
+                                    <a href='/oferta_szwecja/page.html'>SZWECJA</a>
+                                </li>
+                                <li>
+                                    <!--begin sub_holandia -->
+                                    <ul class="subcountry">
+                                        <li><a href='/oferta_holandia_amsterdam/page.html'>AMSTERDAM</a></li>
+                                    </ul>
+                                    <!--end sub_holandia-->
+                                    <a href='/oferta_holandia/page.html'>HOLANDIA</a>
+                                </li>
+                                <li>
+                                    <!--begin sub_wegry -->
+                                    <ul class="subcountry">
+                                        <li><a href='/oferta_wegry_budapeszt/page.html'>BUDAPESZT</a></li>
+                                    </ul>
+                                    <!--end sub_wegry-->
+                                    <a href='/oferta_wegry/page.html'>WĘGRY</a>
+                                </li>
+                            </ul>
+                            <!--end menu_silver-->
+                        </div>
+                    </div>
+
+                    
+                                            <!-- /home/users/sykon_s/public_html/ajax2/_getoffers_v5.php START. -->
+
+
+<!-- .OfFeRsx X  -->
+
+<!-- /home/users/sykon_s/public_html/wsdl/inc/offers2.php, 236 -->
+
+<!-- aaad regentwww 0, 2 ,0--> <!-- qqqqxxx111.  SELECT o.*, DATEDIFF(o.arrival_date, o.departure_date)+1 AS num_days, 
+  g_images AS images 
+ FROM offers o 
+ WHERE 
+ per_days = '0' AND 
+  o.touroperator IN ('REGENT') 
+ AND  o.departure_date > '2026-11-08' 
+ AND (  
+ o.touroperator = 'REGENT' AND o.destination_tourop = 'HISZPANIA' 
+ ) 
+ AND 1=1  
+ AND `stop`=0  
+ AND o.departure_date >= '2027-05-01'
+ AND o.departure_date <= '2027-05-31'
+ AND o.combinations REGEXP ',2\\+0,' 
+ AND age_min <= '100' 
+ AND age_max > '-1' 
+ ORDER BY o.departure_date
+ LIMIT 0, 1000 
+ #F:offers2.php L:1687
+ #F:regentwww
+ --> <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+
+
+	<script type="text/javascript">
+		
+
+			$j = $.noConflict();
+
+		
+
+		
+
+
+
+			
+
+
+
+
+
+			$j(document).ready(function() {
+				$j(".a_price").each(function(indeks, value) {
+					var ind = $j(this).attr("idlinknext");
+					var $value = $j(value);
+					var md = $value.attr("md");
+					var ad = $value.attr("adults");
+
+					var c1 = $value.attr("child1");
+					var c2 = $value.attr("child2");
+					var c3 = $value.attr("child3");
+					var c4 = $value.attr("child4");
+					var ntop = $value.attr("ntop"); // 12.02.2011 kamil fmds
+					var idl = $value.attr("idlinknext");
+
+
+					var superstringpremio;
+
+					superstringpremio = "";
+
+					
+
+					$j.ajax({
+						type: "GET",
+						dataType: "jsonp",
+						jsonp: "callback",
+						jsonpCallback: "jsonpcallback",
+						data: "agentx=regentwww:IGNORUJKOMBINACJE&md=" + md + "&adults=" + ad + "&child1=" + c1 + "&child2=" + c2 + "&child3=" + c3 + "&child4=" + c4 + "&ntop=" + ntop + "&indeks=" + ind + superstringpremio,
+						url: "http://grey.turystyka.com.pl/~sykon_s/ajax2/json_getprice.php"
+
+					});
+
+					//console.log("ind = ", ind);	
+
+					// JSONPCALLBACK
+					///////////////////////////////////////////// 11:47:59
+					jsonpcallback = function(data) {
+
+
+												var s = "";
+						if (data.faultcode != null) {
+							s = "oferta niedostępna";
+							//s += data.detail;
+							//$j("#"+idl).hide("slow");
+							$j("#" + data.indeks).hide("slow");
+						} else {
+
+															s = "";
+								normalprice = 1;
+								if ((typeof(data.ExtraInfo.BusStops) != 'undefined') && (data.ExtraInfo.BusStops != '')) {
+									if (typeof(data.ExtraInfo.FirstPersonPrice) != 'undefined') {
+										sextra = data.ExtraInfo.FirstPersonPrice.split(' ');
+										suma = parseFloat(sextra[0]);
+
+										var i = 0;
+										bstop_array = '';
+
+										
+											while (i <= 1) {
+												var bstop = data.ExtraInfo.BusStops[i];
+												if (typeof(bstop) != 'undefined') {
+													var bstop_array = bstop.split('|');
+													if (bstop_array == '') {
+														suma += parseFloat(bstop_array[4]);
+														break;
+													}
+												}
+												i++;
+											}
+										
+										//			console.log(bstop_array);
+										//			console.log(data.ExtraInfo.FirstPersonPrice);
+										s += suma + ' ' + sextra[1];
+										normalprice = 0;
+									}
+								} else {
+
+									if (typeof(data.ExtraInfo.FirstPersonPrice) != 'undefined') {
+																					s += data.ExtraInfo.FirstPersonPrice;
+																				normalprice = 0;
+										//		    console.log(data.ExtraInfo);		
+									}
+								}
+								if (normalprice == 1) {
+									s += data.Cost[0].Amount;
+									s += "&nbsp;" + data.Cost[0].Currency;
+								}
+
+							
+							//    console.log("xxx" + s);
+							//console.log(s.search(/span/));
+							//s+= "<br>";
+							//console.log(rabat);		
+							//console.info(jestrabat);
+						}
+						$j('.a_price[idlinknext="' + data.indeks + '"]').html(s);
+					}
+
+
+
+					///////////////////////////////////////////////
+
+				});
+
+				HtmlFromCookie();
+
+				$j(".chboffer").each(function(indeks, value) {
+					$j(value).attr("disabled", false);
+					var gc = getCookie('chb_' + value.id);
+					if (gc != null) {
+						$j(value).attr("checked", true);
+					}
+				});
+
+			});
+
+
+			function pOnchange() {
+
+				if ($("#minisearch_children").val() == "") {
+					$("#dur1").css({
+						"display": "none"
+					});
+					$("#dur2").css({
+						"display": "none"
+					});
+
+
+					$("#sid_dataur1").val("");
+					$("#sid_dataur2").val("");
+				}
+
+				if ($("#minisearch_children").val() == "1") {
+					$("#dur1").css({
+						"display": "inline-block"
+					});
+					$("#dur2").css({
+						"display": "none"
+					});
+
+					$("#sid_dataur2").val("");
+				}
+
+				if ($("#minisearch_children").val() == "2") {
+					$("#dur1").css({
+						"display": "inline-block"
+					});
+					$("#dur2").css({
+						"display": "inline-block"
+					});
+				}
+
+
+			}
+
+			function HtmlFromCookie() {
+				var i, x, y, z, counter, md, ARRcookies = document.cookie.split(";");
+				for (i = 0; i < ARRcookies.length; i++) {
+					x = ARRcookies[i].substr(0, ARRcookies[i].indexOf("="));
+					y = ARRcookies[i].substr(ARRcookies[i].indexOf("=") + 1);
+					x = x.replace(/^\s+|\s+$/g, "");
+					z = x.substr(0, 4);
+					if (z == 'chb_') {
+						md = x.replace(z, '');
+						AppendOffer(md, unescape(y));
+						counter++;
+					}
+				}
+			}
+
+			function setCookie(c_name, value, exdays) {
+				var exdate = new Date();
+				exdate.setDate(exdate.getDate() + exdays);
+				var c_value = escape(value) + ((exdays == null) ? "" : "; expires=" + exdate.toUTCString());
+				document.cookie = c_name + "=" + c_value;
+			}
+
+			function getCookie(c_name) {
+				var i, x, y, ARRcookies = document.cookie.split(";");
+				for (i = 0; i < ARRcookies.length; i++) {
+					x = ARRcookies[i].substr(0, ARRcookies[i].indexOf("="));
+					y = ARRcookies[i].substr(ARRcookies[i].indexOf("=") + 1);
+					x = x.replace(/^\s+|\s+$/g, "");
+					if (x == c_name) {
+						return unescape(y);
+					}
+				}
+			}
+
+			function WriteCookie(obj, md, dane) {
+				if (getCookie('chb_' + md) != null) {
+					var s = DeleteOffer(md);
+					if (s)
+						$j('#id_brak_oferty').show();
+				} else {
+					var c = $j('.a_price[md=' + md + ']').html();
+					dane += "#" + c;
+					AppendOffer(md, dane);
+				}
+			}
+
+			function AppendOffer(md, dane) {
+				$j('#id_brak_oferty').hide();
+				setCookie('chb_' + md, dane, 1);
+				var ddane = dane.split('#');
+				dane = '';
+				$nmd = getCookie('notice_' + md);
+				$sauwagi = 0;
+				if (typeof($nmd) == 'undefined')
+					$nmd = '';
+				if ($nmd != '')
+					$sauwagi = 1;
+				for (var i = 0; i < ddane.length - 3; i++) {
+					dane += ddane[i] + "<br>";
+				}
+				$htmla = '<tr id="tr_' + md + '" class="sbtd">';
+				$htmla += '<td>' + '<img width="60" src="' + ddane[ddane.length - 3] + '"></td>'
+				$htmla += '<td><strong>' + dane + '</strong></td>';
+				$htmla += '<td>' + ddane[ddane.length - 2] + '</td>';
+				$htmla += '<td><strong>' + ddane[ddane.length - 1] + '</strong></td>';
+				//    $htmla += '<td><input  classs="checkedoffers" type="checkbox" checked onclick="DeleteOffer(\''+md+'\')" id="offer_'+md+'" >';//kamil
+
+				$htmla += '<td><input  type="checkbox" checked onclick="DeleteOffer(\'' + md + '\')">';
+
+				$htmla += '</td></tr>';
+				$htmla += '<tr id="tr_' + md + '" class="sbtdu"><td colspan="5">';
+				$htmla += '<a class="basket_notices" id="uwagi_' + md + '" onclick="ShowU(this)">Dodaj notatki do oferty</a><br> <textarea id="notice_' + md + '" onchange="WriteNotice(this)"';
+				if ($sauwagi == 0)
+					$htmla += ' style="display: none" ';
+				$htmla += '>';
+				$htmla += $nmd;
+				$htmla += '</textarea>';
+				$htmla += '</td></tr>';
+
+				$j('#sykonbasket').append($htmla);
+			}
+
+			function WriteNotice(obj) {
+				$md = obj.id.replace('notice_', '');
+				$t = $j(obj).val();
+				if ($t == '')
+					setCookie('notice_' + $md, '', -1);
+				else
+					setCookie('notice_' + $md, $t, 1);
+			}
+
+			function DeleteAllOffers() {
+				var i, x, y, z, counter = 0,
+					ARRcookies = document.cookie.split(";");
+				for (i = 0; i < ARRcookies.length; i++) {
+					x = ARRcookies[i].substr(0, ARRcookies[i].indexOf("="));
+					x = x.replace(/^\s+|\s+$/g, "");
+					z = x.substr(0, 4);
+					if (z == 'chb_') {
+						md = x.replace(z, '');
+						setCookie('chb_' + md, '', -1);
+						$("#" + md).removeAttr('checked');
+						$j('#sykonbasket tr[id=tr_' + md + ']').remove();
+						counter++;
+					}
+				}
+				$j('#id_brak_oferty').show();
+			}
+
+
+
+			function DeleteOffer(md) {
+				var i, x, y, z, counter = 0,
+					ARRcookies = document.cookie.split(";");
+
+				// kamil  - troche usunalem :)
+				$j('#sykonbasket tr[id=tr_' + md + ']').remove();
+				$("#" + md).removeAttr('checked');
+				setCookie('chb_' + md, '', -1);
+				counter--;
+				if (counter == 0)
+					$j('#id_brak_oferty').show();
+			}
+
+			function ShowU(obj) {
+				var s = obj.id.replace('uwagi_', '');
+				$("#notice_" + s).toggle();
+			}
+
+		
+
+
+		
+			$j.noConflict(true);
+
+			</script>
+
+
+<!-- wwwregent\gdl\template\template.tpl -->
+<style>
+.offers_hotnam {
+color: #ff0000;
+font-size: 15px;
+font-weight: bold;
+vertical-align: top;
+}
+.offers_hotel {
+padding-top: 5px;
+vertical-align: top;
+}
+
+.offers_onehotel_link {
+
+}
+
+.ofertaclass {
+border-radius: 4px 4px 4px 4px; 
+border: solid 1px #d42205; 
+height: 20px; 
+padding-left: 4px; 
+padding-right: 4px;
+padding-top: 4px; 
+color: #eeeeee; 
+background-color: #d42205;
+margin-top: 10px;
+margin-bottom: 10px;
+}
+
+.ofertaclass2 {
+border-radius: 4px 4px 4px 4px; 
+border: solid 1px #d42205; 
+height: 20px; 
+padding-top: 4px; 
+color: #eeeeee; 
+background-color: #d42205;
+margin-top: 10px;
+margin-bottom: 10px;
+margin-left: 0px;
+margin-right: 0px;
+padding-left: 4px; 
+padding-right: 4px;
+}
+
+.pax_caption {
+padding: 0px;
+}
+
+.osoby {
+width: 100%;
+}
+
+.left {
+width: 50%;
+}
+
+.right {
+width: 50%;
+text-align: right;
+}
+
+.spax_group {
+font-weight: bold;
+padding-top: 20px;
+}
+
+.spax_position {
+
+}
+
+.miasta_wyl_label {
+	font-weight: 600;
+	line-height: 1.5;
+}
+.miasta_wyl_btns a.linkhre {
+    margin: 0;
+    cursor: pointer;
+    position: relative;
+    box-shadow: none;
+    text-shadow: none;
+    text-align: center;
+    /* white-space: nowrap; */
+    vertical-align: middle;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    border: 1px solid transparent;
+    line-height: 1.25;
+    border-radius: 1px;
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out, -webkit-box-shadow 0.15s ease-in-out;
+	color: #fff;
+    background: #CE0004;
+    border-color: #CE0004;
+	text-decoration: none;
+	padding: 8px 4px;
+    /* font-size: 16px; */
+	font-weight: 600;
+	margin: 0 1px 2px;
+    display: block;
+    /* float: left; */
+    /* width: calc(50% - 12px); */
+}
+.miasta_wyl_btns {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.miasta_wyl_btns a.linkhre:hover {
+	background: #FE0000;
+    border-color: #FE0000;
+}
+
+.off_tr_bgd {
+	background: none repeat scroll 0% 0% rgb(246, 246, 246);
+}
+
+a .off_img {
+	transition: all 0.15s;
+	opacity: 1;
+}
+
+a .off_img:hover {
+	opacity: .8;
+}
+</style>
+
+<!-- Krok: 1 -->
+
+
+<span class="error"><strong></strong></span>
+
+
+	<div class="lista-oferty-container" id="middlepage" style="float: left; padding: 0px 0px 10px 0px;width: 684px;">
+		<div class="tmp-vscroll">
+			<table class="lista-oferty" width="100%" cellspacing="0" cellpadding="0">
+									<tr  style="height: 30px;">
+					<th class="thoffers_no" style="width: 20px;"></th>
+					<th class="thoffers_image"></th>  
+					<th class="thoffers_image" style="text-align:center">Kierunek</th>  
+					<th class="thoffers_hotel"><span class="offers_hotel_trip">&nbsp;Nazwa</span></th>
+					<th class="thoffers_from">&nbsp;&nbsp;&nbsp;Cena od</th>
+					<th class="thoffers_link" style="text-align:center">Miasto wylotu</th>
+					</tr>
+
+									
+						<tr class="off_tr_bgd">
+							<td class="offers_no" style="width: 36px;     padding: 0 8px;text-align: center">1.</td>
+							<td class="offers_no" style="padding-left:0" width="110">
+																	<a href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_4_dni_samolotem_z_modlina,md,2ecd4ecde11c28f49a48dece1b8d5d58" class="off_div offers_hotnam offers_onehotel_link" style="height: 90px;">
+																				 
+										<img class="off_img" width="110" height="85" alt="" src="//searchsykon.sykon.pl/imgto/REGENT/8e3c06236a68147d3ceaef6607bafe1fs.JPG">
+										<img class="off_img_maska" src="/gfx/oferta_img_maska.png">
+																										</a>
+															</td>
+							<td class="offers_no" width="100" style="text-align: center;    padding: 0 15px;">
+								<div class="off_panstwo">Barcelona</div>
+								<div class="off_region">Hiszpania</div>
+							</td>
+							<td class="offers_no">
+								<div class="off_nazwa">
+																			<a href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_4_dni_samolotem_z_modlina,md,2ecd4ecde11c28f49a48dece1b8d5d58">City Break - Magia Barcelony - 4 dni </a>
+																	</div>
+								<div  class="offers_wyz" ><strong>Wyżywienie</strong>: <span class="off_wyz">HB</span></div>
+																	 
+							</td>
+							<td class="offers_no" style="padding: 0 15px;" width="96">
+								<div title="Szukaj innych ofert w podobnej cenie" class="off_cena">
+									<a href="/cena,2180/page.html">
+																					2180 PLN
+																			</a>
+								</div>
+							</td>
+							<td class="offers_no" style="padding:2px; border-right:1px solid #c9c9c9;width:204px;text-align: center;">
+									<div class="miasta_wyl_label">Wybierz:</div>
+									<div class="miasta_wyl2 miasta_wyl_btns"><a class="linkhre" title="Rezerwuj z wylotem z Modlina" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_4_dni_samolotem_z_modlina,md,2ecd4ecde11c28f49a48dece1b8d5d58">Modlin</a> <a class="linkhre" title="Rezerwuj z wylotem z Wrocławia" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_4_dni_samolotem_z_wrocławia,md,3008211f32a7c10859a953418bd68b8a">Wrocław</a> <a class="linkhre" title="Rezerwuj z wylotem z Krakowa" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_4_dni_samolotem_z_krakowa,md,9ad336b4d850a98f1f4bddc563bba37e">Kraków</a> <a class="linkhre" title="Rezerwuj z wylotem z Katowic" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_4_dni_samolotem_z_katowic,md,3597742bd3ae3efa173308dac417fc06">Katowice</a> <a class="linkhre" title="Rezerwuj z wylotem z Warszawy" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_4_dni_samolotem_z_warszawy,md,11abae8515d2bf7af754ee795a89f039">Warszawa</a> <a class="linkhre" title="Rezerwuj z wylotem z Gdańska" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_4_dni_samolotem_z_gdańska,md,6b91a2fb3563fec3b1ce1bc65b3ee356">Gdańsk</a> <a class="linkhre" title="Rezerwuj z wylotem z Poznania" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_4_dni_samolotem_z_poznania,md,06b1ca46a71df2858838219778f1bb13">Poznań</a></div>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="6" class="off_tr"  height="10"></td>
+						</tr>
+									
+						<tr class="off_tr_bgd">
+							<td class="offers_no" style="width: 36px;     padding: 0 8px;text-align: center">2.</td>
+							<td class="offers_no" style="padding-left:0" width="110">
+																	<a href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_5_dni_samolotem_z_warszawy,md,455b433db11f0f5f4e6f7aca210409bb" class="off_div offers_hotnam offers_onehotel_link" style="height: 90px;">
+																				 
+										<img class="off_img" width="110" height="85" alt="" src="//searchsykon.sykon.pl/imgto/REGENT/b6124b14e327151c38d9f8aec4ae3725s.JPG">
+										<img class="off_img_maska" src="/gfx/oferta_img_maska.png">
+																										</a>
+															</td>
+							<td class="offers_no" width="100" style="text-align: center;    padding: 0 15px;">
+								<div class="off_panstwo">Barcelona</div>
+								<div class="off_region">Hiszpania</div>
+							</td>
+							<td class="offers_no">
+								<div class="off_nazwa">
+																			<a href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_5_dni_samolotem_z_warszawy,md,455b433db11f0f5f4e6f7aca210409bb">City Break - Magia Barcelony - 5 dni </a>
+																	</div>
+								<div  class="offers_wyz" ><strong>Wyżywienie</strong>: <span class="off_wyz">HB</span></div>
+																	 
+							</td>
+							<td class="offers_no" style="padding: 0 15px;" width="96">
+								<div title="Szukaj innych ofert w podobnej cenie" class="off_cena">
+									<a href="/cena,2355/page.html">
+																					2355 PLN
+																			</a>
+								</div>
+							</td>
+							<td class="offers_no" style="padding:2px; border-right:1px solid #c9c9c9;width:204px;text-align: center;">
+									<div class="miasta_wyl_label">Wybierz:</div>
+									<div class="miasta_wyl2 miasta_wyl_btns"><a class="linkhre" title="Rezerwuj z wylotem z Warszawy" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_5_dni_samolotem_z_warszawy,md,455b433db11f0f5f4e6f7aca210409bb">Warszawa</a> <a class="linkhre" title="Rezerwuj z wylotem z Modlina" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_5_dni_samolotem_z_modlina,md,ad2630511d3ce2c914b5184afaf1cb88">Modlin</a> <a class="linkhre" title="Rezerwuj z wylotem z Wrocławia" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_5_dni_samolotem_z_wrocławia,md,7ada2da982f64f52b209e0dcb7e13955">Wrocław</a> <a class="linkhre" title="Rezerwuj z wylotem z Krakowa" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_5_dni_samolotem_z_krakowa,md,27061557729a383f91cd7a1847f3b634">Kraków</a> <a class="linkhre" title="Rezerwuj z wylotem z Katowic" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_5_dni_samolotem_z_katowic,md,59c2fb315e2a8c6f13b4c6736b896bcc">Katowice</a> <a class="linkhre" title="Rezerwuj z wylotem z Gdańska" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_5_dni_samolotem_z_gdańska,md,bc38dff940f522a1efbe7556bba34b3c">Gdańsk</a> <a class="linkhre" title="Rezerwuj z wylotem z Poznania" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_5_dni_samolotem_z_poznania,md,4875a60b0452cf8eb867c871f4557da9">Poznań</a></div>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="6" class="off_tr"  height="10"></td>
+						</tr>
+									
+						<tr class="off_tr_bgd">
+							<td class="offers_no" style="width: 36px;     padding: 0 8px;text-align: center">3.</td>
+							<td class="offers_no" style="padding-left:0" width="110">
+																	<a href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_6_dni_samolotem_z_katowic,md,6fad732e4099b691a9755493b02df50f" class="off_div offers_hotnam offers_onehotel_link" style="height: 90px;">
+																				 
+										<img class="off_img" width="110" height="85" alt="" src="//searchsykon.sykon.pl/imgto/REGENT/58b143f1ff9944c30c69358183d35471s.JPG">
+										<img class="off_img_maska" src="/gfx/oferta_img_maska.png">
+																										</a>
+															</td>
+							<td class="offers_no" width="100" style="text-align: center;    padding: 0 15px;">
+								<div class="off_panstwo">Barcelona</div>
+								<div class="off_region">Hiszpania</div>
+							</td>
+							<td class="offers_no">
+								<div class="off_nazwa">
+																			<a href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_6_dni_samolotem_z_katowic,md,6fad732e4099b691a9755493b02df50f">City Break - Magia Barcelony - 6 dni </a>
+																	</div>
+								<div  class="offers_wyz" ><strong>Wyżywienie</strong>: <span class="off_wyz">HB</span></div>
+																	 
+							</td>
+							<td class="offers_no" style="padding: 0 15px;" width="96">
+								<div title="Szukaj innych ofert w podobnej cenie" class="off_cena">
+									<a href="/cena,2545/page.html">
+																					2545 PLN
+																			</a>
+								</div>
+							</td>
+							<td class="offers_no" style="padding:2px; border-right:1px solid #c9c9c9;width:204px;text-align: center;">
+									<div class="miasta_wyl_label">Wybierz:</div>
+									<div class="miasta_wyl2 miasta_wyl_btns"><a class="linkhre" title="Rezerwuj z wylotem z Katowic" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_6_dni_samolotem_z_katowic,md,6fad732e4099b691a9755493b02df50f">Katowice</a> <a class="linkhre" title="Rezerwuj z wylotem z Warszawy" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_6_dni_samolotem_z_warszawy,md,343739e5382a20f9b75140cb01ba83b0">Warszawa</a> <a class="linkhre" title="Rezerwuj z wylotem z Modlina" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_6_dni_samolotem_z_modlina,md,94427f398c62f9da9a9b4acf997d2b1f">Modlin</a> <a class="linkhre" title="Rezerwuj z wylotem z Wrocławia" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_6_dni_samolotem_z_wrocławia,md,070b33154f7606661a73e4cd6be8dd53">Wrocław</a> <a class="linkhre" title="Rezerwuj z wylotem z Krakowa" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_6_dni_samolotem_z_krakowa,md,c03bf63753c1dba8641b6ab0977a8d92">Kraków</a> <a class="linkhre" title="Rezerwuj z wylotem z Poznania" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_6_dni_samolotem_z_poznania,md,2bd1a7b9342cd62c5367e17b8fe84109">Poznań</a> <a class="linkhre" title="Rezerwuj z wylotem z Gdańska" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_6_dni_samolotem_z_gdańska,md,8f1a46e7366ef6b9aff202f4d81054e6">Gdańsk</a></div>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="6" class="off_tr"  height="10"></td>
+						</tr>
+									
+						<tr class="off_tr_bgd">
+							<td class="offers_no" style="width: 36px;     padding: 0 8px;text-align: center">4.</td>
+							<td class="offers_no" style="padding-left:0" width="110">
+																	<a href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_8_dni_samolotem_z_katowic,md,21a06ff148f93bc2649695e6eca4bc99" class="off_div offers_hotnam offers_onehotel_link" style="height: 90px;">
+																				 
+										<img class="off_img" width="110" height="85" alt="" src="//searchsykon.sykon.pl/imgto/REGENT/bfad63f3f0273b258ce68aa215bb4e8bs.JPG">
+										<img class="off_img_maska" src="/gfx/oferta_img_maska.png">
+																										</a>
+															</td>
+							<td class="offers_no" width="100" style="text-align: center;    padding: 0 15px;">
+								<div class="off_panstwo">Barcelona</div>
+								<div class="off_region">Hiszpania</div>
+							</td>
+							<td class="offers_no">
+								<div class="off_nazwa">
+																			<a href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_8_dni_samolotem_z_katowic,md,21a06ff148f93bc2649695e6eca4bc99">City Break - Magia Barcelony - 8 dni </a>
+																	</div>
+								<div  class="offers_wyz" ><strong>Wyżywienie</strong>: <span class="off_wyz">HB</span></div>
+																	 
+							</td>
+							<td class="offers_no" style="padding: 0 15px;" width="96">
+								<div title="Szukaj innych ofert w podobnej cenie" class="off_cena">
+									<a href="/cena,2900/page.html">
+																					2900 PLN
+																			</a>
+								</div>
+							</td>
+							<td class="offers_no" style="padding:2px; border-right:1px solid #c9c9c9;width:204px;text-align: center;">
+									<div class="miasta_wyl_label">Wybierz:</div>
+									<div class="miasta_wyl2 miasta_wyl_btns"><a class="linkhre" title="Rezerwuj z wylotem z Katowic" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_8_dni_samolotem_z_katowic,md,21a06ff148f93bc2649695e6eca4bc99">Katowice</a> <a class="linkhre" title="Rezerwuj z wylotem z Poznania" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_8_dni_samolotem_z_poznania,md,bc362de74108b34392e84b0123e9c082">Poznań</a> <a class="linkhre" title="Rezerwuj z wylotem z Warszawy" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_8_dni_samolotem_z_warszawy,md,9f165ad9f4dc27e7e7b5a134e5100830">Warszawa</a> <a class="linkhre" title="Rezerwuj z wylotem z Modlina" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_8_dni_samolotem_z_modlina,md,58504fa1f2a9ef880a93e0a47b66babc">Modlin</a> <a class="linkhre" title="Rezerwuj z wylotem z Wrocławia" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_8_dni_samolotem_z_wrocławia,md,592b9cb5346f88d817febcb062d6022f">Wrocław</a> <a class="linkhre" title="Rezerwuj z wylotem z Gdańska" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_8_dni_samolotem_z_gdańska,md,99fb012a92bc0e2dc821134226ff2300">Gdańsk</a> <a class="linkhre" title="Rezerwuj z wylotem z Krakowa" href="/oferta_hiszpania_barcelona_city_break_-_magia_barcelony_-_8_dni_samolotem_z_krakowa,md,ae6016b809db7c2c812c1c3e0be11900">Kraków</a></div>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="6" class="off_tr"  height="10"></td>
+						</tr>
+									
+						<tr class="off_tr_bgd">
+							<td class="offers_no" style="width: 36px;     padding: 0 8px;text-align: center">5.</td>
+							<td class="offers_no" style="padding-left:0" width="110">
+																	<a href="/oferta_hiszpania_madryt_city_break_-_magia_madrytu_-_4_dni_samolotem_z_gdańska,md,2eac8191ab7bdf229563010766b32e8b" class="off_div offers_hotnam offers_onehotel_link" style="height: 90px;">
+																																		</a>
+															</td>
+							<td class="offers_no" width="100" style="text-align: center;    padding: 0 15px;">
+								<div class="off_panstwo">Madryt</div>
+								<div class="off_region">Hiszpania</div>
+							</td>
+							<td class="offers_no">
+								<div class="off_nazwa">
+																			<a href="/oferta_hiszpania_madryt_city_break_-_magia_madrytu_-_4_dni_samolotem_z_gdańska,md,2eac8191ab7bdf229563010766b32e8b">City Break - Magia Madrytu - 4 dni </a>
+																	</div>
+								<div  class="offers_wyz" ><strong>Wyżywienie</strong>: <span class="off_wyz">BB</span></div>
+																	 
+							</td>
+							<td class="offers_no" style="padding: 0 15px;" width="96">
+								<div title="Szukaj innych ofert w podobnej cenie" class="off_cena">
+									<a href="/cena,2585/page.html">
+																					2585 PLN
+																			</a>
+								</div>
+							</td>
+							<td class="offers_no" style="padding:2px; border-right:1px solid #c9c9c9;width:204px;text-align: center;">
+									<div class="miasta_wyl_label">Wybierz:</div>
+									<div class="miasta_wyl2 miasta_wyl_btns"><a class="linkhre" title="Rezerwuj z wylotem z Gdańska" href="/oferta_hiszpania_madryt_city_break_-_magia_madrytu_-_4_dni_samolotem_z_gdańska,md,2eac8191ab7bdf229563010766b32e8b">Gdańsk</a> <a class="linkhre" title="Rezerwuj z wylotem z Krakowa" href="/oferta_hiszpania_madryt_city_break_-_magia_madrytu_-_4_dni_samolotem_z_krakowa,md,e2c963b854c4b55f6e7c48caea19ec3e">Kraków</a> <a class="linkhre" title="Rezerwuj z wylotem z Modlina" href="/oferta_hiszpania_madryt_city_break_-_magia_madrytu_-_4_dni_samolotem_z_modlina,md,6981848ea20e87137c02ffa9c838c745">Modlin</a> <a class="linkhre" title="Rezerwuj z wylotem z Wrocławia" href="/oferta_hiszpania_madryt_city_break_-_magia_madrytu_-_4_dni_samolotem_z_wrocławia,md,8141a1d4a6f3dfeda5a7d57635a126d7">Wrocław</a> <a class="linkhre" title="Rezerwuj z wylotem z Warszawy" href="/oferta_hiszpania_madryt_city_break_-_magia_madrytu_-_4_dni_samolotem_z_warszawy,md,cbc0cfc0d7e8e03be2a1cf3529569a59">Warszawa</a> <a class="linkhre" title="Rezerwuj z wylotem z Katowic" href="/oferta_hiszpania_madryt_city_break_-_magia_madrytu_-_4_dni_samolotem_z_katowic,md,6f601b3d80748104813fc61888b1caf0">Katowice</a></div>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="6" class="off_tr"  height="10"></td>
+						</tr>
+									
+						<tr class="off_tr_bgd">
+							<td class="offers_no" style="width: 36px;     padding: 0 8px;text-align: center">6.</td>
+							<td class="offers_no" style="padding-left:0" width="110">
+																	<a href="/oferta_hiszpania_madryt_city_break_-_magia_madrytu_-_5_dni_samolotem_z_modlina,md,43fdede1befb4aa222ab6536e2d420da" class="off_div offers_hotnam offers_onehotel_link" style="height: 90px;">
+																				 
+										<img class="off_img" width="110" height="85" alt="" src="//searchsykon.sykon.pl/imgto/REGENT/be39893d35f4ff01c4c7cde6c3410659s.JPG">
+										<img class="off_img_maska" src="/gfx/oferta_img_maska.png">
+																										</a>
+															</td>
+							<td class="offers_no" width="100" style="text-align: center;    padding: 0 15px;">
+								<div class="off_panstwo">Madryt</div>
+								<div class="off_region">Hiszpania</div>
+							</td>
+							<td class="offers_no">
+								<div class="off_nazwa">
+																			<a href="/oferta_hiszpania_madryt_city_break_-_magia_madrytu_-_5_dni_samolotem_z_modlina,md,43fdede1befb4aa222ab6536e2d420da">City Break - Magia Madrytu - 5 dni </a>
+																	</div>
+								<div  class="offers_wyz" ><strong>Wyżywienie</strong>: <span class="off_wyz">BB</span></div>
+																	 
+							</td>
+							<td class="offers_no" style="padding: 0 15px;" width="96">
+								<div title="Szukaj innych ofert w podobnej cenie" class="off_cena">
+									<a href="/cena,2975/page.html">
+																					2975 PLN
+																			</a>
+								</div>
+							</td>
+							<td class="offers_no" style="padding:2px; border-right:1px solid #c9c9c9;width:204px;text-align: center;">
+									<div class="miasta_wyl_label">Wybierz:</div>
+									<div class="miasta_wyl2 miasta_wyl_btns"><a class="linkhre" title="Rezerwuj z wylotem z Modlina" href="/oferta_hiszpania_madryt_city_break_-_magia_madrytu_-_5_dni_samolotem_z_modlina,md,43fdede1befb4aa222ab6536e2d420da">Modlin</a> <a class="linkhre" title="Rezerwuj z wylotem z Warszawy" href="/oferta_hiszpania_madryt_city_break_-_magia_madrytu_-_5_dni_samolotem_z_warszawy,md,5b3f988afff03f00c32e6710b55a22ea">Warszawa</a> <a class="linkhre" title="Rezerwuj z wylotem z Krakowa" href="/oferta_hiszpania_madryt_city_break_-_magia_madrytu_-_5_dni_samolotem_z_krakowa,md,c21a747b91d211dc8a682edaa07bf531">Kraków</a></div>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="6" class="off_tr"  height="10"></td>
+						</tr>
+									
+						<tr class="off_tr_bgd">
+							<td class="offers_no" style="width: 36px;     padding: 0 8px;text-align: center">7.</td>
+							<td class="offers_no" style="padding-left:0" width="110">
+																	<a href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_4_dni_samolotem_z_krakowa,md,fab381c1ed27a756954cd3706c6d3f9a" class="off_div offers_hotnam offers_onehotel_link" style="height: 90px;">
+																				 
+										<img class="off_img" width="110" height="85" alt="" src="//searchsykon.sykon.pl/imgto/REGENT/bfbb54e451d512af59a3ac5a5381d76fs.JPG">
+										<img class="off_img_maska" src="/gfx/oferta_img_maska.png">
+																										</a>
+															</td>
+							<td class="offers_no" width="100" style="text-align: center;    padding: 0 15px;">
+								<div class="off_panstwo">Barcelona</div>
+								<div class="off_region">Hiszpania</div>
+							</td>
+							<td class="offers_no">
+								<div class="off_nazwa">
+																			<a href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_4_dni_samolotem_z_krakowa,md,fab381c1ed27a756954cd3706c6d3f9a">Majówka w Barcelonie - 4 dni </a>
+																	</div>
+								<div  class="offers_wyz" ><strong>Wyżywienie</strong>: <span class="off_wyz">HB</span></div>
+																	 
+							</td>
+							<td class="offers_no" style="padding: 0 15px;" width="96">
+								<div title="Szukaj innych ofert w podobnej cenie" class="off_cena">
+									<a href="/cena,2335/page.html">
+																					2335 PLN
+																			</a>
+								</div>
+							</td>
+							<td class="offers_no" style="padding:2px; border-right:1px solid #c9c9c9;width:204px;text-align: center;">
+									<div class="miasta_wyl_label">Wybierz:</div>
+									<div class="miasta_wyl2 miasta_wyl_btns"><a class="linkhre" title="Rezerwuj z wylotem z Krakowa" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_4_dni_samolotem_z_krakowa,md,fab381c1ed27a756954cd3706c6d3f9a">Kraków</a> <a class="linkhre" title="Rezerwuj z wylotem z Katowic" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_4_dni_samolotem_z_katowic,md,52d4eff46db435fd4242471a7677dcd1">Katowice</a> <a class="linkhre" title="Rezerwuj z wylotem z Warszawy" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_4_dni_samolotem_z_warszawy,md,6fbedcfd4587656e6c0b824f63eda398">Warszawa</a> <a class="linkhre" title="Rezerwuj z wylotem z Modlina" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_4_dni_samolotem_z_modlina,md,3bc332f85e03ae73c33f2314d293fcb4">Modlin</a> <a class="linkhre" title="Rezerwuj z wylotem z Wrocławia" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_4_dni_samolotem_z_wrocławia,md,f0896d690a86a88407c6f659e11c3807">Wrocław</a> <a class="linkhre" title="Rezerwuj z wylotem z Gdańska" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_4_dni_samolotem_z_gdańska,md,ff9441e7ec1951234646d018e236b1b4">Gdańsk</a> <a class="linkhre" title="Rezerwuj z wylotem z Poznania" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_4_dni__samolotem_z_poznania,md,94d23c0b6478ffb01d967171925af155">Poznań</a></div>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="6" class="off_tr"  height="10"></td>
+						</tr>
+									
+						<tr class="off_tr_bgd">
+							<td class="offers_no" style="width: 36px;     padding: 0 8px;text-align: center">8.</td>
+							<td class="offers_no" style="padding-left:0" width="110">
+																	<a href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_5_dni_samolotem_z_krakowa,md,6629c89a951ee94d345906ddc1e1cada" class="off_div offers_hotnam offers_onehotel_link" style="height: 90px;">
+																				 
+										<img class="off_img" width="110" height="85" alt="" src="//searchsykon.sykon.pl/imgto/REGENT/bfbb54e451d512af59a3ac5a5381d76fs.JPG">
+										<img class="off_img_maska" src="/gfx/oferta_img_maska.png">
+																										</a>
+															</td>
+							<td class="offers_no" width="100" style="text-align: center;    padding: 0 15px;">
+								<div class="off_panstwo">Barcelona</div>
+								<div class="off_region">Hiszpania</div>
+							</td>
+							<td class="offers_no">
+								<div class="off_nazwa">
+																			<a href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_5_dni_samolotem_z_krakowa,md,6629c89a951ee94d345906ddc1e1cada">Majówka w Barcelonie - 5 dni </a>
+																	</div>
+								<div  class="offers_wyz" ><strong>Wyżywienie</strong>: <span class="off_wyz">HB</span></div>
+																	 
+							</td>
+							<td class="offers_no" style="padding: 0 15px;" width="96">
+								<div title="Szukaj innych ofert w podobnej cenie" class="off_cena">
+									<a href="/cena,2765/page.html">
+																					2765 PLN
+																			</a>
+								</div>
+							</td>
+							<td class="offers_no" style="padding:2px; border-right:1px solid #c9c9c9;width:204px;text-align: center;">
+									<div class="miasta_wyl_label">Wybierz:</div>
+									<div class="miasta_wyl2 miasta_wyl_btns"><a class="linkhre" title="Rezerwuj z wylotem z Krakowa" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_5_dni_samolotem_z_krakowa,md,6629c89a951ee94d345906ddc1e1cada">Kraków</a> <a class="linkhre" title="Rezerwuj z wylotem z Katowic" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_5_dni_samolotem_z_katowic,md,c73ee6ee08cdb69a5f0d14b9e0a1c1c8">Katowice</a> <a class="linkhre" title="Rezerwuj z wylotem z Warszawy" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_5_dni_samolotem_z_warszawy,md,b3cdc2a33cdae06062392f7278c76ddc">Warszawa</a> <a class="linkhre" title="Rezerwuj z wylotem z Modlina" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_5_dni_samolotem_z_modlina,md,7c26f51b5e178a158f915d30f9641011">Modlin</a> <a class="linkhre" title="Rezerwuj z wylotem z Wrocławia" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_5_dni_samolotem_z_wrocławia,md,1eb286e601dde5be5a8c0ad05d6a2948">Wrocław</a> <a class="linkhre" title="Rezerwuj z wylotem z Gdańska" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_5_dni_samolotem_z_gdańska,md,e58e92f383703cbba298f1980bef051a">Gdańsk</a> <a class="linkhre" title="Rezerwuj z wylotem z Poznania" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_5_dni_samolotem_z_poznania,md,c0793106b1e2d2bb0bc9d8d0b6e7937f">Poznań</a></div>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="6" class="off_tr"  height="10"></td>
+						</tr>
+									
+						<tr class="off_tr_bgd">
+							<td class="offers_no" style="width: 36px;     padding: 0 8px;text-align: center">9.</td>
+							<td class="offers_no" style="padding-left:0" width="110">
+																	<a href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_6_dni_samolotem_z_modlina,md,9b1c1d278b0af0acfbcd2cd28ed00585" class="off_div offers_hotnam offers_onehotel_link" style="height: 90px;">
+																				 
+										<img class="off_img" width="110" height="85" alt="" src="//searchsykon.sykon.pl/imgto/REGENT/cf542219607a9eeb6a116109669177a4s.JPG">
+										<img class="off_img_maska" src="/gfx/oferta_img_maska.png">
+																										</a>
+															</td>
+							<td class="offers_no" width="100" style="text-align: center;    padding: 0 15px;">
+								<div class="off_panstwo">Barcelona</div>
+								<div class="off_region">Hiszpania</div>
+							</td>
+							<td class="offers_no">
+								<div class="off_nazwa">
+																			<a href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_6_dni_samolotem_z_modlina,md,9b1c1d278b0af0acfbcd2cd28ed00585">Majówka w Barcelonie - 6 dni </a>
+																	</div>
+								<div  class="offers_wyz" ><strong>Wyżywienie</strong>: <span class="off_wyz">HB</span></div>
+																	 
+							</td>
+							<td class="offers_no" style="padding: 0 15px;" width="96">
+								<div title="Szukaj innych ofert w podobnej cenie" class="off_cena">
+									<a href="/cena,2695/page.html">
+																					2695 PLN
+																			</a>
+								</div>
+							</td>
+							<td class="offers_no" style="padding:2px; border-right:1px solid #c9c9c9;width:204px;text-align: center;">
+									<div class="miasta_wyl_label">Wybierz:</div>
+									<div class="miasta_wyl2 miasta_wyl_btns"><a class="linkhre" title="Rezerwuj z wylotem z Modlina" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_6_dni_samolotem_z_modlina,md,9b1c1d278b0af0acfbcd2cd28ed00585">Modlin</a> <a class="linkhre" title="Rezerwuj z wylotem z Wrocławia" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_6_dni_samolotem_z_wrocławia,md,e887dabfaa0b8e92d561e7c7965acb46">Wrocław</a> <a class="linkhre" title="Rezerwuj z wylotem z Krakowa" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_6_dni_samolotem_z_krakowa,md,7c79de6d3bf2fc8d33a010b7ae56eeb1">Kraków</a> <a class="linkhre" title="Rezerwuj z wylotem z Katowic" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_6_dni_samolotem_z_katowic,md,f1c30116e3eafefd569de34bb6000705">Katowice</a> <a class="linkhre" title="Rezerwuj z wylotem z Warszawy" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_6_dni_samolotem_z_warszawy,md,6be3c277d6f730a7df3d8de9455938e0">Warszawa</a> <a class="linkhre" title="Rezerwuj z wylotem z Gdańska" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_6_dni_samolotem_z_gdańska,md,458b2dbb22d17dda8580e17db133f003">Gdańsk</a> <a class="linkhre" title="Rezerwuj z wylotem z Poznania" href="/oferta_hiszpania_barcelona_majówka_w_barcelonie_-_6_dni_samolotem_z_poznania,md,1c2fc250eff6facd171c7e93fed8c998">Poznań</a></div>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="6" class="off_tr"  height="10"></td>
+						</tr>
+												</table>
+		</div>
+		
+		<div class="boxBackgroundBottom"><a href="#top">do góry</a>|<a href="javascript:history.back();">wstecz</a>|<a href="/">strona główna</a></div>
+	</div>
+
+
+
+
+
+
+
+
+<!-- DEBUGINFO: 
+Krok: 1   Widok oferty: 1    Widok hotelu: 
+ -->
+    <!-- /home/users/sykon_s/public_html/ajax2/_getoffers_v5.php, 0.14000296592712 ENDe koko -->
+
+
+                    
+                    
+                    <script type="text/javascript">
+                        $(document).ready(function() {
+                            $('#horizontalcarousel').jcarousel({
+                                wrap: 'circular',
+                                scroll: 0,
+                                auto: 5,
+                                initCallback: horizontal_carousel,
+                                itemFallbackDimension: 300
+                            });
+
+                            $('#bigcarousel').jcarousel({
+                                wrap: 'circular',
+                                animation: 1200,
+                                scroll: 1,
+                                auto: 7,
+                                initCallback: big_carousel,
+                                itemFallbackDimension: 300
+                            });
+                        });
+                    </script>
+                    <!--end carousel_horizontal-->
+
+                    <!--begin main_row -->
+                    <div class="cleared"></div>
+
+                    <!-- xxxxx: string(0) ""
+ -->
+
+                                        <!--end main-->
+                </div>
+
+                <!--begin footer -->
+
+                <!--begin bottom -->
+                <!-- 4 kolumny z linkami 
+                <div id="bottom">
+                    <div id="bottomIn">
+                    <div class="bottomLinks">
+                        <h3 style="font-weight:normal">Dokumenty:</h3>
+                        <ul>
+                            <li><a href='/formquestion/page.html'>Katalog REGENT</a></li>
+                            <li><a href='/praca/page.html'>Praca</a></li>
+                            <li><a href='/Files/PolitykaPrywatnosciRODO.pdf'>Polityka prywatności</a></li>
+                        </ul>
+                    </div>
+                    <div class="bottomLinks">
+                        <h3 style="font-weight:normal">&nbsp;</h3>
+                        <ul>
+                            <li><a href='/Files/fz2.pdf'>Formularz zgłoszenia</a></li>
+                            <li><a href='/Files/owu.pdf'>Ogólne warunki uczestnictwa</a></li>
+                            <li><a href='/Files/STANDARDOWY_FORMULARZ_INFORMACYJNY.pdf' target=_blank>Standardowy Formularz Informacyjny do umów 
+                    o udział w imprezie turystycznej</a></li>	    
+
+                        </ul>
+                    </div>
+                    <div class="bottomLinks">
+                        <h3 style="font-weight:normal">&nbsp;</h3>
+                        <ul>
+                            <li><a href='/Files/faq.pdf'>Uzupełnienie ogólnych warunków uczestnictwa</a></li>
+                            <li><a href='/Files/certyfikat_gwarancji_ubezpieczeniowej.pdf'>Certyfikat Gwarancji Ubezpieczeniowej</a></li>
+                        </ul>
+                    </div>
+                    <div class="bottomLinks">
+                        <h3 style="font-weight:normal">&nbsp;</h3>
+                        <ul>
+                            <li><a href='/Files/owub.pdf'>Ogólne warunki ubezpieczenia</a></li>
+
+                            <li><a href='/Files/CertyfikatPIT.pdf'>Certyfikat PIT</a></li>
+                        </ul>
+                </div>-->
+
+                <!-- 2 kolumny z linkami -->
+                <div id="bottom">
+                    <div id="bottomIn">
+                        <div class="bottomLinks">
+                            <h3 style="font-weight:normal">Dokumenty:</h3>
+                            <ul>
+                                <!-- li><a href='/formquestion/page.html'>Katalog REGENT</a></li -->
+                                <li><a href='/praca/page.html'>Praca</a></li>
+                                <!-- li><a href='/polityka_prywatnosci/page.html'>Polityka prywatności</a></li -->
+                                <li><a href='/Files/PolitykaPrywatnosciRODO.pdf'>Polityka prywatności</a></li>
+                                <!-- li><a href='/Files/fz2.pdf'>Formularz zgłoszenia</a></li -->
+                                <li><a href='/Files/owu.pdf'>Ogólne warunki uczestnictwa</a></li>
+                                <li><a href='/Files/STANDARDOWY_FORMULARZ_INFORMACYJNY.pdf' target=_blank>Standardowy Formularz
+                                        Informacyjny do umów
+                                        o udział w imprezie turystycznej</a></li>
+                            </ul>
+                        </div>
+                        <div class="bottomLinks">
+                            <h3 style="font-weight:normal">&nbsp;</h3>
+                            <ul>
+                                <li><a href='/Files/faq.pdf'>Uzupełnienie ogólnych warunków uczestnictwa</a></li>
+                                <li><a href='/Files/certyfikat_gwarancji_ubezpieczeniowej.pdf'>Certyfikat Gwarancji
+                                        Ubezpieczeniowej</a></li>
+                                <li><a href='/Files/owub.pdf'>Ogólne warunki ubezpieczenia</a></li>
+                                <!-- li><a href='/Files/CertyfikatPIT.pdf'>Certyfikat PIT</a></li -->
+                            </ul>
+                        </div>
+                        <!--end bottom_links-->
+
+                        <!--begin bottom_free -->
+                        <div class="bottomFreePlace">
+                            <div class="bottomFreeContent">
+                                <div class="bottomFreeItem">
+                                    <!-- 
+                                    <h4>Rekomendacja</h4>
+                                    <a href="/gfx/certyfikat.jpg" target="_blank"><img src="/gfx/pit.gif" alt="Polska Izba Turystyki"></a>
+                                    -->
+                                    <img src="/gfx/kp//image_part_2261336675121135.png" alt="PFR - Polski Fundusz Rozwoju"
+                                        style="margin-top:9px;height:47px;">
+                                    <p class="PFR-text">Przedsiębiorca uzyskał subwencję finansową w ramach
+                                        programu rządowego „Tarcza Finansowa 2.0 Polskiego Funduszu Rozwoju dla Mikro, Małych i
+                                        Średnich Firm”, udzieloną przez PFR SA.</p>
+                                </div>
+                                <div class="bottomFreeLinks">
+
+                                </div>
+
+                            </div>
+                        </div>
+                        <!--end bottom_free-->
+                    </div>
+                </div>
+                <!--end bottom-->
+            </div>
+
+            <!-- miejsce na GOOGLE ANALITICS -->
+
+            <!--begin footer_html -->
+            <div id="footer">
+                © 2003-2026 <b>REGENT TRAVEL GROUP Sp. Z o.o spółka komandytowa</b>, ul. Meliorantów 8, 60-447 Poznań |
+                <b>tel./fax</b> (61) 851-31-18 | <a href="mailto:biuro@regent.pl">biuro@regent.pl</a> | <a
+                    href="/contacts/page.html">Kontakt</a>
+                <!--  © Copyright 2003-2016 <b>Biuro Podróży "REGENT"</b>, ul. Meliorantów 8, 60-447 Poznań | <b>tel./fax</b> (61) 851-31-18 | <a href="mailto:biuro@regent.pl">biuro@regent.pl</a> | <a href="/contacts/page.html">Kontakt</a >-->
+            </div>
+            <!--end footer_html-->
+
+            <script type="text/javascript">
+                $(function() {
+                    if ($.browser.msie) {
+                        $('#redmenuul li:last-child a').css('border-right', '0px none');
+                        $('#silvermenuul li:last-child a').css('border-right', '0px none');
+                    }
+                });
+            </script>
+            <!--end footer-->
+            </div>
+
+            <script src="/gfx/kp/slick/slick.js" type="text/javascript" charset="utf-8"></script>
+            <script type="text/javascript">
+                
+                    $(document).on('ready', function() {
+                        $(".regular").slick({
+                            dots: true,
+                            infinite: true,
+                            slidesToShow: 3,
+                            slidesToScroll: 3,
+                            responsive: [{
+                                breakpoint: 991,
+                                settings: {
+                                    slidesToShow: 1,
+                                    slidesToScroll: 1
+                                }
+                            }]
+                        });
+                        $(".center").slick({
+                            dots: true,
+                            infinite: true,
+                            centerMode: true,
+                            slidesToShow: 3,
+                            slidesToScroll: 3,
+                            responsive: [{
+                                breakpoint: 991,
+                                settings: {
+                                    slidesToShow: 1,
+                                    slidesToScroll: 1
+                                }
+                            }]
+                        });
+                        $(".variable").slick({
+                            dots: true,
+                            infinite: true,
+                            variableWidth: true,
+                            responsive: [{
+                                breakpoint: 991,
+                                settings: {
+                                    slidesToShow: 1,
+                                    slidesToScroll: 1
+                                }
+                            }]
+                        });
+                    });
+                
+            </script>
+        </body>
+</html><!-- par: <br> -->
