@@ -3,7 +3,7 @@ Zbieramy tylko podstawowe dane (termin, hotel, cena) i link do oferty na stronie
 import datetime,importlib,logging,threading,time,uuid
 import store
 from . import http
-OPS=['itaka','rainbow','tui','exim','grecos','pluswakacje','dertour','toptouristik','nomade','kompastour','regent','matimpex']
+OPS=['itaka','rainbow','tui','exim','grecos','pluswakacje','dertour','toptouristik','nomade','kompastour','bestreisen','onholidays','oskar','sunfun','regent','matimpex']
 NAMES={'ES':'Hiszpania','GR':'Grecja','TR':'Turcja','EG':'Egipt','BG':'Bułgaria','HR':'Chorwacja','IT':'Włochy','PT':'Portugalia','CY':'Cypr',
  'AL':'Albania','TN':'Tunezja','MA':'Maroko','MT':'Malta','ME':'Czarnogóra','FR':'Francja','DE':'Niemcy','AT':'Austria','CZ':'Czechy','HU':'Węgry',
  'GB':'Wielka Brytania','NL':'Holandia','BE':'Belgia','IE':'Irlandia','DK':'Dania','SE':'Szwecja','NO':'Norwegia','IS':'Islandia','FI':'Finlandia',
