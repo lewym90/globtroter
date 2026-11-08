@@ -43,7 +43,7 @@ def _one(job,op,m,cc,ym,o):
     if v is None:
         st['state']='run'
         try:
-            v=m.search(cc,ym,o);v['offers']=[x for x in v.get('offers',[]) if _ok(x,ym,o)];v['at']=time.time();age=0
+            v=m.search(cc,ym,o,limit_pages=getattr(m,'PAGES',40));v['offers']=[x for x in v.get('offers',[]) if _ok(x,ym,o)];v['at']=time.time();age=0
             store.put(key,v,TTL)
         except Exception as e:
             old,oa=store.get_stale(key)
@@ -51,7 +51,9 @@ def _one(job,op,m,cc,ym,o):
             else:
                 st['state']='err';st['error']='Strona biura zablokowała odczyt' if isinstance(e,http.Blocked) else 'Strona biura nie odpowiedziała'
                 logging.warning('tours %s %s %s %s: %s',op,cc,ym,o,e);return
-    for x in v['offers']: x['op']=op
+    for x in v['offers']:
+        x['op']=op
+        if getattr(m,'APPROX',False): x['approx']=True
     st.update(state='ok',count=len(v['offers']),total=v.get('total'),complete=v.get('complete',True),url=v.get('url'),age=int(age or 0))
     with job['lock']: job['offers'].extend(v['offers'])
 def _ok(x,ym,o):

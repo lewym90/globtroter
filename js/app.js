@@ -290,7 +290,7 @@ function drawTours() {
   const busy = R.state === 'running';
   const card = (x) => `<div class="tcard"><div class="th"><div><h3>${esc(x.name)}</h3><p class="ts">${starsL(x.stars)} ${esc(x.place || '')}</p></div><span class="tbo">${esc(name(x.op))}</span></div>
     <div class="tg"><span>${I.cal}${dateL(x.dep)}${x.ret ? ` – ${dateL(x.ret)}` : ''}${x.nights ? `, ${nightsL(x.nights)}` : ''}</span>${x.board ? `<span>${I.fork}${esc(x.board)}</span>` : ''}${x.from ? `<span>${I.plane}wylot: ${esc(S.tmeta.origins.find(([c]) => c === x.from)?.[1] || x.from)}</span>` : ''}${x.kind && x.kind !== 'wypoczynek' ? `<span>${I.map}${esc(x.kind)}</span>` : ''}${x.rating ? `<span>${I.star}ocena ${String(x.rating).replace('.', ',')}/10</span>` : ''}</div>
-    <div class="tp"><div><b>${zl(x.ppp)}</b> <small>za osobę</small>${x.total && x.adults ? `<p class="hint">${zl(x.total)} za ${x.adults} ${osob(x.adults)}</p>` : ''}</div><a class="btn small" href="${url(x.url)}" target="_blank" rel="noopener">Zobacz w biurze</a></div></div>`;
+    <div class="tp"><div><b>${zl(x.ppp)}</b> <small>za osobę${x.approx ? ', orientacyjnie' : ''}</small>${x.total && x.adults ? `<p class="hint">${zl(x.total)} za ${x.adults} ${osob(x.adults)}</p>` : ''}</div><a class="btn small" href="${url(x.url)}" target="_blank" rel="noopener">Zobacz w biurze</a></div></div>`;
   el.innerHTML = `<div class="wcard tbar"><div class="tops">${opLine}</div>
     ${busy ? `<p class="hint"><span class="tspin"></span> Przeglądam strony biur. Pierwsze wyszukiwanie może potrwać do dwóch minut, potem wyniki są od razu.</p>` : ''}
     ${R.state === 'error' ? `<p class="hint">${esc(R.err)}</p>` : ''}

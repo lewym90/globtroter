@@ -23,6 +23,8 @@ offerCode zaczyna sie od kodu IATA lotniska wylotu i zawiera daty.
 import base64,datetime as dt,json,re
 from . import http
 
+APPROX=True
+PAGES=100
 NAME='TUI'
 SITE='https://www.tui.pl'
 # Slugi krajow ze strony (destinations.xml + lista kierunkow w wyszukiwarce, sprawdzone 2026-11-08).

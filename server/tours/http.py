@@ -30,7 +30,9 @@ def get(url,data=None,headers=None,tries=3,timeout=30):
                     with urllib.request.urlopen(req,timeout=timeout,context=CTX) as r:
                         b=r.read();enc=r.headers.get('Content-Encoding','')
                         if enc=='gzip': b=gzip.decompress(b)
-                        elif enc=='deflate': b=zlib.decompress(b)
+                        elif enc=='deflate':
+                            try: b=zlib.decompress(b)
+                            except zlib.error: b=zlib.decompress(b,-15)
                         cs=r.headers.get_content_charset() or 'utf-8'
                         return b.decode(cs,errors='replace')
                 except urllib.error.HTTPError as e:

@@ -17,8 +17,8 @@ albo lot 09:15 z Wroclawia: 7 przy 8) sprawdzone 2026-11-08: zadna z 10 takich o
 ('Dostosuj parametry, aby wyświetlić ofertę'), wiec je pomijamy.
 
 Ceny: Merlin_AdultPrice = cena za 1 doroslego, Merlin_FullPriceParsed = razem za 2 doroslych
-(Adults=2&Children=0). Strona oferty pokazuje te same kwoty ('X ZŁ' i 'Y ZŁ / 1 DOROSŁY'); Grecos nie dolicza
-do nich osobno TFG/TFP. Odpowiedz serwera IIS dla 'deflate' jest surowym deflate, dlatego prosimy tylko o gzip.
+(Adults=2&Children=0). Strona oferty pokazuje te same kwoty ('X ZŁ' i 'Y ZŁ / 1 DOROSŁY', sprawdzone na 10 ofertach);
+czy zawieraja skladki TFG/TFP, strona w tym miejscu nie mowi. Odpowiedz serwera IIS dla 'deflate' jest surowym deflate, dlatego prosimy tylko o gzip.
 """
 import calendar,datetime as dt,json,re,urllib.parse
 from . import http
