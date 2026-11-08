@@ -3,7 +3,7 @@ import { flapRow } from './flap.js';
 import { initLive, swapDay, artOf } from './live.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '2.9.2';
+const VERSION = '3.0.0';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -111,6 +111,7 @@ const I = {
   star: SV('<path d="M12 3.500l2.600 5.400 5.900.8-4.300 4.100 1 5.900-5.200-2.800-5.200 2.800 1-5.900L3.500 9.700l5.900-.8z"/>'),
   heart: SV('<path d="M12 20s-8-4.800-8-10.500A4.500 4.500 0 0 1 12 7a4.500 4.500 0 0 1 8 2.500C20 15.200 12 20 12 20z"/>'),
   user: SV('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.500-7 8-7s8 3 8 7"/>'),
+  bag: SV('<rect x="3.500" y="7" width="17" height="13" rx="2.500"/><path d="M9 7V5.500A1.500 1.500 0 0 1 10.500 4h3A1.500 1.500 0 0 1 15 5.500V7M3.500 12.500h17M10.500 12.500v2h3v-2"/>'),
   bell: SV('<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/>'),
   menu: SV('<path d="M4 6h16M4 12h16M4 18h16"/>', 'stroke-width="2.400"'),
   share: SV('<circle cx="6" cy="12" r="2.500"/><circle cx="18" cy="6" r="2.500"/><circle cx="18" cy="18" r="2.500"/><path d="M8 11l8-4M8 13l8 4"/>'),
@@ -121,8 +122,8 @@ const I = {
   car: SV('<path d="M4 16v-3l2-5h12l2 5v3zM4 16v2M20 16v2"/><circle cx="7.500" cy="13.500" r=".8" fill="currentColor"/><circle cx="16.500" cy="13.500" r=".8" fill="currentColor"/>'),
   sum: SV('<rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/>'),
 };
-const tabbar = (act) => `<nav class="tabbar" aria-label="Główna nawigacja">${[['home', 'Start', I.home, viewHome], ['trips', 'Moje podróże', I.cal, viewTrips], ['insp', 'Inspiracje', I.star, viewInspire], ['fav', 'Ulubione', I.heart, viewFav], ['prof', 'Profil', I.user, viewProfile]].map(([k, l, ic]) => `<button data-nav="${k}" class="${act === k ? 'on' : ''}">${ic}<span>${l}</span></button>`).join('')}</nav>`;
-const NAV = () => ({ home: viewHome, trips: viewTrips, insp: viewInspire, fav: viewFav, prof: viewProfile });
+const tabbar = (act) => `<nav class="tabbar" aria-label="Główna nawigacja">${[['home', 'Start', I.home, viewHome], ['trips', 'Moje podróże', I.cal, viewTrips], ['insp', 'Inspiracje', I.star, viewInspire], ['tours', 'Biura', I.bag, viewTours], ['fav', 'Ulubione', I.heart, viewFav], ['prof', 'Profil', I.user, viewProfile]].map(([k, l, ic]) => `<button data-nav="${k}" class="${act === k ? 'on' : ''}">${ic}<span>${l}</span></button>`).join('')}</nav>`;
+const NAV = () => ({ home: viewHome, trips: viewTrips, insp: viewInspire, tours: viewTours, fav: viewFav, prof: viewProfile });
 const bindNav = () => $$('[data-nav]').forEach((b) => { b.onclick = () => NAV()[b.dataset.nav](); });
 const CN_ = { beach: 'plaża', city: 'zwiedzanie', ski: 'narty', nature: 'przyroda', party: 'imprezy', family: 'z rodziną', food: 'jedzenie', romance: 'we dwoje' };
 function destLabel() {
@@ -219,6 +220,99 @@ function viewTrips() {
   const st = $('#st'); if (st) st.onclick = viewHome;
   $('#nw').onclick = () => LV.viewNew();
   bindNav(); app.scrollTop = 0;
+}
+// Biura podróży: jedna lista ofert z wielu biur. Rezerwacja zawsze na stronie biura.
+const TP_SLUG = { ES: 'hiszpania', GR: 'grecja', TR: 'turcja', EG: 'egipt', BG: 'bulgaria', HR: 'chorwacja', IT: 'wlochy', PT: 'portugalia', CY: 'cypr', AL: 'albania', TN: 'tunezja', MA: 'maroko', MT: 'malta', ME: 'czarnogora' };
+const TP_MON = ['styczen', 'luty', 'marzec', 'kwiecien', 'maj', 'czerwiec', 'lipiec', 'sierpien', 'wrzesien', 'pazdziernik', 'listopad', 'grudzien'];
+const BOARDS = [['', 'Każde'], ['ai', 'All inclusive'], ['hb', 'Śniadania i kolacje'], ['bb', 'Śniadania']];
+const boardOf = (b) => { const t = (b || '').toLowerCase(); return /all|ultra/.test(t) ? 'ai' : /obiadokol|kolac|hb|half|pełne|fb/.test(t) ? 'hb' : /śniad|bb|breakfast/.test(t) ? 'bb' : ''; };
+const nightsL = (n) => `${n} ${n === 1 ? 'noc' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'noce' : 'nocy'}`;
+const starsL = (n) => (n ? '★'.repeat(Math.floor(n)) + (n % 1 ? '½' : '') : '');
+function nearestOrigin(meta) {
+  const o = S.q.origin; if (!o?.lat) return null;
+  let best = null, bd = 1e9;
+  for (const [c] of meta.origins) { const a = S.airports.find((x) => x.iata === c); if (!a) continue; const d = km(o.lat, o.lon, a.lat, a.lon); if (d < bd) { bd = d; best = c; } }
+  return best;
+}
+async function viewTours() {
+  setBackdrop({ photo: heroNow()?.src, dim: true, strong: true });
+  app.innerHTML = `<section class="tabpage">${pageTop('Biura podróży', 'Oferty wielu biur w jednym miejscu. Rezerwujesz na stronie biura.')}<div class="wcard"><p class="hint">Wczytuję listę biur…</p></div></section>${tabbar('tours')}`;
+  bindNav();
+  if (!S.tmeta) { try { await data(); S.tmeta = await api('/api/tours/meta'); } catch (e) { $('.tabpage .wcard').innerHTML = `<p>${esc(e.message)}</p><div class="acts"><button class="btn small" id="rt">Spróbuj ponownie</button></div>`; $('#rt').onclick = viewTours; return; } }
+  const M = S.tmeta; const tq = S.tq || (S.tq = load('tq', null) || {});
+  if (!tq.cc) tq.cc = M.countries.find(([c]) => c === 'ES') ? 'ES' : M.countries[0]?.[0];
+  const mons = []; const d0 = new Date(); for (let i = 0; i < 18; i++) { const d = new Date(d0.getFullYear(), d0.getMonth() + i, 1); mons.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); }
+  if (!mons.includes(tq.ym)) tq.ym = S.q.when.mode === 'month' && mons.includes(`${S.q.when.year}-${String(S.q.when.month).padStart(2, '0')}`) ? `${S.q.when.year}-${String(S.q.when.month).padStart(2, '0')}` : mons[1];
+  if (tq.origin === undefined) tq.origin = nearestOrigin(M);
+  const monL = (ym) => `${MONTHS[+ym.slice(5) - 1][0].toUpperCase()}${MONTHS[+ym.slice(5) - 1].slice(1)} ${ym.slice(0, 4)}`;
+  $('.tabpage').innerHTML = `${pageTop('Biura podróży', 'Oferty wielu biur w jednym miejscu. Rezerwujesz na stronie biura.')}
+    <div class="wcard tform">
+      <label>Kraj<select id="tcc">${M.countries.map(([c, n]) => `<option value="${c}" ${c === tq.cc ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+      <label>Wyjazd w miesiącu<select id="tym">${mons.map((m) => `<option value="${m}" ${m === tq.ym ? 'selected' : ''}>${monL(m)}</option>`).join('')}</select></label>
+      <label>Wylot z<select id="tor"><option value="">Dowolne lotnisko</option>${M.origins.map(([c, n]) => `<option value="${c}" ${c === tq.origin ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+      <button class="btn" id="tgo">${I.search} Pokaż oferty</button>
+      <p class="hint">Sprawdzam ${M.ops.length} biur: ${M.ops.map((o) => esc(o.name)).join(', ')}.</p>
+    </div>
+    <div id="tres">${S.tres && S.tres.key === JSON.stringify([tq.cc, tq.ym, tq.origin]) ? '' : `<div class="wcard emptyc"><img src="art/e/biura.jpg" alt="" onerror="this.remove()"><h3>Wybierz kraj i miesiąc</h3><p>Pokażę oferty wszystkich biur razem, od najtańszej. Każda prowadzi prosto do tej oferty na stronie biura.</p></div>`}</div>
+    <div id="tmore"></div>`;
+  const read = () => { tq.cc = $('#tcc').value; tq.ym = $('#tym').value; tq.origin = $('#tor').value || null; save('tq', tq); };
+  ['#tcc', '#tym', '#tor'].forEach((k) => { $(k).onchange = read; });
+  $('#tgo').onclick = () => { read(); toursSearch(); };
+  if (S.tres && S.tres.key === JSON.stringify([tq.cc, tq.ym, tq.origin])) drawTours(); else drawOthers();
+  app.scrollTop = 0;
+}
+async function toursSearch() {
+  const tq = S.tq; const key = JSON.stringify([tq.cc, tq.ym, tq.origin]); const my = Symbol();
+  S.tres = { key, offers: [], ops: {}, state: 'running', show: 40, sort: S.tres?.sort || 'price', board: S.tres?.board || '', stars: S.tres?.stars || 0, tok: my };
+  drawTours();
+  try {
+    const { id } = await api('/api/tours', { cc: tq.cc, ym: tq.ym, origin: tq.origin });
+    let n = 0;
+    for (let i = 0; i < 400; i++) {
+      if (S.tres?.tok !== my) return;
+      const j = await api(`/api/tours/job?id=${id}&n=${n}`);
+      if (S.tres?.tok !== my) return;
+      n = j.n; S.tres.offers.push(...j.offers); S.tres.ops = j.ops; S.tres.state = j.state;
+      if ($('#tres')) drawTours();
+      if (j.state === 'done') return;
+      await new Promise((r) => setTimeout(r, 2500));
+    }
+  } catch (e) { if (S.tres?.tok === my) { S.tres.state = 'error'; S.tres.err = e.message; if ($('#tres')) drawTours(); } }
+}
+function drawTours() {
+  const R = S.tres; const el = $('#tres'); if (!el || !R) return;
+  const M = S.tmeta; const name = (op) => M.ops.find((o) => o.id === op)?.name || op;
+  let L = R.offers.filter((x) => (!R.board || boardOf(x.board) === R.board) && (!R.stars || (x.stars || 0) >= R.stars));
+  const by = { price: (a, b) => a.ppp - b.ppp, stars: (a, b) => (b.stars || 0) - (a.stars || 0) || a.ppp - b.ppp, date: (a, b) => a.dep.localeCompare(b.dep) || a.ppp - b.ppp };
+  L.sort(by[R.sort]);
+  const ops = Object.entries(R.ops).filter(([, s]) => s.state !== 'none');
+  const opLine = ops.map(([op, s]) => `<span class="top ${s.state}">${esc(s.name)}${s.state === 'ok' ? ` <b>${s.count}</b>` : s.state === 'err' ? ' ✕' : s.state === 'run' || s.state === 'wait' ? ' …' : ''}</span>`).join('');
+  const busy = R.state === 'running';
+  const card = (x) => `<div class="tcard"><div class="th"><div><h3>${esc(x.name)}</h3><p class="ts">${starsL(x.stars)} ${esc(x.place || '')}</p></div><span class="tbo">${esc(name(x.op))}</span></div>
+    <div class="tg"><span>${I.cal}${dateL(x.dep)}${x.ret ? ` – ${dateL(x.ret)}` : ''}${x.nights ? `, ${nightsL(x.nights)}` : ''}</span>${x.board ? `<span>${I.fork}${esc(x.board)}</span>` : ''}${x.from ? `<span>${I.plane}wylot: ${esc(S.tmeta.origins.find(([c]) => c === x.from)?.[1] || x.from)}</span>` : ''}${x.kind && x.kind !== 'wypoczynek' ? `<span>${I.map}${esc(x.kind)}</span>` : ''}${x.rating ? `<span>${I.star}ocena ${String(x.rating).replace('.', ',')}/10</span>` : ''}</div>
+    <div class="tp"><div><b>${zl(x.ppp)}</b> <small>za osobę</small>${x.total && x.adults ? `<p class="hint">${zl(x.total)} za ${x.adults} ${osob(x.adults)}</p>` : ''}</div><a class="btn small" href="${url(x.url)}" target="_blank" rel="noopener">Zobacz w biurze</a></div></div>`;
+  el.innerHTML = `<div class="wcard tbar"><div class="tops">${opLine}</div>
+    ${busy ? `<p class="hint"><span class="tspin"></span> Przeglądam strony biur. Pierwsze wyszukiwanie może potrwać do dwóch minut, potem wyniki są od razu.</p>` : ''}
+    ${R.state === 'error' ? `<p class="hint">${esc(R.err)}</p>` : ''}
+    <div class="seg" id="tsort">${[['price', 'Najtańsze'], ['stars', 'Standard'], ['date', 'Termin']].map(([k, l]) => `<button data-ts="${k}" aria-pressed="${R.sort === k}">${l}</button>`).join('')}</div>
+    <div class="pills dark">${BOARDS.map(([k, l]) => `<button data-tb="${k}" class="${R.board === k ? 'on' : ''}">${l}</button>`).join('')}${[[0, 'Każdy hotel'], [3, '3★ i więcej'], [4, '4★ i więcej'], [5, '5★']].map(([k, l]) => `<button data-tst="${k}" class="${R.stars === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    <p class="hint">${L.length ? `${L.length} ofert${R.offers.length !== L.length ? ` z ${R.offers.length}` : ''}.` : busy ? '' : 'Brak ofert dla tych ustawień.'} Ceny ze stron biur z chwili odczytu, za osobę przy dwóch dorosłych. Ostateczna cena jest zawsze u biura.</p></div>
+    ${!L.length && !busy ? `<div class="wcard emptyc"><img src="art/e/brak.jpg" alt="" onerror="this.remove()"><h3>Nic nie znalazłem</h3><p>Zmień miesiąc, lotnisko wylotu albo filtry. Możesz też sprawdzić porównywarki niżej.</p></div>` : ''}
+    ${L.slice(0, R.show).map(card).join('')}
+    ${L.length > R.show ? `<button class="btn line small lightb" id="tsm">Pokaż kolejne (${L.length - R.show})</button>` : ''}
+    ${ops.filter(([, s]) => s.state === 'ok' && s.url && (s.complete === false || (s.total && s.total > s.count))).map(([, s]) => `<a class="btn line small lightb" href="${url(s.url)}" target="_blank" rel="noopener">Wszystkie oferty ${esc(s.name)}${s.total ? ` (${s.total})` : ''}</a>`).join('')}`;
+  $$('[data-ts]').forEach((b) => { b.onclick = () => { R.sort = b.dataset.ts; drawTours(); }; });
+  $$('[data-tb]').forEach((b) => { b.onclick = () => { R.board = b.dataset.tb; R.show = 40; drawTours(); }; });
+  $$('[data-tst]').forEach((b) => { b.onclick = () => { R.stars = +b.dataset.tst; R.show = 40; drawTours(); }; });
+  const sm = $('#tsm'); if (sm) sm.onclick = () => { R.show += 40; drawTours(); };
+  drawOthers();
+}
+function drawOthers() {
+  const el = $('#tmore'); if (!el) return; const tq = S.tq; const m = +tq.ym.slice(5);
+  const tp = TP_SLUG[tq.cc] ? `https://www.travelplanet.pl/wakacje/${TP_SLUG[tq.cc]}-${TP_MON[m - 1]}/` : 'https://www.travelplanet.pl/';
+  const links = [['Travelplanet.pl', tp, 'porównuje oferty wielu biur'], ['Wakacje.pl', TP_SLUG[tq.cc] ? `https://www.wakacje.pl/wczasy/${TP_SLUG[tq.cc]}/` : 'https://www.wakacje.pl/', 'porównuje oferty wielu biur'], ['Coral Travel', 'https://www.coraltravel.pl/', ''], ['Anex Tour', 'https://anextour.com.pl/', ''], ['Join UP!', 'https://joinup.pl/', '']];
+  el.innerHTML = `<div class="wcard"><h3>Pozostałe biura</h3><p class="hint">Tych stron nie mogę czytać automatycznie, więc otwórz je bezpośrednio. Porównywarki pokazują też oferty biur spoza listy wyżej.</p>
+    <div class="linkset">${links.map(([n, u, d]) => `<a class="btn line small" href="${url(u)}" target="_blank" rel="noopener" title="${esc(d)}">${esc(n)}</a>`).join('')}</div></div>`;
 }
 const favs = () => load('fav', []);
 function toggleFav(id) { const f = favs(); save('fav', f.includes(id) ? f.filter((x) => x !== id) : [...f, id]); }
