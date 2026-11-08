@@ -28,6 +28,7 @@ def meta():
     return {'ops':[{'id':k,'name':m.NAME,'site':m.SITE,'countries':sorted(m.COUNTRIES)} for k,m in M.items()],
             'countries':sorted(([c,NAMES.get(c,c)] for c in cs),key=lambda x:x[1]),'origins':[[k,v] for k,v in ORIGINS.items()]}
 JOBS={};_jl=threading.Lock()
+_SEM=threading.BoundedSemaphore(6)  # najwyzej 6 biur naraz na caly serwer: pamiec (limit uslugi 320 MB)
 def _check(q):
     cc=str(q.get('cc','')).upper();ym=str(q.get('ym',''));o=q.get('origin') or None
     try: d=datetime.date(int(ym[:4]),int(ym[5:7]),1)
@@ -41,16 +42,19 @@ def _one(job,op,m,cc,ym,o):
     st=job['ops'][op];key=f'tour:{op}:{cc}:{ym}:{o or "*"}'
     v,age=store.get(key)
     if v is None:
-        st['state']='run'
-        try:
-            v=m.search(cc,ym,o,limit_pages=getattr(m,'PAGES',40));v['offers']=[x for x in v.get('offers',[]) if _ok(x,ym,o)];v['at']=time.time();age=0
-            store.put(key,v,TTL)
-        except Exception as e:
-            old,oa=store.get_stale(key)
-            if old is not None and oa<36*3600: v,age=old,oa;st['stale']=True
-            else:
-                st['state']='err';st['error']='Strona biura zablokowała odczyt' if isinstance(e,http.Blocked) else 'Strona biura nie odpowiedziała'
-                logging.warning('tours %s %s %s %s: %s',op,cc,ym,o,e);return
+        with _SEM:
+            v,age=store.get(key)  # inny watek mogl juz pobrac to samo
+            if v is None:
+                st['state']='run'
+                try:
+                    v=m.search(cc,ym,o,limit_pages=getattr(m,'PAGES',40));v['offers']=[x for x in v.get('offers',[]) if _ok(x,ym,o)];v['at']=time.time();age=0
+                    store.put(key,v,TTL)
+                except Exception as e:
+                    old,oa=store.get_stale(key)
+                    if old is not None and oa<36*3600: v,age=old,oa;st['stale']=True
+                    else:
+                        st['state']='err';st['error']='Strona biura zablokowała odczyt' if isinstance(e,http.Blocked) else 'Strona biura nie odpowiedziała'
+                        logging.warning('tours %s %s %s %s: %s',op,cc,ym,o,e);return
     for x in v['offers']:
         x['op']=op
         if getattr(m,'APPROX',False): x['approx']=True
