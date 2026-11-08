@@ -7,9 +7,11 @@ robots.txt (User-agent *): Disallow tylko /tempHidden/ (sprawdzone 2026-11-08).
 
 Uwagi:
 - Sortowanie po cenie rosnaco; jeden wiersz na hotel (najtanszy termin w zakresie).
-- Lista podaje cene za osobe przy 2 doroslych ('zl/os.'); cena 'Razem' liczy sie dopiero na
-  stronie oferty (zapytanie do systemu organizatora). total = ppp * 2; na sprawdzonych ofertach
-  'Razem' z checkAvailability rownalo sie 2 x cena za osobe (patrz raport weryfikacji).
+- Lista podaje cene za osobe przy 2 doroslych ('zl/os.'), ta sama co w naglowku strony oferty.
+  Lista nie pokazuje ceny calkowitej, wiec total = ppp * 2 (wyliczone). 'Razem' liczy sie dopiero
+  na stronie oferty (checkAvailability u organizatora) i moze sie roznic: 2026-11-08 na 5 ofertach
+  zgodne 2, rozne o +1, +15 i -100 zl.
+- Strona 100 wynikow trwa ok. 14 s po stronie serwera Plus; ES/05/KTW = 3 strony, GR/06/WAW = 6.
 - Lista nie podaje liczby wynikow, wiec 'total' = None.
 - Wyszukiwarka zawiera wyloty z Berlina i Pragi; bez 'origin' bierzemy tylko lotniska polskie.
 """
@@ -53,8 +55,9 @@ def last_page(text):
 def parse(text):
     """HTML listy wynikow -> lista ofert (bez filtrowania)."""
     out=[]
-    for it in text.split("class='item offersList_item'")[1:]:
-        it=it.split("</a>")[0]
+    ms=list(re.finditer(r"<a href='(ofr-[^']+)'[^>]*class='item offersList_item'",text))
+    for k,m in enumerate(ms):
+        it=text[m.end():ms[k+1].start() if k+1<len(ms) else len(text)].split("</a>")[0]
         nid=re.search(r"data-notes-entity-id='([^']*)'",it)
         if not nid: continue
         f=html.unescape(nid.group(1)).split('|')   # id|wiek|kod|wyzywienie (X)|transport|miasto|wylot|powrot
@@ -78,13 +81,8 @@ def parse(text):
         out.append({'op':'pluswakacje','name':_txt(name.group(1)) if name else '','stars':(int(stars) if stars==int(stars) else stars) or None,
             'place':', '.join(loc[1:]),'dep':dep,'ret':ret,'nights':nights,'board':board,
             'from':CITY_IATA.get(city,city),'ppp':ppp,'adults':ADULTS,'total':ppp*ADULTS,'rating':None,
-            'kind':'objazd' if any('Objazd' in x for x in loc) else 'wypoczynek','url':None,'_id':f[0]})
-    # linki: kazdy element listy to <a href='ofr-...' class='item offersList_item'>
-    links=re.findall(r"<a href='(ofr-[^']+)'[^>]*class='item offersList_item'",text)
-    if len(links)==len(out):
-        for o,l in zip(out,links): o['url']=SITE+'/'+html.unescape(l)
-    for o in out: o.pop('_id')
-    return [o for o in out if o['url']]
+            'kind':'objazd' if any('Objazd' in x for x in loc) else 'wypoczynek','url':SITE+'/'+html.unescape(m.group(1))})
+    return out
 
 def search(cc,ym,origin=None,limit_pages=40):
     cc=cc.upper()

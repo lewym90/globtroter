@@ -8,7 +8,7 @@ NAMES={'ES':'Hiszpania','GR':'Grecja','TR':'Turcja','EG':'Egipt','BG':'Bułgaria
  'AL':'Albania','TN':'Tunezja','MA':'Maroko','MT':'Malta','ME':'Czarnogóra','FR':'Francja','DE':'Niemcy','AT':'Austria','CZ':'Czechy','HU':'Węgry',
  'GB':'Wielka Brytania','NL':'Holandia','BE':'Belgia','IE':'Irlandia','DK':'Dania','SE':'Szwecja','NO':'Norwegia','IS':'Islandia','FI':'Finlandia',
  'SI':'Słowenia','RS':'Serbia','GE':'Gruzja','AE':'Zjednoczone Emiraty Arabskie','JO':'Jordania','CV':'Wyspy Zielonego Przylądka','MK':'Macedonia Północna',
- 'BA':'Bośnia i Hercegowina','RO':'Rumunia','PL':'Polska','SK':'Słowacja','LV':'Łotwa','LT':'Litwa','EE':'Estonia','CH':'Szwajcaria','OM':'Oman'}
+ 'BA':'Bośnia i Hercegowina','RO':'Rumunia','PL':'Polska','SK':'Słowacja','LV':'Łotwa','LT':'Litwa','EE':'Estonia','CH':'Szwajcaria','OM':'Oman','DO':'Dominikana','MX':'Meksyk','TH':'Tajlandia','KE':'Kenia','TZ':'Tanzania (Zanzibar)','LK':'Sri Lanka','MU':'Mauritius','CV':'Wyspy Zielonego Przylądka','MV':'Malediwy','CU':'Kuba','ID':'Indonezja','VN':'Wietnam','US':'Stany Zjednoczone','JM':'Jamajka','SC':'Seszele','IN':'Indie','QA':'Katar','BH':'Bahrajn','SA':'Arabia Saudyjska'}
 ORIGINS={'KTW':'Katowice','WAW':'Warszawa','KRK':'Kraków','GDN':'Gdańsk','WRO':'Wrocław','POZ':'Poznań','RZE':'Rzeszów','LUZ':'Lublin','BZG':'Bydgoszcz','LCJ':'Łódź','SZZ':'Szczecin','OSZ':'Olsztyn-Mazury'}
 TTL=6*3600
 MODS={};_done=[False]
