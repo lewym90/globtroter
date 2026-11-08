@@ -6,6 +6,7 @@ ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOSTS=['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter','https://overpass.kumi.systems/api/interpreter']
 UA={'User-Agent':'Globtroter/1.0 (non-commercial travel planner; github.com/lewym90/globtroter)','Content-Type':'application/x-www-form-urlencoded'}
 MAX_AGE=30*86400;BUDGET=float(os.environ.get('BUDGET_S','1500'))
+ONLY=set(filter(None,os.environ.get('ONLY','').split(',')))  # np. ONLY=hurghada,side: tylko te kierunki
 def parse(raw):
     """Zamienia odpowiedz Overpass na krotkie rekordy, najpelniejsze wpisy najpierw."""
     out=[];seen=set()
@@ -30,6 +31,7 @@ def fetch(lat,lon):
     return None
 def main():
     ds=json.load(open(ROOT+'/data/destinations.json',encoding='utf8'));t0=time.time();ok=bad=skip=0
+    ds=[d for d in ds if not ONLY or d['id'] in ONLY]
     os.makedirs(ROOT+'/data/food',exist_ok=True)
     for d in ds:
         p=f"{ROOT}/data/food/{d['id']}.json"

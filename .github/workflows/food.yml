@@ -35,5 +35,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           N=$(ls data/food | wc -l)
+          ALL=$(python3 -c "import json;print(len(json.load(open('data/destinations.json'))))")
           OK=$(grep -oE 'zapisane [0-9]+' food.log | grep -oE '[0-9]+' || echo 0)
-          if [ "$N" -lt 128 ] && [ "${OK:-0}" -gt 0 ]; then sleep 120; gh workflow run food.yml --ref main || true; fi
+          if [ "$N" -lt "$ALL" ] && [ "${OK:-0}" -gt 0 ]; then sleep 120; gh workflow run food.yml --ref main || true; fi

@@ -6,6 +6,7 @@ ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 P=ROOT+'/data/attractions.json';D=ROOT+'/data/hours.json'
 URLS=['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter','https://maps.mail.ru/osm/tools/overpass/api/interpreter']
 BUDGET=float(os.environ.get('BUDGET_S','5000'))
+ONLY=set(filter(None,os.environ.get('ONLY','').split(',')))  # np. ONLY=hurghada,side: tylko te kierunki
 def ask(q):
     for u in URLS:
         try:
@@ -16,6 +17,7 @@ def ask(q):
 def main():
     ds=json.load(open(ROOT+'/data/destinations.json',encoding='utf8'));A=json.load(open(P,encoding='utf8'))
     done=json.load(open(D,encoding='utf8')) if os.path.exists(D) else {};t0=time.time()
+    ds=[d for d in ds if not ONLY or d['id'] in ONLY]
     for d in ds:
         if d['id'] in done or time.time()-t0>BUDGET: continue
         la,lo=d['lat'],d['lon'];w=.15

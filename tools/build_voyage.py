@@ -3,6 +3,7 @@
 import hashlib,json,os,re,sys,time,unicodedata,urllib.error,urllib.parse,urllib.request
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 P=ROOT+'/data/attractions.json'
+ONLY=set(filter(None,os.environ.get('ONLY','').split(',')))  # np. ONLY=hurghada,side: tylko te kierunki
 def raw(t):
     u='https://en.wikivoyage.org/w/index.php?action=raw&title='+urllib.parse.quote(t.replace(' ','_'))
     for i in range(3):
@@ -12,6 +13,13 @@ def raw(t):
             time.sleep(10*(i+1))
         except Exception: time.sleep(5)
     return ''
+# Tytul artykulu Wikivoyage, gdy rozni sie od nazwy angielskiej kierunku
+TITLE={'Sharm El Sheikh':'Sharm el-Sheikh','Sal (Cape Verde)':'Sal','Halkidiki':'Kassandra'}
+def article(t):
+    """Tekst artykulu; jedno przekierowanie (#REDIRECT) jest wykonywane."""
+    x=raw(TITLE.get(t,t))
+    m=re.match(r'\s*#REDIRECT\s*\[\[([^\]|#]+)',x,re.I)
+    return raw(m[1]) if m else x
 def field(b,k):
     m=re.search(r'\|\s*'+k+r'\s*=\s*(.*?)(?=\n?\s*\|\s*[a-zA-Z_]+\s*=|\Z)',b,re.S)
     return re.sub(r'\[\[(?:[^\]|]*\|)?([^\]]*)\]\]',r'\1',m[1]).replace("'''",'').replace("''",'').strip() if m else ''
@@ -26,9 +34,10 @@ def norm(s):
     return a or re.sub(r'\W','',t)
 def main():
     ds=json.load(open(ROOT+'/data/destinations.json',encoding='utf8'));A=json.load(open(P,encoding='utf8'));t0=time.time();tot=0
+    ds=[d for d in ds if not ONLY or d['id'] in ONLY]
     for d in ds:
         if time.time()-t0>1500: break
-        t=raw(d['en'])
+        t=article(d['en'])
         L=A.setdefault(d['id'],[]);have={norm(x['n']) for x in L};n=0
         for m in re.finditer(r'\{\{(see|do)\s*\n?\|(.*?)\n?\}\}',t,re.S|re.I):
             b='|'+m[2];nm=field(b,'name');la=field(b,'lat');lo=field(b,'long')

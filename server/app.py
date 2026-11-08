@@ -37,6 +37,10 @@ class H(BaseHTTPRequestHandler):
                 if not j: return self.out(404,{'error':'Wyszukiwanie wygasło. Uruchom je jeszcze raz.'})
                 return self.out(200,j)
             if p=='/api/tours/meta': return self.out(200,tours.meta())
+            if p=='/api/tours/compare':
+                from tours import compare
+                if q.get('id','') not in compare.JOBS: return self.out(404,{'error':'Porównanie wygasło. Uruchom je jeszcze raz.'})
+                return self.out(200,compare.status(q['id']))
             if p=='/api/tours/job':
                 if q.get('id','') not in tours.JOBS: return self.out(404,{'error':'Wyszukiwanie wygasło. Uruchom je jeszcze raz.'})
                 return self.out(200,tours.status(q['id'],int(q.get('n',0) or 0)))
@@ -75,6 +79,10 @@ class H(BaseHTTPRequestHandler):
             if p=='/api/plan': return self.out(200,plan.build(b))
             if p=='/api/tours': return self.out(200,{'id':tours.start(b)})
             ip=(self.headers.get('X-Forwarded-For') or self.client_address[0]).split(',')[0].strip()
+            if p=='/api/tours/compare':
+                from tours import compare
+                if limited(ip,'cmp',60,3600): return self.out(429,{'error':'Za dużo porównań. Spróbuj za godzinę.'})
+                return self.out(200,{'id':compare.start(b)})
             if p=='/api/trip/new':
                 if limited(ip,'new',40,86400): return self.out(429,{'error':'Za dużo nowych wyjazdów dziś. Spróbuj jutro.'})
                 return self.out(200,trips.create(b.get('plan'),b.get('s')))
@@ -95,6 +103,7 @@ class H(BaseHTTPRequestHandler):
             if p=='/api/geocode': return self.out(200,{'hit':plan.geocode(b.get('q'),b.get('near'))})
             if p=='/api/route': return self.out(200,plan.route(b))
             if p=='/api/plan/manual': return self.out(200,plan.manual(b))
+            if p=='/api/plan/tour': return self.out(200,plan.tour(b))
             if p=='/api/car':
                 return self.out(200,plan.car_route(float(b['lat']),float(b['lon']),float(b['la']),float(b['lo']),b.get('transport')))
             if p=='/api/watch/add': return self.out(200,{'id':push.watch_add(b.get('device',''),b['from'],b['to'],b['ym'],b['nights'],b.get('name',''),b['price'])})

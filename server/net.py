@@ -30,8 +30,9 @@ def fetch_json(url,ttl=3600,tries=3,timeout=20,data=None,headers=None,cache=True
     raise SourceDown(f'{urllib.parse.urlsplit(url).hostname}: {err}')
 _fx={}
 def fx(code):
-    """Sredni kurs NBP do PLN."""
+    """Sredni kurs NBP do PLN. Tabela A (codziennie), a gdy waluty w niej nie ma, tabela B (raz w tygodniu: EGP, TND, AED, JOD, CVE)."""
     code=code.upper()
     if code=='PLN': return 1.0
-    d=fetch_json(f'https://api.nbp.pl/api/exchangerates/rates/a/{code.lower()}/?format=json',ttl=6*3600)
+    try: d=fetch_json(f'https://api.nbp.pl/api/exchangerates/rates/a/{code.lower()}/?format=json',ttl=6*3600)
+    except SourceDown: d=fetch_json(f'https://api.nbp.pl/api/exchangerates/rates/b/{code.lower()}/?format=json',ttl=24*3600)
     return float(d['rates'][0]['mid'])

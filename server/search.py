@@ -78,7 +78,7 @@ def pick_dests(q,month):
         pool=[x for x in scored if (x[0] or 0)>=0.55]
         if not pool:
             pool=sorted(scored,key=lambda x:-(x[0] or 0))[:6]
-            notes.append({'kind':'climate','text':'W tym miesiącu nigdzie w Europie nie ma idealnych warunków. Pokazujemy najlepsze, jakie są.'})
+            notes.append({'kind':'climate','text':'W tym miesiącu w żadnym miejscu z naszej listy nie ma idealnych warunków. Pokazujemy najlepsze, jakie są.'})
     pool.sort(key=lambda x:(-(x[0] if x[0] is not None else .5),-x[1].get('links',0)))
     res=[];seen={}
     for s,d,why in pool:
@@ -97,7 +97,7 @@ def leave_home(dep_iso,drive,mode,schengen=True):
     # Czas w aucie: bufor 15% i minimum 20 minut na korki
     road=round(drive['min']*1.15)+20
     return (d-dt.timedelta(minutes=buf+extra+road)).isoformat(timespec='minutes'),buf
-NONSCH={'GB','IE','CY','TR','RS','BA','ME','AL','MK','MD','GE','MA','RO','BG'}
+NONSCH={'GB','IE','CY','TR','RS','BA','ME','AL','MK','MD','GE','MA','RO','BG','EG','TN','AE','JO','CV'}
 NONSCH-={'RO','BG'}
 def run(job,q):
     def step(t,p):
