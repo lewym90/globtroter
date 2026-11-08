@@ -122,7 +122,7 @@ const I = {
   car: SV('<path d="M4 16v-3l2-5h12l2 5v3zM4 16v2M20 16v2"/><circle cx="7.500" cy="13.500" r=".8" fill="currentColor"/><circle cx="16.500" cy="13.500" r=".8" fill="currentColor"/>'),
   sum: SV('<rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/>'),
 };
-const tabbar = (act) => `<nav class="tabbar" aria-label="Główna nawigacja">${[['home', 'Start', I.home, viewHome], ['trips', 'Moje podróże', I.cal, viewTrips], ['insp', 'Inspiracje', I.star, viewInspire], ['tours', 'Biura', I.bag, viewTours], ['fav', 'Ulubione', I.heart, viewFav], ['prof', 'Profil', I.user, viewProfile]].map(([k, l, ic]) => `<button data-nav="${k}" class="${act === k ? 'on' : ''}">${ic}<span>${l}</span></button>`).join('')}</nav>`;
+const tabbar = (act) => `<nav class="tabbar" aria-label="Główna nawigacja">${[['home', 'Start', I.home, viewHome], ['trips', 'Podróże', I.cal, viewTrips], ['insp', 'Inspiracje', I.star, viewInspire], ['tours', 'Biura', I.bag, viewTours], ['fav', 'Ulubione', I.heart, viewFav], ['prof', 'Profil', I.user, viewProfile]].map(([k, l, ic]) => `<button data-nav="${k}" class="${act === k ? 'on' : ''}">${ic}<span>${l}</span></button>`).join('')}</nav>`;
 const NAV = () => ({ home: viewHome, trips: viewTrips, insp: viewInspire, tours: viewTours, fav: viewFav, prof: viewProfile });
 const bindNav = () => $$('[data-nav]').forEach((b) => { b.onclick = () => NAV()[b.dataset.nav](); });
 const CN_ = { beach: 'plaża', city: 'zwiedzanie', ski: 'narty', nature: 'przyroda', party: 'imprezy', family: 'z rodziną', food: 'jedzenie', romance: 'we dwoje' };
@@ -263,7 +263,7 @@ async function viewTours() {
 }
 async function toursSearch() {
   const tq = S.tq; const key = JSON.stringify([tq.cc, tq.ym, tq.origin]); const my = Symbol();
-  S.tres = { key, offers: [], ops: {}, state: 'running', show: 40, sort: S.tres?.sort || 'price', board: S.tres?.board || '', stars: S.tres?.stars || 0, tok: my };
+  S.tres = { key, offers: [], ops: {}, state: 'running', show: 40, sort: S.tres?.sort || 'price', board: S.tres?.board || '', stars: S.tres?.stars || 0, len: S.tres?.len || '', tok: my };
   drawTours();
   try {
     const { id } = await api('/api/tours', { cc: tq.cc, ym: tq.ym, origin: tq.origin });
@@ -282,7 +282,8 @@ async function toursSearch() {
 function drawTours() {
   const R = S.tres; const el = $('#tres'); if (!el || !R) return;
   const M = S.tmeta; const name = (op) => M.ops.find((o) => o.id === op)?.name || op;
-  let L = R.offers.filter((x) => (!R.board || boardOf(x.board) === R.board) && (!R.stars || (x.stars || 0) >= R.stars));
+  const NF = { '': () => true, s: (n) => n && n <= 5, w: (n) => n >= 6 && n <= 8, l: (n) => n >= 9 };
+  let L = R.offers.filter((x) => (!R.board || boardOf(x.board) === R.board) && (!R.stars || (x.stars || 0) >= R.stars) && NF[R.len || ''](x.nights));
   const by = { price: (a, b) => a.ppp - b.ppp, stars: (a, b) => (b.stars || 0) - (a.stars || 0) || a.ppp - b.ppp, date: (a, b) => a.dep.localeCompare(b.dep) || a.ppp - b.ppp };
   L.sort(by[R.sort]);
   const ops = Object.entries(R.ops).filter(([, s]) => s.state !== 'none');
@@ -296,6 +297,7 @@ function drawTours() {
     ${R.state === 'error' ? `<p class="hint">${esc(R.err)}</p>` : ''}
     <div class="seg" id="tsort">${[['price', 'Najtańsze'], ['stars', 'Standard'], ['date', 'Termin']].map(([k, l]) => `<button data-ts="${k}" aria-pressed="${R.sort === k}">${l}</button>`).join('')}</div>
     <div class="pills dark">${BOARDS.map(([k, l]) => `<button data-tb="${k}" class="${R.board === k ? 'on' : ''}">${l}</button>`).join('')}${[[0, 'Każdy hotel'], [3, '3★ i więcej'], [4, '4★ i więcej'], [5, '5★']].map(([k, l]) => `<button data-tst="${k}" class="${R.stars === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    <div class="pills dark">${[['', 'Każda długość'], ['w', 'Tydzień'], ['l', 'Dłużej'], ['s', 'Krótko, do 5 nocy']].map(([k, l]) => `<button data-tl="${k}" class="${(R.len || '') === k ? 'on' : ''}">${l}</button>`).join('')}</div>
     <p class="hint">${L.length ? `${L.length} ofert${R.offers.length !== L.length ? ` z ${R.offers.length}` : ''}.` : busy ? '' : 'Brak ofert dla tych ustawień.'} Ceny ze stron biur z chwili odczytu, za osobę przy dwóch dorosłych. Ostateczna cena jest zawsze u biura.</p></div>
     ${!L.length && !busy ? `<div class="wcard emptyc"><img src="art/e/brak.jpg" alt="" onerror="this.remove()"><h3>Nic nie znalazłem</h3><p>Zmień miesiąc, lotnisko wylotu albo filtry. Możesz też sprawdzić porównywarki niżej.</p></div>` : ''}
     ${L.slice(0, R.show).map(card).join('')}
@@ -304,6 +306,7 @@ function drawTours() {
   $$('[data-ts]').forEach((b) => { b.onclick = () => { R.sort = b.dataset.ts; drawTours(); }; });
   $$('[data-tb]').forEach((b) => { b.onclick = () => { R.board = b.dataset.tb; R.show = 40; drawTours(); }; });
   $$('[data-tst]').forEach((b) => { b.onclick = () => { R.stars = +b.dataset.tst; R.show = 40; drawTours(); }; });
+  $$('[data-tl]').forEach((b) => { b.onclick = () => { R.len = b.dataset.tl; R.show = 40; drawTours(); }; });
   const sm = $('#tsm'); if (sm) sm.onclick = () => { R.show += 40; drawTours(); };
   drawOthers();
 }
