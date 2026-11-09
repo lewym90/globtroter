@@ -6,7 +6,7 @@ import { initLive, swapDay, artOf } from './live.js';
 ['gesturestart', 'gesturechange', 'gestureend'].forEach((t) => document.addEventListener(t, (e) => e.preventDefault(), { passive: false }));
 document.addEventListener('touchmove', (e) => { if (e.touches.length > 1 && !e.target.closest('.leaflet-container')) e.preventDefault(); }, { passive: false });
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '3.5.0';
+const VERSION = '3.5.1';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
