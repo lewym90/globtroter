@@ -6,7 +6,7 @@ import { initLive, swapDay, artOf } from './live.js';
 ['gesturestart', 'gesturechange', 'gestureend'].forEach((t) => document.addEventListener(t, (e) => e.preventDefault(), { passive: false }));
 document.addEventListener('touchmove', (e) => { if (e.touches.length > 1 && !e.target.closest('.leaflet-container')) e.preventDefault(); }, { passive: false });
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '3.4.0';
+const VERSION = '3.5.0';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -210,47 +210,87 @@ function viewHome() {
   app.scrollTop = 0;
 }
 /* ---------- Formularz jednej części: Polska, Europa albo poza Europą ---------- */
+// Lotniska w zasięgu, tak samo jak w kroku „Skąd startujesz?”
+function nearAir() {
+  const q = S.q; if (!q.origin) return [];
+  return S.airports.filter((a) => !['BY', 'RU', 'UA'].includes(a.cc)).map((a) => ({ ...a, d: km(q.origin.lat, q.origin.lon, a.lat, a.lon) }))
+    .filter((a) => (a.cc === 'PL' && a.d < Math.max(q.radius, 700)) || (a.d < q.radius && a.large)).sort((a, b) => a.d - b.d);
+}
+const fromLabel = () => { const o = S.q.origin; if (!o) return 'Ustaw miejsce wyjazdu'; if (isPL()) return o.label; const A = nearAir(); return `${o.label}${A.length ? ` · lotniska ${A.slice(0, 3).map((a) => a.iata).join(', ')}${A.length > 3 ? ` i ${A.length - 3} więcej` : ''}` : ''}`; };
+const PACE_L = { slow: 'spokojne tempo', normal: 'tempo normalne', fast: 'intensywnie' };
+function settRows() {
+  const q = S.q; const t = q.transport; const st = q.stay; const pl = q.plan || {}; const b = q.bags || {};
+  const num = (v) => String(v).replace('.', ',');
+  const stayS = `do ${zl(st.budget)}, ${stayLabel().toLowerCase()}, ocena ${st.minRating ? num(st.minRating) + '+' : 'dowolna'}${st.breakfast ? ', ze śniadaniem' : ''}`;
+  const plan = `${PACE_L[pl.pace] || 'tempo normalne'}${pl.interests?.length ? `, ${pl.interests.length} ${pl.interests.length === 1 ? 'zainteresowanie' : 'zainteresowania'}` : ', bez preferencji'}${isPL() ? ', wycieczki autem do 120 km' : ''}`;
+  if (isPL()) return [
+    ['car', I.car, 'Auto', `${num(t.consumption)} l / 100 km, paliwo ${num(t.fuelPrice)} zł/l`, 4],
+    ['lim', I.pin, 'Ile jazdy', q.maxHours ? `najwyżej ${q.maxHours} h w jedną stronę` : 'bez limitu godzin jazdy', 1],
+    ['bed', I.bed, 'Nocleg', stayS, 5],
+    ['map', I.map, 'Zwiedzanie', plan, 6]];
+  return [
+    ['fly', I.plane, 'Loty', `${q.direct ? 'tylko bez przesiadek' : 'z przesiadkami'}, ${b.cabin ? 'bagaż do kabiny' : 'mały plecak'}${b.checked ? ' i rejestrowany' : ''}, ${q.earliest ? 'wyloty od 7:00' : 'o każdej porze'}`, 3],
+    ['acc', I.car, 'Dojazd na lotnisko', t.mode === 'public' ? 'komunikacją' : t.mode === 'dropoff' ? `ktoś podwiezie, ${num(t.consumption)} l` : `autem ${num(t.consumption)} l, parking ${t.parkingOverride != null ? zl(t.parkingOverride) + ' za tydzień' : 'według cennika'}`, 4],
+    ['bed', I.bed, 'Nocleg', stayS, 5],
+    ['map', I.map, 'Zwiedzanie', plan, 6]];
+}
 function viewFly() {
   const h = heroNow();
   setBackdrop({ photo: h?.src, dim: true, strip: true });
   S.q.dest.zone = S.zone;
-  const s = S.q;
-  const ZH = { pl: ['Wyjazd <em>w Polsce</em>', 'Dojazd autem, pociągiem i samolotem · Noclegi · Plan dnia'], eu: ['Wakacje <em>w Europie</em>', 'Loty · Noclegi · Plan zwiedzania · Gastronomia'], world: ['Wakacje <em>poza Europą</em>', 'Loty · Noclegi · Plan zwiedzania · Gastronomia'] }[S.zone];
-  const tr = s.transport;
-  const field = (id, ic, lab, val, cls = '') => `<button class="fld ${cls}" id="${id}">${ic}<span><small>${lab}</small><b>${esc(val)}</b></span>${cls.includes('wide') ? SV('<path d="M6 9l6 6 6-6"/>', 'class="chev"') : ''}</button>`;
+  const ZH = { pl: 'Wyjazd <em>w Polsce</em>', eu: 'Wakacje <em>w Europie</em>', world: 'Wakacje <em>poza Europą</em>' }[S.zone];
+  const field = (id, ic, lab, val, cls = '') => `<button class="fld ${cls}" id="${id}">${ic}<span><small>${lab}</small><b>${esc(val)}</b></span>${cls.includes('wide') ? SV('<path d="M9 5l7 7-7 7"/>', 'class="chev"') : ''}</button>`;
+  const rows = settRows(); const open = !!S.setOpen;
   app.innerHTML = `<section class="home">
     <header class="hd"><button class="round" id="zb" aria-label="Wstecz">${ICON.back}</button><div><strong>${{ pl: 'W Polsce', eu: 'Europa', world: 'Poza Europą' }[S.zone]}</strong><span>Globtroter</span></div></header>
-    <div class="headline"><h1>${ZH[0]}</h1><p>${ZH[1]}</p></div>
+    <div class="headline zh"><h1>${ZH}</h1></div>
     <div class="form">
-      <div class="say"><input id="say" maxlength="400" placeholder="${isPL() ? 'Np. święta we dwoje w górach' : 'Np. 5 dni w Rzymie, 2 osoby'}" aria-label="Opisz wyjazd jednym zdaniem"><button id="sayb" aria-label="Uzupełnij formularz">${I.search}</button></div>
+      ${field('f-from', I.home, 'Skąd?', fromLabel(), 'wide')}
       ${field('f-dest', I.pin, isPL() ? 'Dokąd jedziesz?' : 'Dokąd chcesz lecieć?', destLabel(), 'wide')}
-      <div class="two">${field('f-when', I.cal, 'Kiedy?', whenLabel())}${field('f-pax', I.people, 'Ile osób?', paxLabel())}</div>
-      ${isPL() ? `<div class="two">${field('f-car', I.car, 'Twoje auto', `${String(tr.consumption).replace('.', ',')} l, ${String(tr.fuelPrice).replace('.', ',')} zł/l`)}${field('f-std', I.bed, 'Standard noclegu', stayLabel())}</div>`
-    : `<div class="two">${field('f-bud', I.filter, 'Budżet na nocleg', `do ${zl(s.stay.budget)}`)}${field('f-std', I.bed, 'Standard noclegu', stayLabel())}</div>`}
+      <div class="two">${field('f-when', I.cal, 'Kiedy?', whenLabel())}${field('f-pax', I.people, isPL() ? 'Kto jedzie?' : 'Kto leci?', paxLabel())}</div>
       <button class="cta" id="go">${I.search}Zaplanuj podróż</button>
-      <p class="from"><button id="f-from">${I.pin}Start: ${esc(s.origin?.label || 'ustaw miejsce wyjazdu')}</button><button id="f-more">Więcej opcji</button></p>
+      <label class="lab2" for="say">albo napisz, czego szukasz, a uzupełnię formularz</label>
+      <div class="say small"><input id="say" maxlength="400" placeholder="${isPL() ? 'np. święta we dwoje w górach' : 'np. tydzień na plaży w lipcu, 2 osoby'}"><button id="sayb" aria-label="Uzupełnij formularz">${I.search}</button></div>
     </div>
-    <div class="feats">${(isPL() ? [['insp', I.car, 'Auto, pociąg<br>i samolot'], ['insp', I.bed, 'Sprawdzone<br>noclegi'], ['trips', I.cal, 'Szczegółowy<br>plan dnia'], ['insp', I.pin, 'Co zobaczyć<br>w okolicy']] : [['insp', I.plane, 'Najlepsze<br>loty'], ['insp', I.bed, 'Sprawdzone<br>noclegi'], ['trips', I.cal, 'Szczegółowy<br>plan dnia'], ['insp', I.pin, 'Zwiedzanie<br>i atrakcje']]).map(([k, ic, l]) => `<button data-nav="${k}"><i>${ic}</i><span>${l}</span></button>`).join('')}</div>
+    <div class="sett ${open ? 'open' : ''}">
+      <button class="sett-h" id="seth" aria-expanded="${open}"><span><b>Twoje ustawienia</b><small>${open ? 'Dotknij wiersza, żeby zmienić' : rows.map((r) => r[2]).join(' · ')}</small></span>${SV('<path d="M6 9l6 6 6-6"/>', 'class="chev"')}</button>
+      ${open ? rows.map(([k, ic, t, sub, i]) => `<button class="srow" data-step="${i}">${ic}<span><b>${t}</b><small>${esc(sub)}</small></span>${SV('<path d="M9 5l7 7-7 7"/>', 'class="chv"')}</button>`).join('') : ''}
+    </div>
+    <button class="ghost" id="f-more">${I.cal}Przejdź wszystko krok po kroku</button>
   </section>${tabbar('home')}`;
   $('#zb').onclick = viewHome;
-  const fc = $('#f-car'); if (fc) fc.onclick = () => openStep(4);
-  const need = (fn) => () => { fn(); };
-  const say = async () => { const t = $('#say').value.trim(); if (!t) return; toast('Czytam…'); try { const did = await LV.askSentence(t); if (!did.length) return toast('Nie wyłapałem szczegółów. Wybierz je niżej.'); if (S.q.dest?.ids?.length) { const d0 = S.dests.find((x) => x.id === S.q.dest.ids[0]); if (d0 && !inZone(d0.cc)) { const keep = S.q.dest; setZone(zoneOf(d0.cc)); S.q.dest = { ...keep, zone: S.zone }; } } viewFly(); toast(`Uzupełnione: ${did.join(', ')}. Sprawdź i szukaj.`); } catch (e) { toast(e.message); } };
+  const say = async () => { const t = $('#say').value.trim(); if (!t) return; toast('Czytam…'); try { const did = await LV.askSentence(t); if (!did.length) return toast('Nie wyłapałem szczegółów. Wybierz je w formularzu.'); if (S.q.dest?.ids?.length) { const d0 = S.dests.find((x) => x.id === S.q.dest.ids[0]); if (d0 && !inZone(d0.cc)) { const keep = S.q.dest; setZone(zoneOf(d0.cc)); S.q.dest = { ...keep, zone: S.zone }; } } viewFly(); toast(`Uzupełnione: ${did.join(', ')}. Sprawdź i szukaj.`); } catch (e) { toast(e.message); } };
   $('#sayb').onclick = say; $('#say').onkeydown = (e) => { if (e.key === 'Enter') say(); };
-  $('#f-dest').onclick = need(() => openStep(1));
-  $('#f-when').onclick = need(() => openStep(2));
-  $('#f-pax').onclick = need(() => openStep(3));
-  $$('#f-bud, #f-std').forEach((x) => { x.onclick = need(() => openStep(5)); });
-  $('#f-from').onclick = need(() => openStep(0));
+  $('#f-from').onclick = () => openStep(0);
+  $('#f-dest').onclick = () => openStep(1);
+  $('#f-when').onclick = () => openStep(2);
+  $('#f-pax').onclick = () => openStep(3);
+  $('#seth').onclick = () => { const y = app.scrollTop; S.setOpen = !S.setOpen; viewFly(); app.scrollTop = y; };
+  $$('[data-step]').forEach((b) => { b.onclick = () => openStep(+b.dataset.step); });
   $('#f-more').onclick = () => { S.step = 0; viewWizard(); };
   $('#go').onclick = () => {
+    // Nowa osoba bez ustawionego startu przechodzi kreator krok po kroku
+    if (!S.q.origin) { S.step = 0; return viewWizard(); }
     const t = S.q.dest;
-    if ((t.mode === 'city' && !t.ids.length) || (t.mode === 'country' && !t.countries.length) || (t.mode === 'style' && !t.style)) return openStep(1);
-    if (!S.q.origin) return openStep(0, () => { if (S.q.origin) viewSearch(); else viewFly(); });
-    viewSearch();
+    if ((t.mode === 'city' && !t.ids.length) || (t.mode === 'country' && !t.countries.length) || (t.mode === 'style' && !t.style)) return openStep(1, reviewSheet);
+    reviewSheet();
   };
   bindNav();
   app.scrollTop = 0;
+}
+// Podsumowanie przed szukaniem: pomyłkę widać, zanim czekasz kilka minut
+function reviewSheet() {
+  const q = S.q; const n = q.pax.adults + q.pax.children;
+  const R = [['Skąd', fromLabel(), 0], ['Dokąd', destLabel() + (isPL() ? '' : S.zone === 'world' ? ', poza Europą' : ', w Europie'), 1], ['Kiedy', whenLabel(), 2],
+    ['Kto', `${q.pax.adults} ${q.pax.adults === 1 ? 'dorosły' : 'dorosłych'}${q.pax.children ? `, ${q.pax.children} ${q.pax.children === 1 ? 'dziecko' : 'dzieci'}` : ''}${isPL() ? '' : q.bags?.cabin ? ', bagaż do kabiny' : ', mały plecak'}`, 3]];
+  settRows().forEach(([, , t, sub, i]) => R.push([t, sub, i]));
+  document.body.insertAdjacentHTML('beforeend', `<div class="modal" id="modal"><div class="sheet rev"><h2 class="big" style="font-size:30px">Sprawdź, zanim zacznę</h2><p class="sub">Szukanie trwa zwykle 1–5 minut. Jeśli coś się nie zgadza, popraw to teraz.</p>
+    ${R.map(([l, v, i]) => `<div class="kvr"><span>${l}</span><b>${esc(v)}</b><button data-ed="${i}">zmień</button></div>`).join('')}
+    <div class="nav"><button class="btn" id="rgo">${I.search}Szukaj</button></div></div></div>`);
+  const close = () => $('#modal')?.remove();
+  $('#modal').onclick = (e) => { if (e.target.id === 'modal') close(); };
+  $$('[data-ed]').forEach((b) => { b.onclick = () => { close(); openStep(+b.dataset.ed, () => { viewFly(); reviewSheet(); }); }; });
+  $('#rgo').onclick = () => { close(); save('prefs', S.q); viewSearch(); };
 }
 
 const ageLabel = (dep) => { const d = Math.ceil((new Date(dep + 'T12:00') - Date.now()) / 864e5); return d > 1 ? `za ${d} dni` : d === 1 ? 'jutro' : d === 0 ? 'dziś' : 'minęła'; };
