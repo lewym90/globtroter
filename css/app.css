@@ -605,3 +605,43 @@ button,a,input,select,label{touch-action:manipulation}
 .rev .kvr span{color:var(--ink2)}.rev .kvr b{font-weight:700}
 .rev .kvr button{color:var(--deep);font-weight:700;text-decoration:underline;font-size:14px;min-height:36px}
 .rev .btn svg{width:22px;height:22px}
+/* Propozycja wyjazdu */
+.prop-entry{display:flex;align-items:center;gap:12px;width:100%;text-align:left;margin-top:10px}
+.prop-entry>svg{width:24px;height:24px;flex:none;color:var(--deep)}
+.prop-entry b{display:block;font-size:16px}.prop-entry small{display:block;color:var(--ink2);font-size:13.5px}
+.prow{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--line)}
+.prow span{flex:1;min-width:0}.prow b{display:block}.prow small{color:var(--ink2);font-size:13px}
+.round.sm{width:36px;height:36px;font-size:16px;background:#eef2fa;color:var(--ink)}
+.tgl{display:flex;align-items:center;gap:10px;margin-top:14px;font-weight:700}
+.tgl input{width:22px;height:22px;accent-color:var(--deep)}
+.wcard textarea,.wcard input[type=text],.wcard input:not([type]),.pvote textarea{width:100%;border-radius:12px;border:1px solid var(--line);padding:10px 12px;font:inherit;background:#fff;color:var(--ink)}
+.prop .prophd{display:flex;align-items:center;gap:10px;color:#fff;font-weight:700;margin-top:6px}
+.prop .prophd img{border-radius:10px}
+.ptitle{color:#fff;font:800 clamp(32px,9vw,46px)/1.05 var(--disp);margin:14px 0 10px;text-shadow:0 2px 18px #0008}
+.pmsg{background:#ffffffee;color:var(--ink);border-radius:18px;padding:16px 18px;font-size:17px;line-height:1.45;box-shadow:0 8px 24px #03122f33}
+.pintro{color:#fff;margin:14px 2px}
+.propc{margin-bottom:18px}
+.pline{display:flex;gap:9px;align-items:flex-start;margin:7px 0;line-height:1.35}
+.pline svg{width:20px;height:20px;flex:none;margin-top:1px;color:var(--deep)}
+.mute.small{font-size:13px}
+.pdays{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.pdays summary{font-weight:800;cursor:pointer;padding:6px 0;color:var(--deep)}
+.pday{padding:8px 0;border-top:1px dashed var(--line)}
+.pday em{display:block;font-style:normal;font-size:12.5px;color:var(--ink2)}.pday b{display:block}.pday small{display:block;color:var(--ink2);line-height:1.35}
+.pvote{margin-top:12px;display:grid;gap:8px}
+.pvote.own{background:#fff4f6;border-radius:12px;padding:10px 12px}
+.pheart{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;border-radius:13px;box-shadow:inset 0 0 0 1.5px #e0426a;color:#e0426a;font-weight:800;font-size:16px}
+.pheart svg{width:22px;height:22px}
+.pheart.on{background:#e0426a;color:#fff}
+.pheart.on svg{fill:#fff}
+@media print{
+  body,#app{background:#fff!important}
+  #backdrop,.tabbar,.topbar,.noprint,.pvote button,.pvote textarea,#toast{display:none!important}
+  .propc .poster{break-after:avoid}.propc .pday{break-inside:avoid}
+  .prop .foot{background:none!important;color:#03122f!important}
+  .prop .prophd,.ptitle,.pintro,.foot{color:#03122f!important;text-shadow:none}
+  .propc{box-shadow:none;border:1px solid #ccd}
+  .pmsg{box-shadow:none;border:1px solid #ccd}
+  #app{overflow:visible!important;height:auto!important;position:static!important}
+}
+.pvote.own svg{width:18px;height:18px;vertical-align:-3px;fill:#e0426a;stroke:#e0426a}

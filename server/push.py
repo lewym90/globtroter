@@ -150,7 +150,7 @@ def loop():
         try:
             tick()
             d=dt.date.today()
-            if d!=day: trips.backup();trips.prune();day=d
+            if d!=day: trips.backup();trips.prune();__import__('proposals').prune();day=d
             h=dt.datetime.now()
             if h.hour==4 and night!=d: night=d;threading.Thread(target=nightly,daemon=True).start()
         except Exception: log.exception('harmonogram')

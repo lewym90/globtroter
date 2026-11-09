@@ -4,8 +4,8 @@ import json,logging,os,sys,threading,time
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import parse_qs,urlsplit
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
-import ai,domestic,flights,geo,hotels,net,plan,push,ryanair,search,store,tours,trips
-VERSION='1.12.0'
+import ai,domestic,flights,proposals,geo,hotels,net,plan,push,ryanair,search,store,tours,trips
+VERSION='1.13.0'
 _hits={}
 def limited(ip,kind,n,win):
     """Prosty limit zapytan na adres, zeby nikt nie zapchal bazy ani darmowego limitu AI."""
@@ -26,7 +26,7 @@ class H(BaseHTTPRequestHandler):
         self.send_response(204);self.cors();self.send_header('Access-Control-Allow-Methods','GET,POST,OPTIONS');self.send_header('Access-Control-Allow-Headers','Content-Type');self.send_header('Access-Control-Max-Age','86400');self.end_headers()
     def body(self):
         n=int(self.headers.get('Content-Length') or 0)
-        if n>500000: raise ValueError('Za duże zapytanie')
+        if n>(1600000 if self.path.endswith('/api/prop/new') else 500000): raise ValueError('Za duże zapytanie')
         return json.loads(self.rfile.read(n) or b'{}')
     def do_GET(self):
         u=urlsplit(self.path);p=u.path.replace('/globtroter','',1);q={k:v[0] for k,v in parse_qs(u.query).items()}
@@ -65,11 +65,12 @@ class H(BaseHTTPRequestHandler):
                 return self.out(200,plan.explore(d))
             if p=='/api/watch': return self.out(200,{'list':push.watch_list(q.get('device',''))})
             if p=='/api/trip': return self.out(200,trips.get(q.get('k','')))
+            if p=='/api/prop': return self.out(200,proposals.get(q.get('k','')))
             if p=='/api/push/key': return self.out(200,{'key':push.public()})
             self.out(404,{'error':'Nie ma takiej ścieżki'})
         except ValueError as e: self.out(400,{'error':str(e)})
         except KeyError as e: self.out(400,{'error':f'Brak pola {e}'})
-        except trips.Denied: self.out(404,{'error':'Ten link do wyjazdu jest nieaktualny.'})
+        except trips.Denied: self.out(404,{'error':'Ten link jest nieaktualny albo autor go wyłączył.'})
         except net.SourceDown as e: self.out(503,{'error':'Źródło danych chwilowo nie odpowiada. Spróbuj za chwilę.','retry':True})
         except Exception: logging.exception('GET');self.out(500,{'error':'Błąd serwera. Spróbuj ponownie.','retry':True})
     def do_POST(self):
@@ -89,6 +90,14 @@ class H(BaseHTTPRequestHandler):
                 return self.out(200,trips.create(b.get('plan'),b.get('s')))
             if p=='/api/trip/sync': return self.out(200,trips.sync(b.get('k',''),b.get('s'),b.get('device'),b.get('note')))
             if p=='/api/trip/del': trips.delete(b.get('k',''));return self.out(200,{'ok':True})
+            if p=='/api/prop/new':
+                if limited(ip,'prop',30,86400): return self.out(429,{'error':'Za dużo nowych propozycji dziś. Spróbuj jutro.'})
+                return self.out(200,proposals.create(b.get('data'),b.get('device')))
+            if p=='/api/prop/vote':
+                if limited(ip,'vote',300,3600): return self.out(429,{'error':'Za dużo zmian. Spróbuj za chwilę.'})
+                return self.out(200,proposals.vote(b.get('k',''),b.get('item'),b.get('heart'),b.get('comment')))
+            if p=='/api/prop/off': return self.out(200,proposals.setoff(b.get('k',''),b.get('off')))
+            if p=='/api/prop/del': proposals.delete(b.get('k',''));return self.out(200,{'ok':True})
             if p=='/api/push/sub': return self.out(200,{'trips':push.subscribe(b.get('device'),b.get('subscription'),b.get('keys'))})
             if p=='/api/push/off': push.unsubscribe(b.get('device',''));return self.out(200,{'ok':True})
             if p=='/api/push/test':
@@ -117,7 +126,7 @@ class H(BaseHTTPRequestHandler):
             self.out(404,{'error':'Nie ma takiej ścieżki'})
         except ValueError as e: self.out(400,{'error':str(e)})
         except KeyError as e: self.out(400,{'error':f'Brak pola {e}'})
-        except trips.Denied: self.out(404,{'error':'Ten link do wyjazdu jest nieaktualny.'})
+        except trips.Denied: self.out(404,{'error':'Ten link jest nieaktualny albo autor go wyłączył.'})
         except PermissionError as e: self.out(403,{'error':str(e)})
         except net.SourceDown: self.out(503,{'error':'Asystent chwilowo nie odpowiada. Spróbuj za chwilę.','retry':True})
         except flights.Unavailable: self.out(503,{'error':'Google Flights chwilowo nie odpowiada. Spróbuj za kilka minut.','retry':True})

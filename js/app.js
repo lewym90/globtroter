@@ -6,7 +6,7 @@ import { initLive, swapDay, artOf } from './live.js';
 ['gesturestart', 'gesturechange', 'gestureend'].forEach((t) => document.addEventListener(t, (e) => e.preventDefault(), { passive: false }));
 document.addEventListener('touchmove', (e) => { if (e.touches.length > 1 && !e.target.closest('.leaflet-container')) e.preventDefault(); }, { passive: false });
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '3.5.2';
+const VERSION = '3.6.0';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -304,11 +304,16 @@ function viewTrips() {
   app.innerHTML = `<section class="tabpage">${pageTop('Moje podróże', T.length ? 'Działają bez internetu, a kopia jest na serwerze.' : '')}
     ${act.length ? act.map((x) => card(x)).join('') : `<div class="wcard emptyc"><img src="art/e/podroze.jpg" alt=""><h3>${T.length ? 'Brak nadchodzących wyjazdów' : 'Tu pojawią się Twoje wyjazdy'}</h3><p>Po wybraniu lotu i hotelu plan zapisze się tutaj.</p><div class="acts"><button class="btn" id="st">Zaplanuj podróż</button></div></div>`}
     <div class="linkset"><button class="btn line small lightb" id="nwt">Wakacje z biurem</button><button class="btn line small lightb" id="nw">Własny wyjazd</button></div>
+    <h3 class="sec">Propozycje dla innych</h3>
+    <button class="wcard prop-entry" id="pdr">${I.heart}<span><b>${propDraft().items.length ? `Propozycja w przygotowaniu: ${propDraft().items.length} ${propDraft().items.length === 1 ? 'opcja' : 'opcje'}` : 'Nowa propozycja wyjazdu'}</b><small>${propDraft().items.length ? 'Dodaj wiadomość i wyślij link' : 'W wynikach albo w planie dotknij „Dodaj do propozycji”'}</small></span></button>
+    ${load('props', []).map((x) => `<button class="wcard prop-entry" data-ps="${esc(x.edit)}">${I.share || I.heart}<span><b>${esc(x.title)}</b><small>${x.n} ${x.n === 1 ? 'opcja' : 'opcje'}, wysłana ${dateL(new Date(x.t).toISOString().slice(0, 10))}</small></span></button>`).join('')}
     ${old.length ? `<h3 class="sec">Zakończone</h3>${old.map((x) => card(x, true)).join('')}` : ''}
   </section>${tabbar('trips')}`;
   $$('[data-trip]').forEach((b) => { b.onclick = () => { S.plan = load('trips', [])[+b.dataset.trip]; LV.applyDays(S.plan); S.tab = 'sum'; viewPlan(); LV.syncNow(S.plan, () => S.tab === 'sum' && viewPlan()).catch(() => {}); }; });
   const st = $('#st'); if (st) st.onclick = viewHome;
   $('#nw').onclick = () => LV.viewNew();
+  $('#pdr').onclick = viewPropDraft;
+  $$('[data-ps]').forEach((b) => { b.onclick = () => viewPropSent(b.dataset.ps); });
   $('#nwt').onclick = async () => { await data().catch(() => {}); LV.viewTour(); };
   bindNav(); app.scrollTop = 0;
 }
@@ -900,6 +905,148 @@ function viewResults() {
   $$('[data-alt]').forEach((b) => { b.onclick = () => { S.q.dest = { mode: 'city', ids: [b.dataset.alt], countries: [], style: 'beach' }; viewSearch(); }; });
   app.scrollTop = 0;
 }
+/* ---------- Propozycja wyjazdu: kilka opcji do wyboru wysłanych jednym linkiem ---------- */
+const PROPMAX = 8;
+const propDraft = () => load('prop', { title: '', msg: '', hide: false, items: [] });
+// Mniej danych w linku: bez kalendarza cen i zbędnych pól
+const slimOpt = (o) => { const { calendar, alts, cal, ...r } = o; return JSON.parse(JSON.stringify(r)); };
+const slimPlan = (p) => { const x = JSON.parse(JSON.stringify(p)); delete x.live; delete x.s; (x.days || []).forEach((d) => (d.stops || []).forEach((st) => { delete st.infoEn; })); return x; };
+async function propAdd(o, plan) {
+  const D = propDraft();
+  if (D.items.length >= PROPMAX) return toast(`Propozycja może mieć najwyżej ${PROPMAX} opcji.`);
+  const key = `${o.dest.id}|${o.dep}|${o.ret}|${plan ? 'p' : o.plMode || o.from || ''}`;
+  if (D.items.some((i) => i.key === key)) return toast('Ta opcja jest już w propozycji.');
+  let guide = null;
+  if (!plan) {
+    try {
+      const g = await fetch(`data/guide/${o.dest.id}.json`).then((r) => r.json());
+      guide = (g.a || []).filter((a) => a.d).slice(0, 6).map((a) => ({ ...a, d: a.d.replace(/\s*\([^()]*?\)/g, '').replace(/\s+([,.;])/g, '$1') })).map((a) => ({ n: a.n, d: a.d.length > 170 ? a.d.slice(0, a.d.lastIndexOf(' ', 165)) + '…' : a.d, img: a.img }));
+    } catch { /* bez przewodnika */ }
+  }
+  D.items.push({ id: Math.random().toString(36).slice(2, 9), key, option: slimOpt({ ...o, plMode: o.plMode }), plan: plan ? slimPlan(plan) : null, guide, at: new Date().toISOString().slice(0, 10) });
+  save('prop', D);
+  toast(`Dodano do propozycji (${D.items.length}). Otworzysz ją w zakładce Podróże.`);
+}
+const propBtn = (id = 'padd') => `<button class="btn line small" id="${id}">${I.heart} Dodaj do propozycji</button>`;
+function propWhen(o) { return `${dateL(o.dep)} – ${dateL(o.ret)}, ${nightsL(o.nights || Math.round((new Date(o.ret) - new Date(o.dep)) / 864e5))}`; }
+function propHow(o) {
+  if (o.flight?.out) { const L = o.flight.out.legs; const B = o.flight.back.legs; return `${I.plane} Lot ${esc(o.from)} → ${esc(o.to)}: ${dateL(L[0].dep)} ${timeL(L[0].dep)}, powrót ${dateL(B[0].dep)} ${timeL(B[0].dep)}${L.length > 1 ? `, ${L.length - 1} przesiadka` : ', bez przesiadek'}`; }
+  if (o.plMode === 'plane' && o.plane) return `${I.plane} Lot ${esc(o.plane.from)} → ${esc(o.plane.to)}, ${dateL(o.plane.dep)} ${timeL(o.plane.dep)}`;
+  if (o.plMode === 'train' && o.train) return `${I.train} Pociągiem, około ${dur(o.train.min)}`;
+  if (o.car) return `${I.car} Autem, ${o.car.km} km, około ${dur(o.car.min)}`;
+  return o.modeName ? esc(o.modeName) : '';
+}
+function propPrice(it) { const o = it.option; const p = it.plan; const v = p?.total ?? o.total; return v ? zl(v) : ''; }
+function propCard(it, votes, role) {
+  const o = it.option; const p = it.plan; const v = votes?.[it.id] || {};
+  const m = p?.climate || o.climate?.month;
+  const days = p?.days?.length ? `<details class="pdays"><summary>Plan dzień po dniu (${p.days.length})</summary>${p.days.map((d, i) => `<div class="pday"><em>Dzień ${i + 1} – ${shortD(d.date)}</em><b>${esc(dayTitle(d, i, p))}</b><small>${esc(daySub(d, p))}</small></div>`).join('')}</details>` : '';
+  const sights = !p && it.guide?.length ? `<details class="pdays"><summary>Co warto zobaczyć</summary>${it.guide.map((a) => `<div class="pday"><b>${esc(a.n)}</b><small>${esc(a.d)}</small></div>`).join('')}</details>` : '';
+  const price = propPrice(it);
+  return `<article class="card propc" data-it="${it.id}">${posterOf(o, price ? `<span class="pr">${price}</span>` : '')}
+   <div class="in"><p class="mute">${propWhen(o)}${o.pax ? `, ${o.pax.adults + o.pax.children} ${osob(o.pax.adults + o.pax.children)}` : ''}</p>
+   <p class="pline">${propHow(o)}</p>
+   <p class="pline">${I.bed} ${p?.hotel?.name && p.hotel.name !== 'Nocleg do wyboru' ? esc(p.hotel.name) : 'Nocleg do wybrania razem'}${p?.hotel?.rating ? `, ${String(p.hotel.rating).replace('.', ',')}/5` : ''}</p>
+   ${m?.tmax != null ? `<p class="pline">${I.star} Średnio ${Math.round(m.tmin)}–${Math.round(m.tmax)}°C${m.sea != null && m.tmax >= 18 && (o.dest.tags || []).includes('beach') ? `, morze ${Math.round(m.sea)}°C` : ''}</p>` : ''}
+   ${price ? `<p class="mute small">Cena ${p ? 'całego wyjazdu (szacunek)' : 'dojazdu i noclegu'} z ${dateL(it.at || '')}. Ceny mogą się zmienić.</p>` : ''}
+   ${days}${sights}
+   ${role === 'view' ? `<div class="pvote"><button class="pheart ${v.heart ? 'on' : ''}" data-h="${it.id}" aria-pressed="${!!v.heart}">${I.heart}<span>${v.heart ? 'Podoba mi się' : 'Daj serce'}</span></button>
+     <textarea data-c="${it.id}" maxlength="600" rows="2" placeholder="Komentarz, np. tak, ale bez muzeów">${esc(v.comment || '')}</textarea><button class="btn line small" data-cs="${it.id}">Wyślij komentarz</button></div>`
+    : (v.heart || v.comment ? `<div class="pvote own">${v.heart ? `<p><b>${I.heart} Ma serce</b></p>` : ''}${v.comment ? `<p>„${esc(v.comment)}”</p>` : ''}</div>` : '')}
+   ${role === 'edit' ? `<div class="acts"><button class="btn small" data-mk="${it.id}">Zrób z tego podróż</button></div>` : ''}
+   </div></article>`;
+}
+function viewPropDraft() {
+  const D = propDraft();
+  setBackdrop({ photo: heroNow()?.src, dim: true, strong: true });
+  app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Propozycja wyjazdu</h2></div>
+  <section class="page">
+   <div class="wcard"><h3>Komu i po co</h3>
+    <label class="lab" for="pt">Tytuł</label><input id="pt" maxlength="80" value="${esc(D.title)}" placeholder="np. Wyjazd na święta">
+    <label class="lab" for="pm" style="margin-top:10px;display:block">Wiadomość od Ciebie</label><textarea id="pm" maxlength="1200" rows="3" placeholder="Napisz kilka słów. Zobaczy je na górze strony.">${esc(D.msg)}</textarea>
+    <label class="tgl"><input type="checkbox" id="ph" ${D.hide ? 'checked' : ''}><span>Ukryj ceny</span></label>
+   </div>
+   <div class="wcard"><h3>Opcje (${D.items.length} z ${PROPMAX})</h3>
+    ${D.items.length ? D.items.map((it, i) => `<div class="prow"><span><b>${esc(it.option.dest.name)}</b><small>${propWhen(it.option)}${it.plan ? ', gotowy plan' : ''}${propPrice(it) ? `, ${propPrice(it)}` : ''}</small></span>${i ? `<button class="round sm" data-up="${i}" aria-label="Wyżej">↑</button>` : ''}<button class="round sm" data-rm="${i}" aria-label="Usuń">✕</button></div>`).join('')
+    : '<p class="mute">Na razie pusto. W wynikach wyszukiwania albo w gotowym planie dotknij „Dodaj do propozycji”.</p>'}
+   </div>
+   <div class="acts"><button class="btn" id="pgo" ${D.items.length ? '' : 'disabled'}>Utwórz link do wysłania</button></div>
+   ${D.items.length ? '<p class="hint">Dostanie ładną stronę do obejrzenia w telefonie, bez instalowania aplikacji. Przy każdej opcji może dać serce i komentarz, a Ty dostaniesz powiadomienie.</p>' : ''}
+  </section>`;
+  const keep = () => { D.title = $('#pt').value.trim(); D.msg = $('#pm').value.trim(); D.hide = $('#ph').checked; save('prop', D); };
+  ['pt', 'pm', 'ph'].forEach((id) => { $('#' + id).onchange = keep; });
+  $('#b').onclick = () => { keep(); viewTrips(); };
+  $$('[data-rm]').forEach((b) => { b.onclick = () => { keep(); D.items.splice(+b.dataset.rm, 1); save('prop', D); viewPropDraft(); }; });
+  $$('[data-up]').forEach((b) => { b.onclick = () => { keep(); const i = +b.dataset.up; [D.items[i - 1], D.items[i]] = [D.items[i], D.items[i - 1]]; save('prop', D); viewPropDraft(); }; });
+  $('#pgo').onclick = async () => {
+    keep(); const btn = $('#pgo'); btn.disabled = true; btn.textContent = 'Tworzę link…';
+    try {
+      const r = await api('/api/prop/new', { data: { title: D.title || 'Propozycja wyjazdu', msg: D.msg, hide: D.hide, items: D.items }, device: LV.device() });
+      const L = load('props', []); L.unshift({ edit: r.edit, view: r.view, title: D.title || 'Propozycja wyjazdu', n: D.items.length, t: Date.now() }); save('props', L);
+      save('prop', { title: '', msg: '', hide: false, items: [] });
+      viewPropSent(r.edit, true);
+    } catch (e) { toast(e.message); btn.disabled = false; btn.textContent = 'Utwórz link do wysłania'; }
+  };
+  app.scrollTop = 0;
+}
+const propUrl = (k) => `${location.origin}${location.pathname}#p=${k}`;
+async function viewPropSent(edit, fresh) {
+  setBackdrop({ photo: heroNow()?.src, dim: true, strong: true });
+  app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Propozycja</h2></div><section class="page"><p class="mute" style="color:#fff">Wczytuję…</p></section>`;
+  $('#b').onclick = viewTrips;
+  let r; try { r = await api('/api/prop?k=' + encodeURIComponent(edit)); } catch (e) { app.querySelector('.page').innerHTML = `<div class="note"><b>${esc(e.message)}</b></div>`; return; }
+  const link = propUrl(r.view); const D = r.data; const hearts = Object.values(r.votes).filter((v) => v.heart).length;
+  app.querySelector('.page').innerHTML = `
+   <div class="wcard"><h3>${esc(D.title)}</h3>
+    ${fresh ? '<p><b>Link gotowy.</b> Wyślij go SMS-em albo w komunikatorze.</p>' : `<p class="mute">${r.off ? 'Link jest wyłączony.' : hearts ? `Serca: ${hearts} z ${D.items.length}.` : 'Jeszcze bez odpowiedzi.'}</p>`}
+    <input readonly value="${esc(link)}" id="pl" onclick="this.select()">
+    <div class="acts"><button class="btn" id="psh">Wyślij link</button><button class="btn line" id="pprev">Zobacz, jak to wygląda</button><button class="btn line" id="ppdf">Zapisz jako PDF</button></div>
+    ${D.hide ? '<p class="hint">Ceny są ukryte. Odbiorca ich nie zobaczy, także w kodzie strony.</p>' : ''}
+   </div>
+   ${D.items.map((it) => propCard(it, r.votes, 'edit')).join('')}
+   <div class="acts"><button class="btn line small" id="poff">${r.off ? 'Włącz link z powrotem' : 'Wyłącz link'}</button><button class="btn line small" id="pdel">Usuń propozycję</button></div>`;
+  $('#psh').onclick = async () => { try { if (navigator.share) await navigator.share({ title: D.title, text: D.msg ? D.msg.slice(0, 140) : 'Mam dla Ciebie propozycję wyjazdu', url: link }); else { await navigator.clipboard.writeText(link); toast('Skopiowano link.'); } } catch { /* anulowane */ } };
+  $('#pprev').onclick = () => viewProp(r.view, true);
+  $('#ppdf').onclick = () => viewProp(r.view, true, true);
+  $('#poff').onclick = async () => { try { await api('/api/prop/off', { k: edit, off: !r.off }); viewPropSent(edit); } catch (e) { toast(e.message); } };
+  $('#pdel').onclick = async () => { try { await api('/api/prop/del', { k: edit }); } catch { /* juz nie ma */ } save('props', load('props', []).filter((x) => x.edit !== edit)); viewTrips(); };
+  $$('[data-mk]').forEach((b) => { b.onclick = () => {
+    const it = D.items.find((x) => x.id === b.dataset.mk); if (!it) return;
+    if (it.plan) { const pl = JSON.parse(JSON.stringify(it.plan)); pl.home = S.q.origin; S.plan = pl; LV.savePlan(pl); viewPlan(); return; }
+    S.option = it.option; S.result = { options: [it.option] };
+    if (it.option.car && !it.option.flight) { setZone('pl'); viewPLOption(); } else viewOption();
+  }; });
+}
+// Strona dla odbiorcy (i podgląd autora). Działa w przeglądarce, bez instalowania aplikacji.
+async function viewProp(k, preview, print) {
+  setBackdrop({ photo: heroNow()?.src, dim: true, strong: true });
+  app.innerHTML = `<section class="page prop"><p class="mute" style="color:#fff">Wczytuję propozycję…</p></section>`;
+  let r; try { r = await api('/api/prop?k=' + encodeURIComponent(k)); } catch (e) { app.innerHTML = `<section class="page prop"><div class="note"><b>${esc(e.message)}</b></div></section>`; return; }
+  const D = r.data; const role = preview ? 'preview' : r.role;
+  const first = D.items[0]?.option?.dest;
+  if (first) setBackdrop({ photo: photoOf(first.id, 1280)?.src || heroNow()?.src, dim: true, strong: true });
+  app.innerHTML = `${preview ? `<div class="topbar noprint"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Podgląd</h2></div>` : ''}
+  <section class="page prop">
+   <header class="prophd"><img src="icons/logo-96.png" alt="" width="40" height="40"><span>Propozycja wyjazdu</span></header>
+   <h1 class="ptitle">${esc(D.title)}</h1>
+   ${D.msg ? `<div class="pmsg">${esc(D.msg).replace(/\n/g, '<br>')}</div>` : ''}
+   <p class="pintro">${D.items.length > 1 ? `${D.items.length} opcje do wyboru. ${role === 'view' ? 'Daj serce tej, która Ci się podoba, i napisz, co myślisz.' : ''}` : ''}</p>
+   ${D.items.map((it) => propCard(it, r.votes, role)).join('')}
+   <div class="acts noprint"><button class="btn line" id="pdf">Zapisz jako PDF</button></div>
+   <p class="foot">Zrobione w Globtroterze. Ceny i rozkłady sprawdzone w dniu przygotowania propozycji.</p>
+  </section>`;
+  const b = $('#b'); if (b) b.onclick = () => viewPropSent(load('props', []).find((x) => x.view === k)?.edit || '');
+  const doPrint = () => { $$('details').forEach((d) => { d.open = true; }); setTimeout(() => window.print(), 300); };
+  $('#pdf').onclick = doPrint;
+  if (role === 'view') {
+    const send = async (item, body) => { try { const x = await api('/api/prop/vote', { k, item, ...body }); r.votes = x.votes; return true; } catch (e) { toast(e.message); return false; } };
+    $$('[data-h]').forEach((h) => { h.onclick = async () => { const on = h.getAttribute('aria-pressed') !== 'true'; if (await send(h.dataset.h, { heart: on })) { h.setAttribute('aria-pressed', on); h.classList.toggle('on', on); h.querySelector('span').textContent = on ? 'Podoba mi się' : 'Daj serce'; } }; });
+    $$('[data-cs]').forEach((c) => { c.onclick = async () => { const t = $(`[data-c="${c.dataset.cs}"]`).value.trim(); if (await send(c.dataset.cs, { comment: t })) toast('Wysłane. Dzięki!'); }; });
+  }
+  app.scrollTop = 0;
+  if (print) doPrint();
+}
+
 /* ---------- Wyniki w Polsce ---------- */
 const MODE_L = { car: 'Autem', train: 'Pociągiem', plane: 'Samolotem' };
 function plLines(o, full) {
@@ -942,11 +1089,13 @@ function viewPLOption() {
    ${m?.tmax != null ? `<p class="hint">Średnio w tym miesiącu: ${Math.round(m.tmin)}–${Math.round(m.tmax)}°C${m.rain != null ? `, opady ${Math.round(m.rain)} mm` : ''}.</p>` : ''}
    <h3 class="big" style="font-size:26px;margin-top:14px">Wybierz dojazd i nocleg</h3>
    <div class="acts">${pick('car', zl(o.car.total))}${t ? pick('train', 'około ' + zl(t.total)) : ''}${p ? pick('plane', zl(p.total)) : ''}</div>
+   <div class="acts" style="margin-top:8px">${propBtn()}</div>
    <div class="linkset" style="margin-top:12px"><a class="btn line small" href="${url(o.car.map)}" target="_blank" rel="noopener">Trasa w Google Maps</a>${t ? t.links.map((l) => `<a class="btn line small" href="${url(l.url)}" target="_blank" rel="noopener">${esc(l.site)}</a>`).join('') : ''}${p ? `<a class="btn line small" href="${url(p.url)}" target="_blank" rel="noopener">Lot w Google Flights</a>` : ''}</div>
    ${!t ? '<p class="hint">Nie znaleźliśmy rozkładu pociągów dla tej trasy. Sprawdź w Koleo albo PKP Intercity.</p>' : ''}
    ${!p && o.car.min >= 240 ? '<p class="hint">Lotu krajowego na te daty nie znaleźliśmy.</p>' : ''}
    </div></article></section>`;
   $('#b').onclick = viewPLResults;
+  $('#padd').onclick = () => propAdd({ ...o, plMode: o.best });
   $$('[data-mode]').forEach((b) => { b.onclick = () => { o.plMode = b.dataset.mode; viewHotels(); }; });
   app.scrollTop = 0;
 }
@@ -1063,7 +1212,7 @@ function viewOption() {
     ${o.climate?.month?.tmax != null ? `<p class="hint">Średnio w tym miesiącu: ${Math.round(o.climate.month.tmin)}–${Math.round(o.climate.month.tmax)}°C${o.climate.month.sea != null ? `, morze ${Math.round(o.climate.month.sea)}°C` : ''}${o.climate.month.rain != null ? `, opady ${Math.round(o.climate.month.rain)} mm` : ''}.</p>` : ''}
     ${o.flight ? passHtml(o.flight.out, 'Tam') + passHtml(o.flight.back, 'Z powrotem') : ''}
     ${o.leaveHome ? `<p style="margin-top:12px"><b>Z domu wyjeżdżasz ${dateL(o.leaveHome)} o ${timeL(o.leaveHome)}.</b></p>` : ''}
-    <div class="acts">${o.flight ? `<button class="btn" id="hot">Wybierz nocleg</button>` : '<p class="warn">Nie potwierdziliśmy lotów na ten termin. Dotknij innego dnia w kalendarzu poniżej.</p>'}</div></div>
+    <div class="acts">${o.flight ? `<button class="btn" id="hot">Wybierz nocleg</button>${propBtn()}` : '<p class="warn">Nie potwierdziliśmy lotów na ten termin. Dotknij innego dnia w kalendarzu poniżej.</p>'}</div></div>
    ${calendar(o)}
    ${cmp?.length > 1 ? `<div class="in"><h3 class="big" style="font-size:32px">Z którego lotniska</h3><p class="mute">Bilety, bagaż i dojazd dla ${n} ${osob(n)}, ${o.compareNights || others[0].nights} nocy, w najtańszym terminie z każdego lotniska. Noclegu tu nie liczymy, bo nie zależy od lotniska.</p>${insight ? `<div class="insight">${esc(insight)}</div>` : ''}
     <div class="bars">${cmp.map((c, ci) => {
@@ -1079,6 +1228,7 @@ function viewOption() {
   carCard(o);
   $('#b').onclick = viewResults;
   const h = $('#hot'); if (h) h.onclick = viewHotels;
+  const pa = $('#padd'); if (pa) pa.onclick = () => propAdd(o);
   $$('[data-c]').forEach((b) => { b.onclick = () => { S.option = S.result.options.find((x) => x.id === b.dataset.c); viewOption(); }; });
   $$('[data-f]').forEach((b) => { b.onclick = () => { const c = cmp[+b.dataset.f]; openFare({ ...c, destId: o.dest.id }); }; });
   drawCal(o);
@@ -1242,6 +1392,7 @@ function viewPlan() {
       <div class="pr">${I.map}<div><b>Plan zwiedzania: ${p.days.length} dni</b><small>${stopsN} atrakcji, trasy i restauracje w pobliżu</small></div><i>${I.check}</i></div>
       <div class="pr">${I.coin}<div><b>Budżet (szacunkowy): ${zl(p.total)}</b><small>${['All inclusive', 'Pełne wyżywienie'].includes(p.hotel.board) ? 'Wyżywienie w cenie wyjazdu' : 'Bez jedzenia na miejscu'}</small></div><i>${I.check}</i></div></div>
       <button class="aibtn" id="aio">${I.bulb}<span><b>Zapytaj asystenta</b><small>Zmień plan, znajdź oszczędności, co gdy pada</small></span></button>
+      <button class="aibtn" id="padd">${I.heart}<span><b>Dodaj do propozycji</b><small>Wyślij komuś kilka opcji do wyboru, z sercem i komentarzem</small></span></button>
       <div class="wcard"><div class="rowh"><h3>Plan dnia – skrót</h3><button id="all">Zobacz cały plan ›</button></div>${p.days.slice(0, 3).map(dayRow).join('')}</div>
       ${o.leaveHome ? `<div class="tip">${I.bulb}<p><b>Wyjazd z domu:</b> ${dateL(o.leaveHome)} o ${timeL(o.leaveHome)}.</p></div>` : ''}`,
     loty: () => `<div class="wcard">${o.flight ? `${passHtml(o.flight.out, 'Tam')}${passHtml(o.flight.back, 'Z powrotem')}${o.flight.separate ? '<p class="hint">To dwa osobne bilety w jedną stronę.</p>' : ''}` : `<h3>${esc(o.modeName)}</h3>${(o.warnings || []).map((w) => `<p class="warn">${esc(w)}</p>`).join('')}`}<div class="linkset">${o.links.map((l) => `<a class="btn line small" href="${url(l.url)}" target="_blank" rel="noopener">${esc(l.site)}</a>`).join('')}</div></div>
@@ -1260,6 +1411,7 @@ function viewPlan() {
   $$('.ptabs button').forEach((b) => { b.onclick = () => { S.tab = b.dataset.t; viewPlan(); }; });
   $$('[data-d]').forEach((b) => { b.onclick = () => { S.day = +b.dataset.d; S.dayTab = 'plan'; viewDay(); }; });
   const aio = $('#aio'); if (aio) aio.onclick = LV.viewAI;
+  const pd = $('#padd'); if (pd) pd.onclick = () => propAdd(p.option, p);
   const fh = $('#fh'); if (fh) fh.onclick = () => { S.option = o; viewHotels(); };
   if (S.tab === 'bud') LV.bindBudget(p);
   const all = $('#all'); if (all) all.onclick = () => { S.tab = 'dni'; viewPlan(); };
@@ -1413,9 +1565,11 @@ const LV = initLive({ S, app, $, $$, esc, url, zl, toast, api, load, save, I, IM
   viewHome();
   const lk = new URLSearchParams(location.hash.slice(1)).get('t');
   if (lk) { history.replaceState(null, '', location.pathname); if (await LV.openLink(lk)) { viewPlan(); startUpdates(); return; } }
+  const pk = new URLSearchParams(location.hash.slice(1)).get('p');
+  if (pk) { await viewProp(pk); startUpdates(); return; }
   LV.linkPush();
   const job = load('job', null);
   if (job && Date.now() - job.t < 3e6) { S.q = job.q; if (job.zone) S.zone = job.zone; viewSearch(job.id); }
   startUpdates();
-  window.__gt = { S, viewHotels, viewResults, viewOption, viewPlan, viewDay, viewTrips, viewInspire, viewProfile, viewHome, VERSION };
+  window.__gt = { S, viewProp, viewPropDraft, viewPropSent, propAdd, viewHotels, viewResults, viewOption, viewPlan, viewDay, viewTrips, viewInspire, viewProfile, viewHome, VERSION };
 })();

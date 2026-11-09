@@ -564,5 +564,5 @@ export function initLive(x) {
       $$('[data-wd2]', el).forEach((b) => { b.onclick = async () => { await api('/api/watch/del', { device: device(), id: b.dataset.wd2 }); watchDraw(el); }; });
     } catch { el.innerHTML = ''; }
   }
-  return { viewOwnHotel, ownToVault, refreshWeather, viewNew, viewTour, exportAll, importAll, watchAdd, watchDraw, exploreData: explore, L, canEdit, applyDays, savePlan, syncNow, openLink, viewShare, editHtml, bindDay, viewExplore, budgetHtml, bindBudget, docsHtml, bindDocs, put, pushHtml, bindPush, linkPush, askSentence, viewAI, ensureRemote };
+  return { device, viewOwnHotel, ownToVault, refreshWeather, viewNew, viewTour, exportAll, importAll, watchAdd, watchDraw, exploreData: explore, L, canEdit, applyDays, savePlan, syncNow, openLink, viewShare, editHtml, bindDay, viewExplore, budgetHtml, bindBudget, docsHtml, bindDocs, put, pushHtml, bindPush, linkPush, askSentence, viewAI, ensureRemote };
 }
