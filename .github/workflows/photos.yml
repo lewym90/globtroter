@@ -1,0 +1,30 @@
+name: Zdjecia miejsc
+on:
+  workflow_dispatch:
+concurrency:
+  group: dests
+  cancel-in-progress: false
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/fix_photos.py
+      - name: Zapisz
+        run: |
+          git config user.name 'globtroter-bot'
+          git config user.email 'globtroter-bot@users.noreply.github.com'
+          cp data/photos.json /tmp/new.json
+          for i in 1 2 3 4 5 6; do
+            git fetch -q origin main && git reset -q --hard origin/main
+            cp /tmp/new.json data/photos.json
+            git add data/photos.json
+            git diff --cached --quiet && exit 0
+            git commit -qm 'Zdjecia miejsc'
+            git push -q origin HEAD:main && exit 0
+            sleep 15
+          done
+          exit 1

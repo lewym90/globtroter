@@ -93,7 +93,7 @@ const photoOf = (id, w = 900, shift = 0) => { const L = S.photos[id] || []; retu
 const HERO = [['rzym', 'Rzym'], ['santorini', 'Santorini'], ['paryz', 'Paryż'], ['barcelona', 'Barcelona'], ['alpy', 'Alpy'], ['chorwacja', 'Chorwacja']].map(([f, n]) => ({ src: `art/hero/${f}.jpg`, n }));
 const heroNow = () => HERO[dayIdx() % HERO.length];
 const BANDS = ['miasto', 'morze', 'gory'];
-const IMG = (src, alt = '', cls = '') => `<img class="${cls}" src="${esc(src)}" alt="${esc(alt)}" loading="lazy" onerror="this.remove()">`;
+const IMG = (src, alt = '', cls = '', alt2 = '') => `<img class="${cls}" src="${esc(src)}" alt="${esc(alt)}" loading="lazy" ${alt2 ? `data-alt="${esc(alt2)}" onerror="if(this.dataset.alt){this.src=this.dataset.alt;this.dataset.alt=''}else this.remove()"` : 'onerror="this.remove()"'}>`;
 const SV = (d, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${extra}>${d}</svg>`;
 const I = {
   pin: SV('<path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.500C5 14.800 12 21 12 21z" fill="currentColor"/><circle cx="12" cy="9.500" r="2.500" fill="#03122f" stroke="none"/>'),
@@ -355,8 +355,8 @@ const favs = () => load('fav', []);
 function toggleFav(id) { const f = favs(); save('fav', f.includes(id) ? f.filter((x) => x !== id) : [...f, id]); }
 const fitOf = (d, m, st) => { const c = d.climate; if (!c) return 0; const t = c.tmax[m - 1]; const s = c.sea ? c.sea[m - 1] : null; if (st === 'beach') return s == null ? 0 : Math.min(1, Math.max(0, (t - 16) / 8)) * 0.6 + Math.min(1, Math.max(0, (s - 15) / 7)) * 0.4; if (st === 'ski') return Math.min(1, Math.max(0, (9 - t) / 7)); return 1 - Math.min(1, Math.abs(t - 22) / 16); };
 function destCard(d, m) {
-  const p = photoOf(d.id, 700); const c = d.climate;
-  return `<div class="pcard" data-dest="${d.id}" role="button" tabindex="0">${p ? IMG(p.src, p.n) : ''}<button class="heart ${favs().includes(d.id) ? 'on' : ''}" data-h2="${d.id}" aria-label="Ulubione">${I.heart}</button><div><h3>${esc(d.name.replace(/\s*\(.*/, ''))}</h3><p>${c ? `${Math.round(c.tmax[m - 1])}°C w dzień${c.sea ? `, morze ${Math.round(c.sea[m - 1])}°C` : ''}` : ''}</p></div></div>`;
+  const p = photoOf(d.id, 700); const p2 = photoOf(d.id, 700, 1); const c = d.climate;
+  return `<div class="pcard" data-dest="${d.id}" role="button" tabindex="0">${p ? IMG(p.src, p.n, '', p2 && p2.src !== p.src ? p2.src : '') : ''}<button class="heart ${favs().includes(d.id) ? 'on' : ''}" data-h2="${d.id}" aria-label="Ulubione">${I.heart}</button><div><h3>${esc(d.name.replace(/\s*\(.*/, ''))}</h3><p>${c ? `${Math.round(c.tmax[m - 1])}°C w dzień${c.sea ? `, morze ${Math.round(c.sea[m - 1])}°C` : ''}` : ''}</p></div></div>`;
 }
 function bindDest() {
   $$('[data-h2]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); toggleFav(b.dataset.h2); b.classList.toggle('on'); }; });
@@ -386,7 +386,7 @@ async function guideList(seg) {
     const L = S.dests.filter((d) => !q || normQ(d.name).includes(q) || normQ(d.en || '').includes(q) || normQ(cn(d.cc)).includes(q));
     const by = {}; L.forEach((d) => { (by[d.cc] ||= []).push(d); });
     const groups = Object.entries(by).sort((a, b) => cn(a[0]).localeCompare(cn(b[0]), 'pl'));
-    $('#gl').innerHTML = groups.length ? groups.map(([cc, ds]) => `<h3 class="gh">${esc(cn(cc))}</h3><div class="glist">${ds.sort((a, b) => a.name.localeCompare(b.name, 'pl')).map((d) => { const p = photoOf(d.id, 240); return `<button class="gitem" data-g="${d.id}">${p ? IMG(p.src, '') : `<span class="gph">${I.pin}</span>`}<span><b>${esc(d.name)}</b><small>${d.tags.includes('beach') ? 'plaża' : ''}${d.tags.includes('city') ? `${d.tags.includes('beach') ? ', ' : ''}zwiedzanie` : ''}${d.tags.includes('ski') ? 'narty' : ''}</small></span></button>`; }).join('')}</div>`).join('') : '<p class="hint">Nic nie pasuje. Spróbuj inną nazwę.</p>';
+    $('#gl').innerHTML = groups.length ? groups.map(([cc, ds]) => `<h3 class="gh">${esc(cn(cc))}</h3><div class="glist">${ds.sort((a, b) => a.name.localeCompare(b.name, 'pl')).map((d) => { const p = photoOf(d.id, 240); const p2 = photoOf(d.id, 240, 1); return `<button class="gitem" data-g="${d.id}">${p ? IMG(p.src, '', '', p2 && p2.src !== p.src ? p2.src : '') : `<span class="gph">${I.pin}</span>`}<span><b>${esc(d.name)}</b><small>${d.tags.includes('beach') ? 'plaża' : ''}${d.tags.includes('city') ? `${d.tags.includes('beach') ? ', ' : ''}zwiedzanie` : ''}${d.tags.includes('ski') ? 'narty' : ''}</small></span></button>`; }).join('')}</div>`).join('') : '<p class="hint">Nic nie pasuje. Spróbuj inną nazwę.</p>';
     $$('[data-g]').forEach((b) => { b.onclick = () => viewGuide(b.dataset.g); });
   };
   app.innerHTML = `<section class="tabpage">${pageTop('Inspiracje', `Przewodnik po ${S.dests.length} miejscach. Wybierz miejsce, aby zobaczyć atrakcje, pogodę i informacje praktyczne.`)}${seg}
