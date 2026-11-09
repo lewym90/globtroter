@@ -3,7 +3,7 @@ import { flapRow } from './flap.js';
 import { initLive, swapDay, artOf } from './live.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '3.2.1';
+const VERSION = '3.2.2';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -709,20 +709,28 @@ async function viewSearch(resumeId) {
   setBackdrop({ photo: 'art/e/ladowanie.jpg', dim: true });
   const W = window.innerWidth < 380 ? 14 : 16;
   app.innerHTML = `<section class="board-wrap"><h1 class="board-title">Szukamy</h1><div class="board" id="bd"></div>
-    <div class="bar"><i id="pr"></i></div><p class="board-label" id="lb" role="status">Przygotowuję trasy</p><p class="board-label" style="font-weight:400;font-size:14px">Zwykle 1–5 minut, bo sprawdzamy ceny na żywo. Możesz zamknąć aplikację, wyniki tu poczekają.</p></section>`;
+    <div class="bar"><i id="pr"></i></div><p class="board-label" id="lb" role="status">Przygotowuję trasy</p><p class="board-label" style="font-weight:400;font-size:14px">Zwykle 1–5 minut, bo sprawdzamy ceny na żywo. Możesz zamknąć aplikację, wyniki tu poczekają.</p>
+    <div class="acts" style="justify-content:center;margin-top:18px"><button class="btn line lightb" id="cx">Przerwij</button><button class="btn line lightb" id="ed">Popraw wyszukiwanie</button></div></section>`;
+  let off = false; let ticker = 0;
+  const quit = (fn) => { off = true; stop(); save('job', null); fn(); };
+  $('#cx').onclick = () => quit(viewHome);
+  $('#ed').onclick = () => quit(() => { S.step = 0; viewWizard(); });
   const rows = [flapRow(W), flapRow(W), flapRow(W), flapRow(W)];
   rows.forEach((r) => $('#bd').append(r.el));
   const names = S.dests.filter((d) => matches(d)).sort(() => Math.random() - 0.5).map((d) => d.name.toUpperCase());
   if (names.length < 5) names.push('NAJTAŃSZE DATY', 'WSZYSTKIE LOTNISKA', 'NOCLEGI', 'DOJAZD');
   const t = () => rows.forEach((r, i) => r.set((names[(i + Math.floor(Date.now() / 3200)) % Math.max(1, names.length)] || 'EUROPA').replace(/\(.*/, '').trim()));
-  t(); const ticker = setInterval(t, 3200);
-  const stop = () => clearInterval(ticker);
+  t(); ticker = setInterval(t, 3200);
+  function stop() { clearInterval(ticker); }
   try {
     const id = resumeId || (await api('/api/search', S.q)).id;
+    if (off) return;
     save('job', { id, q: S.q, t: Date.now() });
     for (;;) {
       await new Promise((r) => setTimeout(r, 1300));
+      if (off) return;
       const j = await api('/api/job?id=' + id);
+      if (off) return;
       const bar = $('#pr'); const lb = $('#lb');
       if (!bar) { stop(); return; }
       bar.style.width = j.progress * 100 + '%'; lb.textContent = j.label;
@@ -731,6 +739,7 @@ async function viewSearch(resumeId) {
     }
   } catch (e) {
     stop();
+    if (off) return;
     app.innerHTML = `<section class="board-wrap"><div class="card"><div class="in"><h2 class="big">Nie mamy pewnych wyników</h2><p style="margin-top:8px">${esc(e.message)}</p><div class="acts"><button class="btn" id="r">Spróbuj ponownie</button><button class="btn line" id="b">Zmień wyszukiwanie</button></div></div></div></section>`;
     $('#r').onclick = () => viewSearch(); $('#b').onclick = () => { S.step = 0; viewWizard(); };
   }
