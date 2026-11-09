@@ -6,7 +6,7 @@ import { initLive, swapDay, artOf } from './live.js';
 ['gesturestart', 'gesturechange', 'gestureend'].forEach((t) => document.addEventListener(t, (e) => e.preventDefault(), { passive: false }));
 document.addEventListener('touchmove', (e) => { if (e.touches.length > 1 && !e.target.closest('.leaflet-container')) e.preventDefault(); }, { passive: false });
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '3.6.2';
+const VERSION = '3.7.0';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -1074,7 +1074,7 @@ function viewPLResults() {
   ${L.map((o) => { const n = o.pax.adults + o.pax.children; return `<article class="card"><button data-o="${o.id}" style="display:block;width:100%;text-align:left">${posterOf(o, `<span class="pr">${zl(o.total)}<small style="font:600 12px var(--body)"> razem${o.hotelEst ? ' z noclegiem' : ''}</small></span>`)}
     <div class="in"><p><b>${dateL(o.dep)} – ${dateL(o.ret)}</b>, ${nightsL(o.nights)}, ${n} ${osob(n)}</p>
     ${plLines(o, false)}
-    <p>${o.hotelEst ? `Nocleg około ${zl(o.hotelEst.total)} <span class="sure est">szacunek</span>` : '<span class="sure check">nocleg: nie pobrano cen</span>'}</p></div></button></article>`; }).join('')}
+    <p>${o.hotelEst ? `Nocleg od ${zl(o.hotelEst.total)}${o.hotelEst.name ? `, ${esc(o.hotelEst.name)}` : ''}` : '<span class="sure check">nocleg: nie pobrano cen</span>'}</p></div></button></article>`; }).join('')}
   <p class="foot">${esc(R.tollSrc || '')} Ceny paliwa i noclegów to szacunki, bilety lotnicze sprawdzone dziś.</p></section>`;
   $('#b').onclick = () => { S.step = STEPS.length - 1; viewWizard(); };
   $$('[data-o]').forEach((b) => { b.onclick = () => { S.option = L.find((o) => o.id === b.dataset.o); viewPLOption(); }; });
@@ -1091,7 +1091,7 @@ function viewPLOption() {
    ${o.dest.desc ? `<p class="hint">${esc(o.dest.desc)}</p>` : ''}
    <h3 class="big" style="font-size:26px;margin-top:14px">Jak dojechać</h3>${plLines(o, true)}
    ${p ? `${passHtml(p.flight.out, 'Tam')}${passHtml(p.flight.back, 'Z powrotem')}` : ''}
-   <p class="hint">${o.hotelEst ? `Nocleg: około ${zl(o.hotelEst.total)} za ${nightsL(o.nights)}, ${o.hotelEst.rooms} ${o.hotelEst.rooms > 1 ? 'pokoje' : 'pokój'}. Dokładne ceny hoteli zobaczysz w następnym kroku.` : 'Ceny noclegów sprawdzimy w następnym kroku.'}</p>
+   <p class="hint">${o.hotelEst ? `Nocleg: od ${zl(o.hotelEst.total)}${o.hotelEst.name ? ` (${esc(o.hotelEst.name)})` : ''} za ${nightsL(o.nights)}, ${o.hotelEst.rooms} ${o.hotelEst.rooms > 1 ? 'pokoje' : 'pokój'}. Dokładne ceny hoteli zobaczysz w następnym kroku.` : 'Ceny noclegów sprawdzimy w następnym kroku.'}</p>
    ${m?.tmax != null ? `<p class="hint">Średnio w tym miesiącu: ${Math.round(m.tmin)}–${Math.round(m.tmax)}°C${m.rain != null ? `, opady ${Math.round(m.rain)} mm` : ''}.</p>` : ''}
    <h3 class="big" style="font-size:26px;margin-top:14px">Wybierz dojazd i nocleg</h3>
    <div class="acts">${pick('car', zl(o.car.total))}${t ? pick('train', 'około ' + zl(t.total)) : ''}${p ? pick('plane', zl(p.total)) : ''}</div>
@@ -1212,7 +1212,7 @@ function viewOption() {
     <div class="kv"><span>Bilety</span><span>${zl(o.tickets)} <span class="sure ${o.verified ? 'fact' : 'est'}">${o.verified ? 'sprawdzone' : 'z kalendarza'}</span></span></div>
     ${o.access.items.map((i) => `<div class="kv"><span>${esc(i.label)}</span><span>${zl(i.pln)} <span class="sure est">szacunek</span></span></div>`).join('')}
     ${o.bags ? `<div class="kv"><span>Bagaż</span><span>${zl(o.bags)} <span class="sure est">szacunek</span></span></div>` : ''}
-    ${o.hotelEst ? `<div class="kv"><span>Nocleg, ${o.nights} nocy</span><span>około ${zl(o.hotelEst.total)} <span class="sure est">szacunek</span></span></div>` : `<div class="kv"><span>Nocleg</span><span class="sure check">nie pobrano cen</span></div>`}</div>
+    ${o.hotelEst ? `<div class="kv"><span>Nocleg, ${o.nights} nocy${o.hotelEst.name ? `<br><small>najtańszy dobrze oceniany: ${esc(o.hotelEst.name)}</small>` : ''}</span><span>${zl(o.hotelEst.total)}</span></div>` : `<div class="kv"><span>Nocleg</span><span class="sure check">nie pobrano cen</span></div>`}</div>
     ${o.bagNote ? `<p class="hint">${esc(o.bagNote)}</p>` : ''}
     ${(o.warnings || []).map((w) => `<p class="warn">${esc(w)}</p>`).join('')}
     ${o.climate?.month?.tmax != null ? `<p class="hint">Średnio w tym miesiącu: ${Math.round(o.climate.month.tmin)}–${Math.round(o.climate.month.tmax)}°C${o.climate.month.sea != null ? `, morze ${Math.round(o.climate.month.sea)}°C` : ''}${o.climate.month.rain != null ? `, opady ${Math.round(o.climate.month.rain)} mm` : ''}.</p>` : ''}
@@ -1266,10 +1266,12 @@ async function viewHotels() {
   const o = S.option; const s = S.q.stay;
   app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Noclegi: ${esc(o.dest.name)}</h2></div><section class="page"><div class="card"><div class="in"><p>Zbieram hotele z dwóch źródeł i porównuję ceny. To potrwa około pół minuty.</p><div class="spin"></div></div></div></section>`;
   $('#b').onclick = S.option?.manual ? viewPlan : S.option?.plMode ? viewPLOption : viewOption;
-  const P = new URLSearchParams({ dest: o.dest.id, in: o.dep, out: o.ret, adults: o.pax.adults, children: o.pax.children, pref: s.pref, minRating: s.minRating, breakfast: s.breakfast ? 1 : 0 });
+  const P = new URLSearchParams({ dest: o.dest.id, in: o.dep, out: o.ret, adults: o.pax.adults, children: o.pax.children, pref: s.pref, minRating: s.minRating });
   if (s.budget) P.set('budget', s.budget);
   try {
-    const r = await api('/api/hotels?' + P);
+    // Pełna lista sprawdzana na serwerze w tle: hotele dochodzą w miarę sprawdzania cen
+    const { id } = await api('/api/hotels/start?' + P);
+    const r = { hotels: [], rooms: 1, nights: o.nights, note: '', sources: [], state: 'running', checked: 0, total: 0, all: 0, g: false };
     S.hotels = r;
     S.hf = S.hf || { breakfast: !!s.breakfast, sort: 'best', pool: false, stars: 0, limit: 12 };
     const list = () => {
@@ -1309,8 +1311,9 @@ async function viewHotels() {
       const y = app.scrollTop;
       app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Noclegi: ${esc(o.dest.name)}</h2></div><section class="page">
       <button class="btn line small lightb" id="ownh">Mam własną rezerwację</button>
-      <a class="btn line small lightb" target="_blank" rel="noopener" href="${url(bookingAll(o, f.breakfast))}">Wszystkie noclegi na Booking${f.breakfast ? ', ze śniadaniem' : ''}, od najtańszych</a>
-      ${!L.length ? `<div class="note"><b>${r.sourceDown ? 'Ceny hoteli są chwilowo niedostępne.' : 'Nie mamy pewnych cen dla tych kryteriów.'}</b><p class="mute">${r.sourceDown ? 'Oba źródła nie odpowiadają. Znajdź nocleg na stronach poniżej, a plan podróży ułożymy i tak.' : 'Złagodź wymagania albo sprawdź oferty bezpośrednio.'}</p><div class="linkset">${Object.entries(r.fallback || {}).slice(0, 4).map(([k, c]) => `<a class="btn line small" href="${url(c)}" target="_blank" rel="noopener">${esc(k)}</a>`).join('')}</div><div class="acts"><button class="btn" id="noh">Ułóż plan bez wybranego hotelu</button></div></div>` : `
+      <button class="btn line small lightb" id="lnk">Mam ofertę z innej strony: wklej link</button>
+      ${r.state === 'running' ? `<div class="note info"><b>${L.length ? `Sprawdzam ceny: ${r.checked} z ${r.total}` : 'Zbieram noclegi i sprawdzam ceny na Twoje daty…'}</b><div class="bar" style="margin-top:8px"><i style="width:${r.total ? Math.round((100 * r.checked) / r.total) : 4}%"></i></div><p class="mute" style="font-size:14px">${r.all ? `W okolicy jest ${r.all} obiektów. ` : ''}Najtańsze i najlepsze sprawdzam najpierw, lista sama się uzupełnia.</p></div>` : ''}
+      ${!L.length && r.state === 'running' ? '' : !L.length ? `<div class="note"><b>${r.sourceDown ? 'Ceny hoteli są chwilowo niedostępne.' : 'Nie mamy pewnych cen dla tych kryteriów.'}</b><p class="mute">${r.sourceDown ? 'Oba źródła nie odpowiadają. Znajdź nocleg na stronach poniżej, a plan podróży ułożymy i tak.' : 'Złagodź wymagania albo sprawdź oferty bezpośrednio.'}</p><div class="linkset">${Object.entries(r.fallback || {}).slice(0, 4).map(([k, c]) => `<a class="btn line small" href="${url(c)}" target="_blank" rel="noopener">${esc(k)}</a>`).join('')}</div><div class="acts"><button class="btn" id="noh">Ułóż plan bez wybranego hotelu</button></div></div>` : `
       <div class="note info"><b>${v.length} z ${L.length} hoteli, ${L.filter((h) => h.breakfast).length} ze śniadaniem w cenie</b>
         <div class="chips" style="margin-top:8px">
         <button class="chip" data-f="breakfast" aria-pressed="${f.breakfast}">Śniadanie w cenie</button><button class="chip" data-f="pool" aria-pressed="${f.pool}">Basen</button>
@@ -1319,7 +1322,8 @@ async function viewHotels() {
       ${v.slice(0, f.limit).map(card).join('')}
       ${v.length > f.limit ? '<button class="btn ghost" id="more">Pokaż więcej hoteli</button>' : ''}
       ${L.length && !v.length ? '<div class="note"><b>Żaden hotel nie spełnia tych filtrów.</b></div>' : ''}
-      ${L.length ? `<p class="foot">${r.rooms} ${r.rooms > 1 ? 'pokoje' : 'pokój'}, ${r.nights} nocy. ${esc(r.note || '')} Źródła: ${esc((r.sources || []).join(', '))}.</p>` : ''}</section>`;
+      <a class="btn line small lightb" target="_blank" rel="noopener" href="${url(bookingAll(o, f.breakfast))}">Szukaj też na Booking${f.breakfast ? ', ze śniadaniem' : ''}</a>
+      ${L.length ? `<p class="foot">${r.rooms} ${r.rooms > 1 ? 'pokoje' : 'pokój'}, ${r.nights} nocy. ${esc(r.note || '')}</p>` : ''}</section>`;
       $('#b').onclick = S.option?.manual ? viewPlan : S.option?.plMode ? viewPLOption : viewOption;
       $$('[data-f]').forEach((b) => { b.onclick = () => { f[b.dataset.f] = !f[b.dataset.f]; f.limit = 12; draw(); }; });
       $$('[data-st]').forEach((b) => { b.onclick = () => { const n = +b.dataset.st; f.stars = f.stars === n ? 0 : n; f.limit = 12; draw(); }; });
@@ -1332,18 +1336,68 @@ async function viewHotels() {
         buildPlan(h);
       }; });
       $('#ownh').onclick = () => LV.viewOwnHotel(o, buildPlan, viewHotels);
+      $('#lnk').onclick = () => linkHotel(o);
       const nh = $('#noh'); if (nh) nh.onclick = () => buildPlan({ name: 'centrum: ' + o.dest.name, lat: o.dest.lat, lon: o.dest.lon, bestTotal: 0 });
       app.scrollTop = y;
       fill();
     };
     draw();
     app.scrollTop = 0;
+    // Dociąganie kolejnych hoteli
+    let fails = 0;
+    while (S.hotels === r && r.state === 'running') {
+      await new Promise((ok) => setTimeout(ok, 2500));
+      if (S.hotels !== r || !$('#ownh')) return; // użytkownik przeszedł do innego ekranu
+      let st;
+      try { st = await api(`/api/hotels/job?id=${id}&n=${r.hotels.length}&g=${r.g ? 1 : 0}`); fails = 0; } catch (er) { if (++fails > 6) { r.state = 'done'; break; } continue; }
+      if (S.hotels !== r || !$('#ownh')) return;
+      const keep = new Map(r.hotels.filter((h) => h.live || h.liveFail || h.noOffers).map((h) => [String(h.key), h]));
+      const fix = (h) => { const k = keep.get(String(h.key)); return k ? { ...h, live: k.live, liveFail: k.liveFail, noOffers: k.noOffers, prices: k.prices, bestTotal: k.bestTotal, bestNight: k.bestNight } : h; };
+      const before = r.hotels.length + ':' + r.checked;
+      if (st.full) { r.hotels = st.hotels.map(fix); if (st.google) r.g = true; } else r.hotels.push(...st.hotels);
+      Object.assign(r, { state: st.state, checked: st.checked, total: st.total, all: st.all, rooms: st.rooms, nights: st.nights, note: st.note });
+      if (st.empty) { r.sourceDown = true; r.fallback = st.fallback; }
+      if (st.error) { r.state = 'done'; toast(st.error); }
+      if (before !== r.hotels.length + ':' + r.checked || r.state !== 'running' || st.full) { if (!document.querySelector('.page textarea:focus,.page input:focus')) draw(); }
+    }
   } catch (e) {
     app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Noclegi</h2></div><section class="page"><div class="note"><b>${esc(e.message)}</b><div class="acts"><button class="btn" id="r">Spróbuj ponownie</button></div></div></section>`;
     $('#b').onclick = S.option?.manual ? viewPlan : S.option?.plMode ? viewPLOption : viewOption; $('#r').onclick = viewHotels;
   }
 }
 
+// Hotel z linku do oferty: nazwę i daty czytamy z linku, a hotel szukamy w naszych źródłach. Bez przepisywania danych.
+function linkHotel(o) {
+  const back = viewHotels;
+  const page = (inner) => { app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Hotel z innej strony</h2></div><section class="page">${inner}</section>`; $('#b').onclick = back; };
+  page(`<div class="wcard"><h3>Wklej link do oferty</h3><p class="mute">Booking, Agoda, Expedia, Hotels.com, Trip.com albo Google. Na Booking dotknij „Udostępnij” i „Kopiuj link”.</p>
+    <textarea id="lu" rows="3" placeholder="https://www.booking.com/hotel/…"></textarea>
+    <label class="lab" for="ln" style="display:block;margin-top:10px">albo nazwa hotelu</label><input id="ln" maxlength="120" placeholder="np. Hotel Panoramica Garden">
+    <div class="acts"><button class="btn" id="lf">Znajdź ten hotel</button></div></div>`);
+  $('#lf').onclick = async () => {
+    const u = $('#lu').value.trim(); const n = $('#ln').value.trim();
+    if (!u && !n) return toast('Wklej link albo wpisz nazwę hotelu.');
+    const btn = $('#lf'); btn.disabled = true; btn.textContent = 'Szukam…';
+    let r; try { r = await api('/api/hotel/link?' + new URLSearchParams({ url: u, name: n, dest: o.dest.id, in: o.dep, out: o.ret, adults: o.pax.adults, children: o.pax.children })); } catch (e) { btn.disabled = false; btn.textContent = 'Znajdź ten hotel'; return toast(e.message); }
+    const h = r.hotel; const other = r.ci !== o.dep || r.co !== o.ret;
+    const best = h?.bestTotal || '';
+    page(`<div class="wcard">${h ? `${h.image ? `<img src="${url(h.image)}" alt="" style="width:100%;border-radius:12px;margin-bottom:10px" referrerpolicy="no-referrer">` : ''}<h3>${esc(h.name)}</h3>
+      ${h.rating ? `<p><b>${String(h.rating).replace('.', ',')} / 5</b> <span class="mute">${(h.reviews || 0).toLocaleString('pl-PL')} opinii</span></p>` : ''}
+      ${h.breakfast ? '<p><span class="sure fact">śniadanie w cenie</span></p>' : ''}
+      ${h.prices?.length ? `<div class="pricelist">${h.prices.map((x, j) => `<a class="pl ${j === 0 ? 'best' : ''}" href="${url(x.url)}" target="_blank" rel="noopener"><span>${esc(x.site)}</span><span>${zl(x.total)}</span></a>`).join('')}</div><p class="mute small">Ceny na ${dateL(r.ci)} – ${dateL(r.co)}, ${r.rooms} ${r.rooms > 1 ? 'pokoje' : 'pokój'}. Na stronie, z której masz link, cena może się różnić, na przykład przy taryfie ze śniadaniem.</p>`
+        : `<p class="mute">${r.found === 'map' ? 'Znam położenie hotelu, ale nie mam jego cen na te daty.' : ''}</p>`}`
+      : `<h3>${esc(r.name || 'Hotel')}</h3><p class="warn">Nie znalazłem tego hotelu w naszych źródłach. Możesz go dodać z nazwą i ceną, plan policzę od centrum ${esc(o.dest.name)}.</p>`}
+      ${other ? `<p class="warn">Link jest na inne daty (${dateL(r.ci)} – ${dateL(r.co)}) niż Twój wyjazd. Sprawdź, czy to dobra oferta.</p>` : ''}
+      <label class="lab" for="lp" style="display:block;margin-top:10px">Kwota za cały pobyt, którą widzisz w ofercie (zł)</label><input id="lp" type="number" inputmode="numeric" min="0" step="1" value="${best}">
+      <div class="acts"><button class="btn" id="lok">Wybieram ten hotel</button><button class="btn line" id="lagain">Inny link</button></div></div>`);
+    $('#lagain').onclick = () => linkHotel(o);
+    $('#lok').onclick = () => {
+      const v = Math.round(parseFloat(($('#lp').value || '').replace(',', '.')) || 0);
+      const base = h || { name: r.name || 'Hotel', lat: o.dest.lat, lon: o.dest.lon, prices: [] };
+      buildPlan({ ...base, name: base.name, bestTotal: v || base.bestTotal || 0, prices: v && v !== base.bestTotal ? [{ site: r.site ? `Twoja oferta (${r.site})` : 'Twoja oferta', total: v, url: u || '' }, ...(base.prices || [])] : base.prices });
+    };
+  };
+}
 /* ---------- Kompendium ---------- */
 async function buildPlan(hotel) {
   if (S.option.manual) { S.plan.hotel = hotel; LV.put('meta', 'hotel', { hotel }); LV.applyDays(S.plan); LV.savePlan(S.plan); LV.ownToVault(S.plan); S.tab = 'noc'; return viewPlan(); }

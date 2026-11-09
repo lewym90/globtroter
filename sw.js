@@ -1,6 +1,6 @@
 // Kod i dane: najpierw siec z pominieciem pamieci przegladarki, max 4 s, potem kopia offline.
 // Czcionki i ikony: kopia. Dzieki temu kazde otwarcie daje najnowsza wersje, a bez internetu aplikacja dalej dziala.
-const V='gt-v3.6.2';
+const V='gt-v3.7.0';
 const SHELL=['./','index.html','css/app.css','js/app.js','js/live.js','art/hero/rzym.jpg','art/hero/santorini.jpg','art/hero/paryz.jpg','art/hero/barcelona.jpg','art/hero/alpy.jpg','art/hero/chorwacja.jpg','art/e/ladowanie.jpg','art/e/polska.jpg','art/e/europa.jpg','art/e/swiat.jpg','art/e/biura.jpg','js/scene.js','js/flap.js','data/airports.json','data/destinations.json','data/photos.json','data/hero.json','data/shapes.json','vendor/leaflet/leaflet.js','vendor/leaflet/leaflet.css','icons/logo-96.png','manifest.webmanifest','icons/icon-192.png','fonts/big-shoulders-display-latin-wght-normal.woff2','fonts/big-shoulders-display-latin-ext-wght-normal.woff2','fonts/figtree-latin-wght-normal.woff2','fonts/figtree-latin-ext-wght-normal.woff2'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(V).then(c=>Promise.all(SHELL.map(u=>fetch(new Request(u,{cache:'reload'})).then(r=>{if(!r.ok)throw new Error(u);return c.put(u,r);})))).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));

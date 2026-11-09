@@ -5,7 +5,7 @@ from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import parse_qs,urlsplit
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 import ai,domestic,flights,proposals,geo,hotels,net,plan,push,ryanair,search,store,tours,trips
-VERSION='1.14.0'
+VERSION='1.15.0'
 _hits={}
 def limited(ip,kind,n,win):
     """Prosty limit zapytan na adres, zeby nikt nie zapchal bazy ani darmowego limitu AI."""
@@ -46,6 +46,10 @@ class H(BaseHTTPRequestHandler):
                 if q.get('id','') not in tours.JOBS: return self.out(404,{'error':'Wyszukiwanie wygasło. Uruchom je jeszcze raz.'})
                 return self.out(200,tours.status(q['id'],int(q.get('n',0) or 0)))
             if p=='/api/hotel/offers': return self.out(200,hotels.offers(q.get('key'),q.get('in'),q.get('out'),q.get('rooms',1)))
+            if p=='/api/hotel/link': return self.out(200,hotels.from_link(q.get('url',''),q['dest'],q.get('in'),q.get('out'),int(q.get('adults',2)),int(q.get('children',0)),q.get('name') or None))
+            if p=='/api/hotels/job': return self.out(200,hotels.status(q.get('id',''),int(q.get('n',0) or 0),int(q.get('g',0) or 0)))
+            if p=='/api/hotels/start':
+                return self.out(200,{'id':hotels.start(q['dest'],q['in'],q['out'],int(q.get('adults',2)),int(q.get('children',0)),int(q['budget']) if q.get('budget') else None,q.get('pref','balanced'),q.get('minRating',0),q.get('kind','all'))})
             if p=='/api/hotels':
                 return self.out(200,hotels.search(q['dest'],q['in'],q['out'],int(q.get('adults',2)),int(q.get('children',0)),int(q['budget']) if q.get('budget') else None,q.get('pref','balanced'),q.get('minRating',0),q.get('kind','all'),q.get('breakfast')=='1'))
             if p=='/api/diag':
