@@ -6,7 +6,7 @@ import { initLive, swapDay, artOf } from './live.js';
 ['gesturestart', 'gesturechange', 'gestureend'].forEach((t) => document.addEventListener(t, (e) => e.preventDefault(), { passive: false }));
 document.addEventListener('touchmove', (e) => { if (e.touches.length > 1 && !e.target.closest('.leaflet-container')) e.preventDefault(); }, { passive: false });
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '3.5.1';
+const VERSION = '3.5.2';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -841,7 +841,12 @@ async function viewSearch(resumeId) {
     for (;;) {
       await new Promise((r) => setTimeout(r, 1300));
       if (off) return;
-      const j = await api((isPL() ? '/api/pl/job?id=' : '/api/job?id=') + id);
+      // Telefon gubi zasięg albo serwer się restartuje: kilka cichych prób, zanim pokażemy błąd
+      let j = null;
+      for (let t = 0; !j; t++) {
+        try { j = await api((isPL() ? '/api/pl/job?id=' : '/api/job?id=') + id); }
+        catch (er) { if (t >= 7 || !/połączenia/.test(er.message)) throw er; if ($('#lb')) $('#lb').textContent = 'Słabe połączenie, ponawiam…'; await new Promise((r) => setTimeout(r, 4000)); if (off) return; }
+      }
       if (off) return;
       const bar = $('#pr'); const lb = $('#lb');
       if (!bar) { stop(); return; }
