@@ -3,7 +3,7 @@ import { flapRow } from './flap.js';
 import { initLive, swapDay, artOf } from './live.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '3.2.0';
+const VERSION = '3.2.1';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -87,7 +87,9 @@ const sceneOf = (d) => { const landmark = landmarkOf(d.id); return { seed: d.id,
 
 /* ---------- Zdjęcia: zmiana codziennie o 8:00 ---------- */
 const dayIdx = () => Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4 - 8 * 36e5) / 864e5);
-const commons = (f, w) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(safeDec(f))}?width=${w}`;
+// Wikimedia ogranicza miniatury w niestandardowych rozmiarach (blad 429), wiec zaokraglamy do ich standardowych szerokosci
+const THUMB = [120, 250, 330, 500, 960, 1280, 1920];
+const commons = (f, w) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(safeDec(f))}?width=${THUMB.find((t) => t >= w) || 1920}`;
 const safeDec = (f) => { try { return decodeURIComponent(f); } catch { return f; } };
 const photoOf = (id, w = 900, shift = 0) => { const L = S.photos[id] || []; return L.length ? { ...L[(dayIdx() + shift) % L.length], src: commons(L[(dayIdx() + shift) % L.length].f, w) } : null; };
 const HERO = [['rzym', 'Rzym'], ['santorini', 'Santorini'], ['paryz', 'Paryż'], ['barcelona', 'Barcelona'], ['alpy', 'Alpy'], ['chorwacja', 'Chorwacja']].map(([f, n]) => ({ src: `art/hero/${f}.jpg`, n }));
