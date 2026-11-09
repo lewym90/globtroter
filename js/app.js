@@ -6,7 +6,7 @@ import { initLive, swapDay, artOf } from './live.js';
 ['gesturestart', 'gesturechange', 'gestureend'].forEach((t) => document.addEventListener(t, (e) => e.preventDefault(), { passive: false }));
 document.addEventListener('touchmove', (e) => { if (e.touches.length > 1 && !e.target.closest('.leaflet-container')) e.preventDefault(); }, { passive: false });
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '3.6.1';
+const VERSION = '3.6.2';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -956,6 +956,12 @@ function propCard(it, votes, role) {
    ${role === 'edit' ? `<div class="acts"><button class="btn small" data-mk="${it.id}">Zrób z tego podróż</button></div>` : ''}
    </div></article>`;
 }
+// Booking nie pozwala automatom czytać ofert, więc dajemy gotowe wyszukiwanie: to miejsce, Twoje daty, osoby, od najtańszych
+function bookingAll(o, breakfast) {
+  const P = new URLSearchParams({ ss: o.dest.name.replace(/\s*\(.*/, ''), checkin: o.dep, checkout: o.ret, group_adults: o.pax.adults, group_children: o.pax.children, no_rooms: S.hotels?.rooms || 1, order: 'price', lang: 'pl' });
+  if (breakfast) P.set('nflt', 'mealplan=1');
+  return 'https://www.booking.com/searchresults.pl.html?' + P;
+}
 function viewPropDraft() {
   const D = propDraft();
   setBackdrop({ photo: heroNow()?.src, dim: true, strong: true });
@@ -1303,6 +1309,7 @@ async function viewHotels() {
       const y = app.scrollTop;
       app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Noclegi: ${esc(o.dest.name)}</h2></div><section class="page">
       <button class="btn line small lightb" id="ownh">Mam własną rezerwację</button>
+      <a class="btn line small lightb" target="_blank" rel="noopener" href="${url(bookingAll(o, f.breakfast))}">Wszystkie noclegi na Booking${f.breakfast ? ', ze śniadaniem' : ''}, od najtańszych</a>
       ${!L.length ? `<div class="note"><b>${r.sourceDown ? 'Ceny hoteli są chwilowo niedostępne.' : 'Nie mamy pewnych cen dla tych kryteriów.'}</b><p class="mute">${r.sourceDown ? 'Oba źródła nie odpowiadają. Znajdź nocleg na stronach poniżej, a plan podróży ułożymy i tak.' : 'Złagodź wymagania albo sprawdź oferty bezpośrednio.'}</p><div class="linkset">${Object.entries(r.fallback || {}).slice(0, 4).map(([k, c]) => `<a class="btn line small" href="${url(c)}" target="_blank" rel="noopener">${esc(k)}</a>`).join('')}</div><div class="acts"><button class="btn" id="noh">Ułóż plan bez wybranego hotelu</button></div></div>` : `
       <div class="note info"><b>${v.length} z ${L.length} hoteli, ${L.filter((h) => h.breakfast).length} ze śniadaniem w cenie</b>
         <div class="chips" style="margin-top:8px">
