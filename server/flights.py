@@ -103,6 +103,18 @@ def calendar(o,d,start,end,nights,adults=1,children=0,stops=None,fresh=False):
     store.put(key,out,20*3600)
     if not fresh: remember([o,d,start,end,nights,adults,children,stops])
     return out,0
+def oneway_calendar(o,d,start,end,adults=1,children=0,stops=None):
+    """Najtanszy lot w jedna strone na kazdy dzien (max 60 dni). Wszystkie lotniska z listy naraz."""
+    key=f"owcal:{','.join(sorted(o))}:{','.join(sorted(d))}:{start}:{end}:{adults}:{children}:{stops}"
+    v,age=store.get(key)
+    if v is not None: return v,age
+    SD,SF,m=_fli()
+    kw={'stops':m.MaxStops.NON_STOP} if stops==0 else {}
+    f=m.DateSearchFilters(trip_type=m.TripType.ONE_WAY,passenger_info=_pax(adults,children),**kw,flight_segments=[_seg(o,d,start)],from_date=start,to_date=end)
+    r=_call(lambda:SD().search(f,currency=CURRENCY,country='PL',language='pl')) or []
+    out={x.date[0].date().isoformat():round(x.price) for x in r if x.price and x.price>0}
+    store.put(key,out,12*3600)
+    return out,0
 def remember(q):
     L=store.get('warmlist')[0] or []
     L=[x for x in L if x[0]!=q][-150:]+[[q,time.time()]]

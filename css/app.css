@@ -569,3 +569,17 @@ details.add summary{font-weight:700;cursor:pointer;margin:0}
 .ztile small{display:block;margin-top:4px;font-size:12.5px;line-height:1.3;color:#dfe6f3}
 .home .lastr{margin-top:14px}
 .page .kv svg{width:18px;height:18px;vertical-align:-3px;margin-right:4px}
+/* Kalendarz wylot/powrót */
+.calstep{margin-top:10px}
+.calstep button{display:flex;flex-direction:column;align-items:center;line-height:1.15;padding:6px 4px;font-weight:700}
+.calstep button small{font-weight:600;font-size:11.5px;opacity:.75}
+.cal2 button{background:#eef2fa;color:var(--ink)}
+.cal2 button small{color:var(--ink2);font-weight:600}
+.cal2 button.low{background:#e3f6ec}
+.cal2 button.low small{color:#0f8a4b;font-weight:800}
+.cal2 button[aria-pressed=true]{background:var(--deep);color:#fff}
+.cal2 button[aria-pressed=true] small{color:#fff}
+.cal2 span.dep{outline:2px dashed var(--sun);outline-offset:-2px;border-radius:8px}
+/* Bez powiększania dwuklikiem i szczypaniem: aplikacja ma zachowywać się jak natywna */
+html,body{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%}
+button,a,input,select,label{touch-action:manipulation}

@@ -339,6 +339,24 @@ def month_grid(b):
     except flights.Unavailable: down=True
     if down and not g: raise flights.Unavailable('kalendarz')
     return {'ym':ym,'grid':merge(ga,g)}
+def oneway_month(b):
+    """Kalendarz w jedna strone: osobno ceny wylotu i powrotu, jak w Skyscannerze. Cena dla 1 osoby."""
+    o,dd,ym=b['from'],b['to'],b['ym']
+    if b.get('dir')=='back': o,dd=dd,o
+    for x in(o,dd):
+        if x not in geo.AIRPORTS: raise ValueError('Nieznane lotnisko')
+    y,m=int(ym[:4]),int(ym[5:7]);a=max(dt.date(y,m,1),dt.date.today()+dt.timedelta(days=1));e=dt.date(y,m,cal.monthrange(y,m)[1])
+    if e<a: return {'ym':ym,'days':{}}
+    days={};down=False
+    try: days,_=flights.oneway_calendar([o],[dd],a.isoformat(),e.isoformat(),1,0,0 if b.get('direct') else None);days=dict(days)
+    except flights.Unavailable: down=True
+    if dd in ryanair.routes(o):
+        try:
+            for k,v in ryanair.month(o,dd,ym).items():
+                if k>=a.isoformat() and (k not in days or v['price']<days[k]): days[k]=round(v['price'])
+        except ryanair.Down: pass
+    if down and not days: raise flights.Unavailable('kalendarz')
+    return {'ym':ym,'days':days}
 def confirm(c,A,C,st):
     """Potwierdza konkretne loty: w obie strony, potem osobno, potem nastepna najtansza data."""
     for x in [{'dep':c['dep'],'ret':c['ret'],'price':c['one']}]+sorted([g for g in c.get('pool') or c['grid'] if g['dep']!=c['dep']],key=lambda g:g['price'])[:2]:

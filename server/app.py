@@ -5,7 +5,7 @@ from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import parse_qs,urlsplit
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 import ai,domestic,flights,geo,hotels,net,plan,push,ryanair,search,store,tours,trips
-VERSION='1.11.0'
+VERSION='1.12.0'
 _hits={}
 def limited(ip,kind,n,win):
     """Prosty limit zapytan na adres, zeby nikt nie zapchal bazy ani darmowego limitu AI."""
@@ -112,6 +112,7 @@ class H(BaseHTTPRequestHandler):
             if p=='/api/watch/add': return self.out(200,{'id':push.watch_add(b.get('device',''),b['from'],b['to'],b['ym'],b['nights'],b.get('name',''),b['price'])})
             if p=='/api/watch/del': push.watch_del(b.get('device',''),b.get('id',''));return self.out(200,{'ok':True})
             if p=='/api/calendar': return self.out(200,search.month_grid(b))
+            if p=='/api/calendar1': return self.out(200,search.oneway_month(b))
             if p=='/api/option': return self.out(200,search.recheck(b))
             self.out(404,{'error':'Nie ma takiej ścieżki'})
         except ValueError as e: self.out(400,{'error':str(e)})

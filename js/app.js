@@ -2,8 +2,11 @@ import { scene, themeOf, landmarkOf } from './scene.js';
 import { flapRow } from './flap.js';
 import { initLive, swapDay, artOf } from './live.js';
 
+// iOS Safari pomija user-scalable=no, więc blokujemy powiększanie gestem i dwuklikiem w skrypcie. Dwuklik blokuje touch-action w CSS. Mapy mają własne przybliżanie.
+['gesturestart', 'gesturechange', 'gestureend'].forEach((t) => document.addEventListener(t, (e) => e.preventDefault(), { passive: false }));
+document.addEventListener('touchmove', (e) => { if (e.touches.length > 1 && !e.target.closest('.leaflet-container')) e.preventDefault(); }, { passive: false });
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '3.3.0';
+const VERSION = '3.4.0';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -937,42 +940,55 @@ function openMonth(ym) {
 }
 function calendar() { return '<div class="in" id="calbox"></div>'; }
 const addYm = (ym, k) => { const d = new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + k, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
+// Kalendarz jak w Skyscannerze: najpierw dzień wylotu, potem dzień powrotu, każdy z własną ceną w jedną stronę.
 async function drawCal(o) {
   const box = $('#calbox'); if (!box) return;
   S.calCache ||= {};
-  const ym = S.calYm || o.dep.slice(0, 7);
-  const key = `${o.from}-${o.to}-${o.nights}-${ym}`;
-  const here = (o.calendar || []).filter((x) => x.dep.startsWith(ym));
-  let g = here.length ? here : S.calCache[key];
+  const c = (S.cal2 && S.cal2.id === o.id) ? S.cal2 : (S.cal2 = { id: o.id, step: 'out', dep: o.dep, ret: o.ret, ym: o.dep.slice(0, 7) });
+  const dir = c.step; const ym = c.ym;
+  const key = `${o.from}-${o.to}-${dir}-${ym}-${S.q.direct ? 1 : 0}`;
+  const g = S.calCache[key];
   const nowYm = addYm(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`, 0);
-  const head = `<h3 class="big" style="font-size:32px">Kiedy najtaniej</h3><p class="mute">Bilet w obie strony dla 1 osoby według dnia wylotu, ${o.nights} nocy. Dotknij dnia, by sprawdzić.</p>
+  const nn = Math.round((new Date(c.ret) - new Date(c.dep)) / 864e5);
+  const head = `<h3 class="big" style="font-size:32px">Kiedy najtaniej</h3>
+  <div class="seg calstep"><button data-st="out" aria-pressed="${dir === 'out'}"><small>Wylot</small>${dateL(c.dep)}</button><button data-st="back" aria-pressed="${dir === 'back'}"><small>Powrót</small>${dateL(c.ret)}</button></div>
+  <p class="mute" style="margin-top:8px">${dir === 'out' ? `Ceny wylotu ${esc(o.from)} → ${esc(o.to)}` : `Ceny powrotu ${esc(o.to)} → ${esc(o.from)}`} w jedną stronę dla 1 osoby. ${dir === 'out' ? 'Dotknij dnia wylotu, potem wybierz powrót.' : `Dotknij dnia powrotu. Teraz: ${nightsL(nn)}.`}</p>
   <div class="calnav"><button class="round" id="cp" aria-label="Poprzedni miesiąc" ${ym <= nowYm ? 'disabled' : ''}>‹</button><b>${MONTHS[+ym.slice(5, 7) - 1]} ${ym.slice(0, 4)}</b><button class="round" id="cn" aria-label="Następny miesiąc" ${ym >= addYm(nowYm, 12) ? 'disabled' : ''}>›</button></div>`;
   const bind = () => {
-    const go = (k) => { S.calYm = addYm(ym, k); drawCal(o); };
+    const go = (k) => { c.ym = addYm(ym, k); drawCal(o); };
     const p = $('#cp'); const n = $('#cn');
     if (p) p.onclick = () => go(-1);
     if (n) n.onclick = () => go(1);
-    $$('.cal button').forEach((b) => { b.onclick = () => recheck(b.dataset.dep, b.dataset.ret); });
+    $$('.calstep button').forEach((b) => { b.onclick = () => { c.step = b.dataset.st; c.ym = (c.step === 'out' ? c.dep : c.ret).slice(0, 7); drawCal(o); }; });
+    $$('.cal button').forEach((b) => { b.onclick = () => {
+      const k = b.dataset.d;
+      if (dir === 'out') {
+        const len = Math.max(1, nn); c.dep = k; if (c.ret <= k) { const r = new Date(k + 'T12:00'); r.setDate(r.getDate() + len); c.ret = r.toISOString().slice(0, 10); }
+        c.step = 'back'; c.ym = c.ret.slice(0, 7); drawCal(o);
+      } else { c.ret = k; S.cal2 = { ...c, step: 'out' }; recheck(c.dep, c.ret); }
+    }; });
   };
   if (!g) {
     box.innerHTML = `${head}<p class="mute">Sprawdzam ceny w tym miesiącu…</p>`; bind();
-    try { const r = await api('/api/calendar', { from: o.from, to: o.to, ym, nights: o.nights, direct: !!S.q.direct }); S.calCache[key] = r.grid; }
+    try { const r = await api('/api/calendar1', { from: o.from, to: o.to, ym, dir, direct: !!S.q.direct }); S.calCache[key] = r.days; }
     catch (e) { box.innerHTML = `${head}<p class="warn">${esc(e.message)}</p>`; bind(); return; }
-    if ((S.calYm || o.dep.slice(0, 7)) === ym && S.option === o) drawCal(o);
+    if (S.cal2 === c && c.ym === ym && c.step === dir && S.option === o) drawCal(o);
     return;
   }
-  if (!g.length) { box.innerHTML = `${head}<p class="mute">Brak lotów w tym miesiącu albo rozkład nie jest jeszcze sprzedawany.</p>`; bind(); return; }
-  const lo = Math.min(...g.map((x) => x.price)); const hi = Math.max(...g.map((x) => x.price));
-  const map = Object.fromEntries(g.map((x) => [x.dep, x]));
+  const vals = Object.entries(g).filter(([k]) => k.startsWith(ym) && (dir === 'out' || k > c.dep)).map(([, v]) => v);
+  if (!vals.length) { box.innerHTML = `${head}<p class="mute">Brak lotów w tym miesiącu albo rozkład nie jest jeszcze sprzedawany.</p>`; bind(); return; }
+  const sorted = [...vals].sort((x, z) => x - z); const cheap = sorted[Math.floor((sorted.length - 1) / 3)];
   const y = +ym.slice(0, 4); const m = +ym.slice(5, 7) - 1;
   const first = new Date(y, m, 1, 12); const days = new Date(y, m + 1, 0).getDate();
   let cells = '';
   for (let i = 0; i < (first.getDay() + 6) % 7; i++) cells += '<span></span>';
   for (let d = 1; d <= days; d++) {
-    const k = `${ym}-${String(d).padStart(2, '0')}`; const x = map[k];
-    cells += x ? `<button data-dep="${k}" data-ret="${x.ret}" style="background:${heat(x.price, lo, hi)}" aria-pressed="${k === o.dep}" aria-label="${dateL(k)}, ${x.price} zł">${d}<small>${x.price}</small></button>` : `<span class="mute">${d}</span>`;
+    const k = `${ym}-${String(d).padStart(2, '0')}`; const v = g[k];
+    const ok = v != null && (dir === 'out' || k > c.dep);
+    const sel = k === (dir === 'out' ? c.dep : c.ret); const other = dir === 'back' && k === c.dep;
+    cells += ok ? `<button data-d="${k}" class="${v <= cheap ? 'low' : ''}" aria-pressed="${sel}" aria-label="${dateL(k)}, ${v} zł">${d}<small>${v}</small></button>` : `<span class="mute${other ? ' dep' : ''}">${d}</span>`;
   }
-  box.innerHTML = `${head}<div class="cal">${DAYS.map((d) => `<b>${d}</b>`).join('')}${cells}</div>`;
+  box.innerHTML = `${head}<div class="cal cal2">${DAYS.map((d) => `<b>${d}</b>`).join('')}${cells}</div><p class="hint">Zielone: najtańsza jedna trzecia dni. Po wybraniu powrotu sprawdzę konkretne loty i cenę w obie strony dla wszystkich osób.</p>`;
   bind();
 }
 function passHtml(f, label) {
@@ -1020,7 +1036,7 @@ function viewOption() {
   const h = $('#hot'); if (h) h.onclick = viewHotels;
   $$('[data-c]').forEach((b) => { b.onclick = () => { S.option = S.result.options.find((x) => x.id === b.dataset.c); viewOption(); }; });
   $$('[data-f]').forEach((b) => { b.onclick = () => { const c = cmp[+b.dataset.f]; openFare({ ...c, destId: o.dest.id }); }; });
-  S.calYm = null; drawCal(o);
+  drawCal(o);
   app.scrollTop = 0;
 }
 async function carCard(o) {
@@ -1028,6 +1044,7 @@ async function carCard(o) {
   try {
     const r = await api('/api/car', { lat: S.q.origin.lat, lon: S.q.origin.lon, la: o.dest.lat, lo: o.dest.lon, transport: S.q.transport });
     if (!el.isConnected) return;
+    if (r.km > 2200) { el.remove(); return; }
     el.innerHTML = `<h3 class="big" style="font-size:32px">A może autem?</h3><p>${r.km.toLocaleString('pl-PL')} km w jedną stronę, około ${dur(r.min)} z postojami. Paliwo tam i z powrotem około ${zl(r.fuel)}.</p><p class="hint">Bez autostrad i winiet za granicą. Te sprawdź dla swojej trasy. Dla porównania samolot z dojazdem: ${zl(o.total)}.</p><div class="linkset"><a class="btn line small" href="${url(r.map)}" target="_blank" rel="noopener">Trasa</a><button class="btn small" id="bycar">Zaplanuj autem</button></div>`;
     $('#bycar').onclick = () => LV.viewNew({ dest: { id: o.dest.id, name: o.dest.name }, from: o.dep, to: o.ret, mode: 'car' });
   } catch { el.remove(); }
