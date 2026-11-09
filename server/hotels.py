@@ -182,7 +182,7 @@ def search(did,ci,co,A,C,budget=None,pref='balanced',minrating=0,kind='all',brea
         out.append(h)
     out+=list(gs.values())
     if pref!='cheap': out=[h for h in out if not re.search(r'hostel|dorm|backpack',h['name'],re.I) and (h.get('stars') or 2)>=2] or out
-    if breakfast: out=[h for h in out if h['breakfast']] or out
+    # Sniadanie filtruje aplikacja przyciskiem, zeby po odznaczeniu bylo widac wszystkie hotele
     out.sort(key=lambda h:(h['overBudget'],-h['score']))
     for h in out:
         if str(h.get('key','')).startswith('Ch'): h['gkey']=h['key']

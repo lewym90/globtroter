@@ -6,7 +6,7 @@ import { initLive, swapDay, artOf } from './live.js';
 ['gesturestart', 'gesturechange', 'gestureend'].forEach((t) => document.addEventListener(t, (e) => e.preventDefault(), { passive: false }));
 document.addEventListener('touchmove', (e) => { if (e.touches.length > 1 && !e.target.closest('.leaflet-container')) e.preventDefault(); }, { passive: false });
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '3.6.0';
+const VERSION = '3.6.1';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -1268,7 +1268,10 @@ async function viewHotels() {
     S.hf = S.hf || { breakfast: !!s.breakfast, sort: 'best', pool: false, stars: 0, limit: 12 };
     const list = () => {
       const f = S.hf;
-      let v = r.hotels.filter((h) => (!f.breakfast || h.breakfast) && (!f.pool || (h.amen || []).includes('basen')) && (!f.stars || (h.stars || 0) >= f.stars));
+      // Basen: najpierw hotele z potwierdzonym basenem, potem te, o których źródła nie podają wyposażenia (oznaczone)
+      const poolOk = (h) => (h.amen || []).includes('basen'); const poolUnk = (h) => !(h.amen || []).filter((x) => x !== 'śniadanie w cenie').length;
+      let v = r.hotels.filter((h) => (!f.breakfast || h.breakfast) && (!f.pool || poolOk(h) || poolUnk(h)) && (!f.stars || (h.stars || 0) >= f.stars));
+      if (f.pool) v = [...v.filter(poolOk), ...v.filter((h) => !poolOk(h))];
       if (f.sort === 'cheap') v = [...v].sort((a, c) => a.bestTotal - c.bestTotal);
       if (f.sort === 'rate') v = [...v].sort((a, c) => (c.rating || 0) - (a.rating || 0) || (c.reviews || 0) - (a.reviews || 0));
       return v;
@@ -1290,6 +1293,7 @@ async function viewHotels() {
     <div class="in"><h3>${esc(h.name)}</h3><p>${h.rating ? `<span class="stars">${String(h.rating).replace('.', ',')} / 5</span> ` : ''}<span class="mute">${(h.reviews || 0).toLocaleString('pl-PL')} opinii${h.stars ? `, ${h.stars}★` : ''}${h.distKm != null ? `, ${String(h.distKm).replace('.', ',')} km od centrum` : ''}</span></p>
     <p>${h.breakfast ? '<span class="sure fact">śniadanie w cenie</span>' : h.breakfastPaid ? '<span class="sure est">śniadanie płatne</span>' : '<span class="sure check">śniadanie: brak danych</span>'}</p>
     ${h.amen?.filter((a) => a !== 'śniadanie w cenie').length ? `<p class="mute" style="font-size:14px">${esc(h.amen.filter((a) => a !== 'śniadanie w cenie').slice(0, 6).join(', '))}</p>` : ''}
+    ${S.hf.pool && !(h.amen || []).includes('basen') ? '<p><span class="sure check">basen: brak danych, sprawdź na stronie hotelu</span></p>' : ''}
     ${h.overBudget ? '<p class="warn">Ponad Twój budżet.</p>' : ''}
     <div data-pl="${esc(h.key)}">${priceBox(h)}</div>
     ${h.gpage ? `<div class="linkset"><a class="btn line small" href="${url(h.gpage)}" target="_blank" rel="noopener">Ten hotel w Google, wszystkie oferty</a></div>` : ''}

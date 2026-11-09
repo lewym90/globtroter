@@ -89,26 +89,58 @@ def collect(d,q,ci,co,seen):
     return True
 def search(d,ci,co):
     """Szybka lista (jedno zapytanie), np. do szacunku noclegu. None = zrodlo nie odpowiedzialo."""
-    k=f'gh2:{d["id"]}:{ci}:{co}'
+    k=f'gh5:{d["id"]}:{ci}:{co}'
     v,_=store.get(k)
     if v: return v
-    n=ALIAS.get(d['en'],d['en']);seen={}
+    n=(AREAS.get(d['id']) or [ALIAS.get(d['en'],d['en'])])[0];seen={}
     try: collect(d,query(n,ci,co),ci,co,seen)
     except Exception as e: log.warning('gh %s',str(e)[:120]);last['error']=str(e)[:160];return None
     out=list(seen.values())
     if out: store.put(k,out,4*3600)
     return out or None
-KINDS=['hotels in %s','hotels with free breakfast in %s','4 star hotels in %s','3 star hotels in %s','5 star hotels in %s','cheap hotels in %s','best hotels in %s city center','family hotels in %s','boutique hotels in %s','resorts in %s']
+# Wyspy i regiony: turysci mieszkaja w kurortach, nie w stolicy. Kazda nazwa sprawdzona w Photon (do 85 km od celu).
+AREAS={'teneryfa':['Tenerife','Costa Adeje','Los Cristianos','Playa de las Americas','Puerto de la Cruz'],
+'gran-canaria':['Gran Canaria','Maspalomas','Playa del Ingles','Puerto de Mogan'],
+'lanzarote':['Puerto del Carmen','Costa Teguise','Playa Blanca'],
+'fuerteventura':['Corralejo','Caleta de Fuste','Costa Calma','Morro Jable'],
+'palma-de-mallorca':['Mallorca','Alcudia','Cala d\'Or','Magaluf','Cala Millor'],
+'ibiza':['Sant Antoni de Portmany','Santa Eulalia del Rio','Playa d\'en Bossa'],
+'madera-funchal':['Madeira','Canico'],
+'kreta-heraklion':['Hersonissos','Malia'],
+'kreta-chania':['Platanias','Agia Marina Chania'],
+'rodos':['Rhodes island','Faliraki','Ialyssos','Lindos'],
+'korfu':['Corfu island','Dassia','Kavos','Sidari'],
+'kos':['Kos island','Kardamena','Tigaki','Kefalos'],
+'zakynthos':['Zakynthos island','Laganas','Tsilivi'],
+'kefalonia':['Lassi Kefalonia','Skala Kefalonia'],
+'larnaka':['Ayia Napa','Protaras'],
+'pafos':['Coral Bay Cyprus'],
+'antalya':['Lara Antalya','Konyaalti','Kemer'],
+'sardynia-olbia':['San Teodoro','Costa Smeralda'],
+'sardynia-cagliari':['Villasimius','Pula Sardinia'],
+'faro-algarve':['Albufeira','Vilamoura','Portimao','Lagos Portugal'],
+'makarska':['Tucepi','Baska Voda'],
+'chalkidiki':['Kassandra Halkidiki','Sithonia Halkidiki'],
+'sloneczny-brzeg':['Nessebar','Sveti Vlas'],
+'warna':['Golden Sands Bulgaria','Albena'],
+'hurghada':['El Gouna','Sahl Hasheesh'],
+'szarm-el-szejk':['Naama Bay'],
+'malaga':['Torremolinos','Benalmadena','Marbella'],
+'ajaccio-korsyka':['Porticcio'],
+'nicea':['Antibes','Cannes']}
+AREA_KINDS=['hotels in %s','cheap hotels in %s','vacation rentals in %s']
+KINDS=['hotels in %s','vacation rentals in %s','hotels with free breakfast in %s','4 star hotels in %s','3 star hotels in %s','5 star hotels in %s','cheap hotels in %s','best hotels in %s city center','family hotels in %s','boutique hotels in %s','resorts in %s']
 def deep(d,ci,co):
     """Duza lista: wiele rodzajow zapytan, bez duplikatow."""
-    k=f'gh3:{d["id"]}:{ci}:{co}'
+    k=f'gh4:{d["id"]}:{ci}:{co}'
     v,_=store.get(k)
     if v: return v
-    n=ALIAS.get(d['en'],d['en']);seen={h['name']:h for h in (store.get(f'gh2:{d["id"]}:{ci}:{co}')[0] or [])}
+    n=ALIAS.get(d['en'],d['en']);seen={h['name']:h for h in (store.get(f'gh5:{d["id"]}:{ci}:{co}')[0] or [])}
     a,b=dt.date.fromisoformat(ci),dt.date.fromisoformat(co)
-    for i,kind in enumerate(KINDS):
+    Q=[kind%n for kind in KINDS]+[kind%x for x in AREAS.get(d['id'],[]) for kind in AREA_KINDS]
+    for i,qq in enumerate(Q):
         try:
-            q=query('X',ci,co).replace('hotels in X',kind%n)
+            q=query('X',ci,co).replace('hotels in X',qq)
             if not collect(d,q,ci,co,seen): break
         except Exception as e:
             log.warning('gh %s',str(e)[:120]);last['error']=str(e)[:160];break
