@@ -6,7 +6,7 @@ import { initLive, swapDay, artOf } from './live.js';
 ['gesturestart', 'gesturechange', 'gestureend'].forEach((t) => document.addEventListener(t, (e) => e.preventDefault(), { passive: false }));
 document.addEventListener('touchmove', (e) => { if (e.touches.length > 1 && !e.target.closest('.leaflet-container')) e.preventDefault(); }, { passive: false });
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '3.7.0';
+const VERSION = '3.7.1';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -1278,7 +1278,8 @@ async function viewHotels() {
       const f = S.hf;
       // Basen: najpierw hotele z potwierdzonym basenem, potem te, o których źródła nie podają wyposażenia (oznaczone)
       const poolOk = (h) => (h.amen || []).includes('basen'); const poolUnk = (h) => !(h.amen || []).filter((x) => x !== 'śniadanie w cenie').length;
-      let v = r.hotels.filter((h) => (!f.breakfast || h.breakfast) && (!f.pool || poolOk(h) || poolUnk(h)) && (!f.stars || (h.stars || 0) >= f.stars));
+      const nq = normQ(f.q || '');
+      let v = r.hotels.filter((h) => (!nq || normQ(h.name).includes(nq)) && (!f.breakfast || h.breakfast) && (!f.pool || poolOk(h) || poolUnk(h)) && (!f.stars || (h.stars || 0) >= f.stars));
       if (f.pool) v = [...v.filter(poolOk), ...v.filter((h) => !poolOk(h))];
       if (f.sort === 'cheap') v = [...v].sort((a, c) => a.bestTotal - c.bestTotal);
       if (f.sort === 'rate') v = [...v].sort((a, c) => (c.rating || 0) - (a.rating || 0) || (c.reviews || 0) - (a.reviews || 0));
@@ -1318,10 +1319,11 @@ async function viewHotels() {
         <div class="chips" style="margin-top:8px">
         <button class="chip" data-f="breakfast" aria-pressed="${f.breakfast}">Śniadanie w cenie</button><button class="chip" data-f="pool" aria-pressed="${f.pool}">Basen</button>
         ${[3, 4, 5].map((n) => `<button class="chip" data-st="${n}" aria-pressed="${f.stars === n}">${n}★${n < 5 ? '+' : ''}</button>`).join('')}</div>
+        <input id="hq" type="search" maxlength="80" placeholder="Szukaj hotelu po nazwie" value="${esc(f.q || '')}" style="margin-top:8px;width:100%;border-radius:12px;border:1px solid var(--line);padding:10px 12px;font:inherit">
         <div class="seg" style="margin-top:8px">${[['best', 'Polecane'], ['cheap', 'Najtaniej'], ['rate', 'Oceny']].map(([k, l]) => `<button data-so="${k}" aria-pressed="${f.sort === k}">${l}</button>`).join('')}</div></div>`}
       ${v.slice(0, f.limit).map(card).join('')}
       ${v.length > f.limit ? '<button class="btn ghost" id="more">Pokaż więcej hoteli</button>' : ''}
-      ${L.length && !v.length ? '<div class="note"><b>Żaden hotel nie spełnia tych filtrów.</b></div>' : ''}
+      ${L.length && !v.length ? `<div class="note"><b>${f.q ? `Na sprawdzonej liście nie ma „${esc(f.q)}”.` : 'Żaden hotel nie spełnia tych filtrów.'}</b>${f.q ? `<div class="acts"><button class="btn small" id="hqs">Znajdź „${esc(f.q)}” i sprawdź ceny</button></div>` : ''}</div>` : ''}
       <a class="btn line small lightb" target="_blank" rel="noopener" href="${url(bookingAll(o, f.breakfast))}">Szukaj też na Booking${f.breakfast ? ', ze śniadaniem' : ''}</a>
       ${L.length ? `<p class="foot">${r.rooms} ${r.rooms > 1 ? 'pokoje' : 'pokój'}, ${r.nights} nocy. ${esc(r.note || '')}</p>` : ''}</section>`;
       $('#b').onclick = S.option?.manual ? viewPlan : S.option?.plMode ? viewPLOption : viewOption;
@@ -1337,6 +1339,8 @@ async function viewHotels() {
       }; });
       $('#ownh').onclick = () => LV.viewOwnHotel(o, buildPlan, viewHotels);
       $('#lnk').onclick = () => linkHotel(o);
+      const hq = $('#hq'); if (hq) { hq.onkeydown = (e) => { if (e.key === 'Enter') hq.blur(); }; hq.onchange = () => { f.q = hq.value.trim(); f.limit = 12; draw(); }; }
+      const hqs = $('#hqs'); if (hqs) hqs.onclick = () => linkHotel(o, f.q);
       const nh = $('#noh'); if (nh) nh.onclick = () => buildPlan({ name: 'centrum: ' + o.dest.name, lat: o.dest.lat, lon: o.dest.lon, bestTotal: 0 });
       app.scrollTop = y;
       fill();
@@ -1367,13 +1371,14 @@ async function viewHotels() {
 }
 
 // Hotel z linku do oferty: nazwę i daty czytamy z linku, a hotel szukamy w naszych źródłach. Bez przepisywania danych.
-function linkHotel(o) {
+function linkHotel(o, preset) {
   const back = viewHotels;
   const page = (inner) => { app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Hotel z innej strony</h2></div><section class="page">${inner}</section>`; $('#b').onclick = back; };
   page(`<div class="wcard"><h3>Wklej link do oferty</h3><p class="mute">Booking, Agoda, Expedia, Hotels.com, Trip.com albo Google. Na Booking dotknij „Udostępnij” i „Kopiuj link”.</p>
     <textarea id="lu" rows="3" placeholder="https://www.booking.com/hotel/…"></textarea>
     <label class="lab" for="ln" style="display:block;margin-top:10px">albo nazwa hotelu</label><input id="ln" maxlength="120" placeholder="np. Hotel Panoramica Garden">
     <div class="acts"><button class="btn" id="lf">Znajdź ten hotel</button></div></div>`);
+  if (preset) { $('#ln').value = preset; setTimeout(() => $('#lf').click(), 0); }
   $('#lf').onclick = async () => {
     const u = $('#lu').value.trim(); const n = $('#ln').value.trim();
     if (!u && !n) return toast('Wklej link albo wpisz nazwę hotelu.');

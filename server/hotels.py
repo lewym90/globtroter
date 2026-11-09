@@ -199,7 +199,7 @@ def search(did,ci,co,A,C,budget=None,pref='balanced',minrating=0,kind='all',brea
 # ---------- Pelna lista noclegow sprawdzana w tle ----------
 # TripAdvisor (przez Xotelo) zna setki obiektow w kazdym miejscu, z cenami Booking.com, Agody, Trip.com i strony hotelu
 # na konkretne daty. Google Hotels dokladamy z kurortami. Ceny sprawdzamy po kolei i wynik rosnie na oczach uzytkownika.
-MAXL=1500;MAXCHK=400
+MAXL=1500;MAXCHK=1500
 HJOBS={};_hj=threading.Lock()
 def full_list(d):
     """Cala lista obiektow z TripAdvisora dla miejsca (do 1500), trzymana tydzien."""
@@ -221,7 +221,8 @@ def _guess(h): return ((h.get('price_ranges') or {}).get('minimum') or 0)*net.fx
 def _bf(h): return 'Breakfast included' in (h.get('merchandising_labels') or [])
 def _order(L,minrating,est_key=None):
     """Kolejnosc sprawdzania cen: najpierw hotel z szacunku, potem na zmiane najtansze, ze sniadaniem i najlepiej oceniane."""
-    ok=[h for h in L if ((h.get('review_summary') or {}).get('rating') or 0)>=float(minrating or 0) or not (h.get('review_summary') or {}).get('count')]
+    # Ocena tylko ustawia kolejnosc: oceny w serwisach roznia sie (3/5 na TripAdvisorze bywa 7,7/10 na Bookingu), wiec nic nie wycinamy
+    ok=sorted(L,key=lambda h:((h.get('review_summary') or {}).get('rating') or 0)<float(minrating or 0) and bool((h.get('review_summary') or {}).get('count')))
     cheap=sorted([h for h in ok if _guess(h)],key=_guess)
     bf=[h for h in ok if _bf(h)]
     best=sorted(ok,key=lambda h:-(((h.get('review_summary') or {}).get('rating') or 0)*math.log10(10+((h.get('review_summary') or {}).get('count') or 0))))
