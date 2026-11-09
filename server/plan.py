@@ -220,6 +220,19 @@ def manual(b):
         rt.append(dict(at=lv.isoformat(timespec='minutes'),title='Wyjazd do domu',text=f"Około {span(c['min'])} z postojami.",sure='est',icon='car'))
         rt.append(dict(at=add(lv,c['min']).isoformat(timespec='minutes'),title='W domu',text='',sure='est',icon='home'))
         o_drive={'km':c['km'],'min':c['min']}
+    elif mode=='plane' and b.get('flightInfo') and ha:
+        f=b['flightInfo'];L=f['flight']['out']['legs'];B=f['flight']['back']['legs']
+        dep=t(L[0]['dep']);a0=geo.AIRPORTS.get(f['from'],{})
+        drv=car_route(float(home['lat']),float(home['lon']),a0['lat'],a0['lon'],b.get('transport')) if a0 else None
+        if drv:
+            leave=add(dep,-(drv['min']+90));tl.append(dict(at=leave.isoformat(timespec='minutes'),title='Wyjazd na lotnisko',text=f"{a0.get('city','')} {f['from']}: {drv['km']} km, około {span(drv['min'])}. Na lotnisku bądź 1,5 godziny przed wylotem.",sure='est',icon='car',map=drv['map']))
+        tl.append(dict(at=L[0]['dep'],title=f"Wylot {f['from']} → {f['to']}",text=f"{L[0].get('airlineName','')} {L[0].get('airline','')} {L[0].get('no','')}".strip()+f", przylot {L[-1]['arr'][11:16]}.",sure='fact',icon='plane'))
+        tl.append(dict(at=L[-1]['arr'],title='Przylot',text=f"Do miejsca noclegu około {f['transfer']['km']} km. Komunikacja albo taksówka.",sure='est',icon='bus'))
+        rt.append(dict(at=add(t(B[0]['dep']),-90).isoformat(timespec='minutes'),title='Na lotnisku',text='1,5 godziny przed wylotem.',sure='est',icon='door'))
+        rt.append(dict(at=B[0]['dep'],title=f"Wylot {f['to']} → {f['from']}",text=f"Przylot {B[-1]['arr'][11:16]}.",sure='fact',icon='plane'))
+        if drv: rt.append(dict(at=add(t(B[-1]['arr']),30+drv['min']).isoformat(timespec='minutes'),title='W domu',text='',sure='est',icon='home'))
+        o_drive={'km':drv['km'] if drv else 0,'min':drv['min'] if drv else 0}
+        links_=[{'site':'Lot w Google Flights','url':f['url']}]
     else:
         o_drive={'km':0,'min':0}
         if mode=='train' and ha:
@@ -230,15 +243,22 @@ def manual(b):
             else: warn.append('Nie mamy rozkładu dla tej trasy. Sprawdź połączenie w linkach.')
         tl.append(dict(at=arr.isoformat(timespec='minutes'),title='Na miejscu',text=f"{mname}. Godzina, którą podałeś.",sure='check',icon='door'))
         rt.append(dict(at=lv.isoformat(timespec='minutes'),title='Wyjazd do domu',text=f"{mname}. Godzina, którą podałeś.",sure='check',icon='door'))
+    for x in b.get('extra') or []:
+        if x.get('pln'): items.append({'label':str(x['label'])[:80],'pln':round(float(x['pln'])),'est':bool(x.get('est',True))})
     c_t=float(b.get('transportCost') or 0)
     if c_t>0: items.append({'label':'Transport','pln':round(c_t),'est':False})
     if mode=='car': tl.append(dict(at=arr.isoformat(timespec='minutes'),title='Na miejscu',text='',sure='est',icon='door'))
     hc=float(b.get('hotelCost') or 0);name=str(b.get('hotel') or '').strip()[:80]
     h={'name':name or 'Nocleg do wyboru','lat':d['lat'],'lon':d['lon'],'bestTotal':round(hc) if hc>0 else None,'breakfast':False}
+    if b.get('hotelObj'): h=dict(b['hotelObj'])
     o={'id':__import__('uuid').uuid4().hex[:10],'manual':True,'mode':mode,'modeName':mname,'dest':{k:d.get(k) for k in('id','name','cc','lat','lon','tags','desc','ta')},'from':'','to':'','fromName':home.get('label','Dom'),'toName':d['name'],'dep':a.isoformat(),'ret':z.isoformat(),'nights':(z-a).days,'pax':{'adults':A,'children':C},'arrive':arr.isoformat(timespec='minutes'),'leave':lv.isoformat(timespec='minutes'),'flight':None,'links':links_,'tickets':0,'verified':True,'total':0,'access':{'mode':mode,'items':items,'total':sum(i['pln'] for i in items)},'drive':o_drive,'warnings':warn,'calendar':[]}
     o['total']=o['access']['total']
     if leave: o['leaveHome']=leave.isoformat(timespec='minutes')
-    p=finish(d,o,h,home,b.get('prefs') or {},mode,tl,rt,False,None)
+    days=None
+    if b.get('pl') and mode=='car':
+        pr=dict(b.get('prefs') or {});pr.setdefault('mix','half');pr['board']='bb' if h.get('breakfast') else 'ro'
+        days=tour_days((h['lat'],h['lon']),arr,lv,pr)
+    p=finish(d,o,h,home,b.get('prefs') or {},mode,tl,rt,False,None,days)
     return p
 def tour_days(H,arr,dep,prefs):
     """Dni wakacji z biurem: na zmiane okolica hotelu i jednodniowe wycieczki do miejsc z bazy, do tego dni odpoczynku."""

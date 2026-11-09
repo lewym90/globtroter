@@ -48,7 +48,8 @@ def spans(a,b,n=59):
     return r
 def pick_dests(q,month):
     """Zwraca kierunki do sprawdzenia i uwagi. Klimat decyduje przy wyborze stylu."""
-    t=q.get('dest',{});mode=t.get('mode','city');notes=[]
+    t=q.get('dest',{});mode=t.get('mode','city');notes=[];zone=t.get('zone')
+    POOL=[d for d in geo.DESTS if geo.in_zone(d['cc'],zone)]
     style=t.get('style') if mode!='city' else None
     ms=[month] if isinstance(month,int) else month
     def fitb(d,st):
@@ -59,18 +60,18 @@ def pick_dests(q,month):
         ds=[geo.BYID[i] for i in t.get('ids',[]) if i in geo.BYID]
         if not ds: raise ValueError('Nie znam tego miejsca')
     elif mode=='country':
-        ds=[d for d in geo.DESTS if d['cc'] in t.get('countries',[])]
+        ds=[d for d in POOL if d['cc'] in t.get('countries',[])]
         if style: ds=[d for d in ds if style in d['tags']] or ds
         if not ds: raise ValueError('Brak kierunków w tym kraju')
     else:
-        ds=[d for d in geo.DESTS if not style or style in d['tags']]
+        ds=[d for d in POOL if not style or style in d['tags']]
     scored=[]
     for d in ds:
         s,why=fitb(d,style or 'city')
         scored.append((s,d,why))
     unfit=[(d,why) for s,d,why in scored if style=='beach' and s is not None and s<0.55]
     if style=='beach' and mode!='anywhere' and unfit and len(unfit)==len(scored):
-        best=sorted([(fitb(d,'beach')[0] or 0,d) for d in geo.DESTS if 'beach' in d['tags']],key=lambda x:-x[0])[:4]
+        best=sorted([(fitb(d,'beach')[0] or 0,d) for d in POOL if 'beach' in d['tags']],key=lambda x:-x[0])[:4]
         notes.append({'kind':'climate','text':f"W tym miesiącu {unfit[0][0]['name']} nie nadaje się na plażowanie. {unfit[0][1]}.",
             'alternatives':[{'id':d['id'],'name':d['name'],'fit':climate.month(d,ms[0])} for _,d in best]})
     pool=scored

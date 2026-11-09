@@ -15,3 +15,12 @@ def km(a,b,c,d):
 def slug(s):
     s=unicodedata.normalize('NFKD',s.replace('ł','l').replace('Ł','L'))
     return re.sub(r'[^a-z0-9]+','-',s.encode('ascii','ignore').decode().lower()).strip('-')
+
+# Kafelki na starcie. Turcja i Gruzja leza na granicy kontynentow, wiec sa w obu.
+WORLD={'EG','TN','MA','CV','AE','JO','TR','GE'}
+BOTH={'TR','GE'}
+def in_zone(cc,zone):
+    if zone=='pl': return cc=='PL'
+    if zone=='world': return cc in WORLD
+    if zone=='eu': return cc!='PL' and (cc not in WORLD or cc in BOTH)
+    return True

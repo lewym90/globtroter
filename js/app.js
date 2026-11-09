@@ -3,7 +3,7 @@ import { flapRow } from './flap.js';
 import { initLive, swapDay, artOf } from './live.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '3.2.2';
+const VERSION = '3.3.0';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -39,8 +39,31 @@ const defaults = () => ({
   stay: { budget: 3000, pref: 'balanced', minRating: 4, breakfast: false, kind: 'all' },
 });
 const S = {
-  q: { ...defaults(), ...load('prefs', {}) }, step: 0, airports: [], dests: [], photos: {}, hero: [], shapes: {}, result: null, option: null, plan: null, tab: 'droga', day: 0,
+  q: { ...defaults(), ...load('prefs', {}) }, zone: load('zone', 'eu'), step: 0, airports: [], dests: [], photos: {}, hero: [], shapes: {}, result: null, option: null, plan: null, tab: 'droga', day: 0,
 };
+
+// Kafelki na starcie: Polska, Europa, poza Europą. Turcja i Gruzja leżą na granicy kontynentów, więc są w obu.
+const WORLD = ['EG', 'TN', 'MA', 'CV', 'AE', 'JO', 'TR', 'GE'];
+const inZone = (cc, z = S.zone) => (z === 'pl' ? cc === 'PL' : z === 'world' ? WORLD.includes(cc) : z === 'eu' ? cc !== 'PL' && (!WORLD.includes(cc) || cc === 'TR' || cc === 'GE') : true);
+const zoneOf = (cc) => (cc === 'PL' ? 'pl' : WORLD.includes(cc) && cc !== 'TR' && cc !== 'GE' ? 'world' : 'eu');
+const ZD = () => S.dests.filter((d) => inZone(d.cc));
+const isPL = () => S.zone === 'pl';
+function setZone(z) {
+  const q = S.q; q.destZ ||= {};
+  if (q.dest) q.destZ[S.zone] = q.dest;
+  S.zone = z; save('zone', z);
+  q.dest = q.destZ[z] || { mode: z === 'pl' ? 'style' : 'city', ids: [], countries: [], style: null };
+  q.dest.zone = z;
+  q.dest.ids = (q.dest.ids || []).filter((i) => { const d = S.dests.find((x) => x.id === i); return !d || inZone(d.cc, z); });
+  save('prefs', q);
+}
+function openDest(id) {
+  const d = S.dests.find((x) => x.id === id); if (!d) return;
+  setZone(zoneOf(d.cc));
+  S.q.dest = { mode: 'city', ids: [id], countries: [], style: null, zone: S.zone }; save('prefs', S.q);
+  viewFly();
+}
+const goForm = () => viewFly();
 
 let backKey = '';
 function setBackdrop(opts) {
@@ -119,21 +142,24 @@ const I = {
   share: SV('<circle cx="6" cy="12" r="2.500"/><circle cx="18" cy="6" r="2.500"/><circle cx="18" cy="18" r="2.500"/><path d="M8 11l8-4M8 13l8 4"/>'),
   dots: SV('<circle cx="12" cy="5" r="1.300" fill="currentColor"/><circle cx="12" cy="12" r="1.300" fill="currentColor"/><circle cx="12" cy="19" r="1.300" fill="currentColor"/>'),
   bulb: SV('<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.500 11c.7.600 1 1.300 1 2h5c0-.7.300-1.400 1-2A6 6 0 0 0 12 3z"/>'),
+  train: SV('<rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M8 21l2-4M16 21l-2-4"/><circle cx="8.500" cy="14" r=".9" fill="currentColor"/><circle cx="15.500" cy="14" r=".9" fill="currentColor"/>'),
   walk: SV('<circle cx="13" cy="4.500" r="1.800" fill="currentColor"/><path d="M9 21l2-6-2-3 1-5 3 1 2 3h3M11 15l3 2 1 4M10 7l-3 3v3"/>'),
   fork: SV('<path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M17 3c-2 1-3 4-3 8h3v10"/>'),
   car: SV('<path d="M4 16v-3l2-5h12l2 5v3zM4 16v2M20 16v2"/><circle cx="7.500" cy="13.500" r=".8" fill="currentColor"/><circle cx="16.500" cy="13.500" r=".8" fill="currentColor"/>'),
   sum: SV('<rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/>'),
 };
-const tabbar = (act) => `<nav class="tabbar" aria-label="Główna nawigacja">${[['home', 'Start', I.home, viewHome], ['trips', 'Podróże', I.cal, viewTrips], ['insp', 'Inspiracje', I.star, viewInspire], ['tours', 'Biura', I.bag, viewTours], ['fav', 'Ulubione', I.heart, viewFav], ['prof', 'Profil', I.user, viewProfile]].map(([k, l, ic]) => `<button data-nav="${k}" class="${act === k ? 'on' : ''}">${ic}<span>${l}</span></button>`).join('')}</nav>`;
+const tabbar = (act) => `<nav class="tabbar" aria-label="Główna nawigacja">${[['home', 'Start', I.home, viewHome], ['trips', 'Podróże', I.cal, viewTrips], ['insp', 'Inspiracje', I.star, viewInspire], ['fav', 'Ulubione', I.heart, viewFav], ['prof', 'Profil', I.user, viewProfile]].map(([k, l, ic]) => `<button data-nav="${k}" class="${act === k ? 'on' : ''}">${ic}<span>${l}</span></button>`).join('')}</nav>`;
 const NAV = () => ({ home: viewHome, trips: viewTrips, insp: viewInspire, tours: viewTours, fav: viewFav, prof: viewProfile });
 const bindNav = () => $$('[data-nav]').forEach((b) => { b.onclick = () => NAV()[b.dataset.nav](); });
-const CN_ = { beach: 'plaża', city: 'zwiedzanie', ski: 'narty', nature: 'przyroda', party: 'imprezy', family: 'z rodziną', food: 'jedzenie', romance: 'we dwoje' };
+const CN_ = { beach: 'plaża', city: 'zwiedzanie', ski: 'narty', nature: 'przyroda', party: 'imprezy', family: 'z rodziną', food: 'jedzenie', romance: 'we dwoje', lake: 'jeziora', spa: 'uzdrowisko i spa' };
+const CN_PL = { beach: 'morze', city: 'miasto', ski: 'góry i narty', nature: 'przyroda', family: 'z rodziną', romance: 'we dwoje', lake: 'jeziora', spa: 'uzdrowisko i spa' };
 function destLabel() {
   const t = S.q.dest;
   if (t.mode === 'city') { const n = t.ids.map((i) => S.dests.find((d) => d.id === i)?.name).filter(Boolean); return n.length ? n.join(', ') : 'Wybierz miejsce'; }
   if (t.mode === 'country') return t.countries.length ? t.countries.join(', ') + (t.style ? `, ${CN_[t.style]}` : '') : 'Wybierz kraj';
-  if (t.mode === 'style') return `Styl: ${CN_[t.style] || 'wybierz'}`;
-  return 'Gdziekolwiek' + (t.style ? `, ${CN_[t.style]}` : '');
+  const cn = isPL() ? CN_PL : CN_;
+  if (t.mode === 'style') return `${isPL() ? '' : 'Styl: '}${cn[t.style] ? cn[t.style][0].toUpperCase() + cn[t.style].slice(1) : 'wybierz'}${isPL() && S.q.maxHours ? `, do ${S.q.maxHours} h jazdy` : ''}`;
+  return (isPL() ? 'Cała Polska' : 'Gdziekolwiek') + (t.style ? `, ${cn[t.style]}` : '') + (isPL() && S.q.maxHours ? `, do ${S.q.maxHours} h jazdy` : '');
 }
 function whenLabel() {
   const w = S.q.when;
@@ -156,51 +182,70 @@ function closeModal() {
   const m = S.modal; S.modal = null;
   $('#modal')?.remove();
   save('prefs', S.q);
-  if (m?.then) m.then(); else viewHome();
+  if (m?.then) m.then(); else goForm();
 }
 
-/* ---------- Start ---------- */
+/* ---------- Start: kafelki ---------- */
+const ZT = [['pl', 'art/e/polska.jpg', 'W Polsce', 'Autem, pociągiem albo samolotem'], ['eu', 'art/e/europa.jpg', 'Europa', 'Loty, noclegi i plan zwiedzania'], ['world', 'art/e/swiat.jpg', 'Poza Europą', 'Egipt, Tunezja, Maroko, Emiraty i więcej'], ['tours', 'art/e/biura.jpg', 'Z biurem podróży', 'Oferty biur i porównanie z wyjazdem samemu']];
 function viewHome() {
   if (S.reloadLater) { S.reloadLater = false; freshReload(); }
-  const h = heroNow();
-  setBackdrop({ photo: h?.src, dim: true, strip: true });
-  const s = S.q;
-  const field = (id, ic, lab, val, cls = '') => `<button class="fld ${cls}" id="${id}">${ic}<span><small>${lab}</small><b>${esc(val)}</b></span>${cls.includes('wide') ? SV('<path d="M6 9l6 6 6-6"/>', 'class="chev"') : ''}</button>`;
+  setBackdrop({ photo: heroNow()?.src, dim: true, strip: true });
   const soon = load('trips', []).find((t) => t.option.dep >= new Date().toISOString().slice(0, 10));
+  const last = load('last', null);
   app.innerHTML = `<section class="home">
     <header class="hd"><img src="icons/logo-96.png" alt="" width="56" height="56"><div><strong>Globtroter</strong><span>Twój kompleksowy plan podróży</span></div>
       <button class="ico" id="bell" aria-label="Najbliższa podróż">${I.bell}${soon ? '<i></i>' : ''}</button><button class="ico" id="burger" aria-label="Menu">${I.menu}</button></header>
-    <div class="headline"><h1>Zaplanuj idealne wakacje od <em>A do Z</em></h1>
-      <p>Loty · Noclegi · Plan zwiedzania · Gastronomia · Logistyka</p></div>
+    <div class="headline"><h1>Dokąd <em>jedziemy?</em></h1><p>Dojazd · Noclegi · Plan zwiedzania · Gastronomia</p></div>
+    <div class="ztiles">${ZT.map(([k, img, t, sub]) => `<button class="ztile" data-z="${k}"><img src="${img}" alt="" loading="lazy"><span><b>${t}</b><small>${sub}</small></span></button>`).join('')}</div>
+    ${last && Date.now() - last.t < 6 * 36e5 ? '<button class="lastr" id="lastr">Wróć do ostatnich wyników</button>' : ''}
+  </section>${tabbar('home')}`;
+  $$('[data-z]').forEach((b) => { b.onclick = () => { const z = b.dataset.z; if (z === 'tours') return viewTours(); setZone(z); viewFly(); }; });
+  $('#bell').onclick = () => (soon ? viewTrips() : toast('Nie masz jeszcze zaplanowanej podróży.'));
+  $('#burger').onclick = viewProfile;
+  const lr = $('#lastr'); if (lr) lr.onclick = () => { const l = load('last'); S.result = l.result; S.q = l.q; if (l.zone) S.zone = l.zone; viewResults(); };
+  bindNav();
+  app.scrollTop = 0;
+}
+/* ---------- Formularz jednej części: Polska, Europa albo poza Europą ---------- */
+function viewFly() {
+  const h = heroNow();
+  setBackdrop({ photo: h?.src, dim: true, strip: true });
+  S.q.dest.zone = S.zone;
+  const s = S.q;
+  const ZH = { pl: ['Wyjazd <em>w Polsce</em>', 'Dojazd autem, pociągiem i samolotem · Noclegi · Plan dnia'], eu: ['Wakacje <em>w Europie</em>', 'Loty · Noclegi · Plan zwiedzania · Gastronomia'], world: ['Wakacje <em>poza Europą</em>', 'Loty · Noclegi · Plan zwiedzania · Gastronomia'] }[S.zone];
+  const tr = s.transport;
+  const field = (id, ic, lab, val, cls = '') => `<button class="fld ${cls}" id="${id}">${ic}<span><small>${lab}</small><b>${esc(val)}</b></span>${cls.includes('wide') ? SV('<path d="M6 9l6 6 6-6"/>', 'class="chev"') : ''}</button>`;
+  app.innerHTML = `<section class="home">
+    <header class="hd"><button class="round" id="zb" aria-label="Wstecz">${ICON.back}</button><div><strong>${{ pl: 'W Polsce', eu: 'Europa', world: 'Poza Europą' }[S.zone]}</strong><span>Globtroter</span></div></header>
+    <div class="headline"><h1>${ZH[0]}</h1><p>${ZH[1]}</p></div>
     <div class="form">
-      <div class="say"><input id="say" maxlength="400" placeholder="Np. 5 dni w Rzymie, 2 osoby" aria-label="Opisz wyjazd jednym zdaniem"><button id="sayb" aria-label="Uzupełnij formularz">${I.search}</button></div>
-      ${field('f-dest', I.pin, 'Dokąd chcesz lecieć?', destLabel(), 'wide')}
+      <div class="say"><input id="say" maxlength="400" placeholder="${isPL() ? 'Np. święta we dwoje w górach' : 'Np. 5 dni w Rzymie, 2 osoby'}" aria-label="Opisz wyjazd jednym zdaniem"><button id="sayb" aria-label="Uzupełnij formularz">${I.search}</button></div>
+      ${field('f-dest', I.pin, isPL() ? 'Dokąd jedziesz?' : 'Dokąd chcesz lecieć?', destLabel(), 'wide')}
       <div class="two">${field('f-when', I.cal, 'Kiedy?', whenLabel())}${field('f-pax', I.people, 'Ile osób?', paxLabel())}</div>
-      <div class="two">${field('f-bud', I.filter, 'Budżet na nocleg', `do ${zl(s.stay.budget)}`)}${field('f-std', I.bed, 'Standard noclegu', stayLabel())}</div>
+      ${isPL() ? `<div class="two">${field('f-car', I.car, 'Twoje auto', `${String(tr.consumption).replace('.', ',')} l, ${String(tr.fuelPrice).replace('.', ',')} zł/l`)}${field('f-std', I.bed, 'Standard noclegu', stayLabel())}</div>`
+    : `<div class="two">${field('f-bud', I.filter, 'Budżet na nocleg', `do ${zl(s.stay.budget)}`)}${field('f-std', I.bed, 'Standard noclegu', stayLabel())}</div>`}
       <button class="cta" id="go">${I.search}Zaplanuj podróż</button>
       <p class="from"><button id="f-from">${I.pin}Start: ${esc(s.origin?.label || 'ustaw miejsce wyjazdu')}</button><button id="f-more">Więcej opcji</button></p>
-      ${load('last', null) && Date.now() - load('last').t < 6 * 36e5 ? '<button class="lastr" id="lastr">Wróć do ostatnich wyników</button>' : ''}
     </div>
-    <div class="feats">${[['insp', I.plane, 'Najlepsze<br>loty'], ['insp', I.bed, 'Sprawdzone<br>noclegi'], ['trips', I.cal, 'Szczegółowy<br>plan dnia'], ['insp', I.pin, 'Zwiedzanie<br>i atrakcje']].map(([k, ic, l]) => `<button data-nav="${k}"><i>${ic}</i><span>${l}</span></button>`).join('')}</div>
+    <div class="feats">${(isPL() ? [['insp', I.car, 'Auto, pociąg<br>i samolot'], ['insp', I.bed, 'Sprawdzone<br>noclegi'], ['trips', I.cal, 'Szczegółowy<br>plan dnia'], ['insp', I.pin, 'Co zobaczyć<br>w okolicy']] : [['insp', I.plane, 'Najlepsze<br>loty'], ['insp', I.bed, 'Sprawdzone<br>noclegi'], ['trips', I.cal, 'Szczegółowy<br>plan dnia'], ['insp', I.pin, 'Zwiedzanie<br>i atrakcje']]).map(([k, ic, l]) => `<button data-nav="${k}"><i>${ic}</i><span>${l}</span></button>`).join('')}</div>
   </section>${tabbar('home')}`;
+  $('#zb').onclick = viewHome;
+  const fc = $('#f-car'); if (fc) fc.onclick = () => openStep(4);
   const need = (fn) => () => { fn(); };
-  const say = async () => { const t = $('#say').value.trim(); if (!t) return; toast('Czytam…'); try { const did = await LV.askSentence(t); if (!did.length) return toast('Nie wyłapałem szczegółów. Wybierz je niżej.'); viewHome(); toast(`Uzupełnione: ${did.join(', ')}. Sprawdź i szukaj.`); } catch (e) { toast(e.message); } };
+  const say = async () => { const t = $('#say').value.trim(); if (!t) return; toast('Czytam…'); try { const did = await LV.askSentence(t); if (!did.length) return toast('Nie wyłapałem szczegółów. Wybierz je niżej.'); if (S.q.dest?.ids?.length) { const d0 = S.dests.find((x) => x.id === S.q.dest.ids[0]); if (d0 && !inZone(d0.cc)) { const keep = S.q.dest; setZone(zoneOf(d0.cc)); S.q.dest = { ...keep, zone: S.zone }; } } viewFly(); toast(`Uzupełnione: ${did.join(', ')}. Sprawdź i szukaj.`); } catch (e) { toast(e.message); } };
   $('#sayb').onclick = say; $('#say').onkeydown = (e) => { if (e.key === 'Enter') say(); };
   $('#f-dest').onclick = need(() => openStep(1));
   $('#f-when').onclick = need(() => openStep(2));
   $('#f-pax').onclick = need(() => openStep(3));
-  $('#f-bud').onclick = $('#f-std').onclick = need(() => openStep(5));
+  $$('#f-bud, #f-std').forEach((x) => { x.onclick = need(() => openStep(5)); });
   $('#f-from').onclick = need(() => openStep(0));
   $('#f-more').onclick = () => { S.step = 0; viewWizard(); };
-  $('#bell').onclick = () => (soon ? viewTrips() : toast('Nie masz jeszcze zaplanowanej podróży.'));
-  $('#burger').onclick = viewProfile;
   $('#go').onclick = () => {
     const t = S.q.dest;
     if ((t.mode === 'city' && !t.ids.length) || (t.mode === 'country' && !t.countries.length) || (t.mode === 'style' && !t.style)) return openStep(1);
-    if (!S.q.origin) return openStep(0, () => { if (S.q.origin) viewSearch(); else viewHome(); });
+    if (!S.q.origin) return openStep(0, () => { if (S.q.origin) viewSearch(); else viewFly(); });
     viewSearch();
   };
-  const lr = $('#lastr'); if (lr) lr.onclick = () => { const l = load('last'); S.result = l.result; S.q = l.q; viewResults(); };
   bindNav();
   app.scrollTop = 0;
 }
@@ -255,12 +300,14 @@ async function viewTours() {
       <label>Wylot z<select id="tor"><option value="">Dowolne lotnisko</option>${M.origins.map(([c, n]) => `<option value="${c}" ${c === tq.origin ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
       <button class="btn" id="tgo">${I.search} Pokaż oferty</button>
       <p class="hint">Sprawdzam ${M.ops.length} biur: ${M.ops.map((o) => esc(o.name)).join(', ')}.</p>
+      <button class="btn line small" id="town">Mam już wykupione wakacje: ułóż plan</button>
     </div>
     <div id="tres">${S.tres && S.tres.key === JSON.stringify([tq.cc, tq.ym, tq.origin]) ? '' : `<div class="wcard emptyc"><img src="art/e/biura.jpg" alt="" onerror="this.remove()"><h3>Wybierz kraj i miesiąc</h3><p>Pokażę oferty wszystkich biur razem, od najtańszej. Każda prowadzi prosto do tej oferty na stronie biura.</p></div>`}</div>
     <div id="tmore"></div>`;
   const read = () => { tq.cc = $('#tcc').value; tq.ym = $('#tym').value; tq.origin = $('#tor').value || null; save('tq', tq); };
   ['#tcc', '#tym', '#tor'].forEach((k) => { $(k).onchange = read; });
   $('#tgo').onclick = () => { read(); toursSearch(); };
+  $('#town').onclick = async () => { await data().catch(() => {}); LV.viewTour(); };
   if (S.tres && S.tres.key === JSON.stringify([tq.cc, tq.ym, tq.origin])) drawTours(); else drawOthers();
   app.scrollTop = 0;
 }
@@ -362,22 +409,26 @@ function destCard(d, m) {
 }
 function bindDest() {
   $$('[data-h2]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); toggleFav(b.dataset.h2); b.classList.toggle('on'); }; });
-  $$('[data-dest]').forEach((b) => { b.onclick = () => { S.q.dest = { mode: 'city', ids: [b.dataset.dest], countries: [], style: null }; save('prefs', S.q); viewHome(); }; });
+  $$('[data-dest]').forEach((b) => { b.onclick = () => openDest(b.dataset.dest); });
 }
 function viewInspire() {
   const m = S.q.when.mode === 'month' ? S.q.when.month : new Date().getMonth() + 1;
   S.ins = S.ins || 'city'; S.insMode = S.insMode || 'month';
   setBackdrop({ photo: heroNow()?.src, dim: true, strong: true });
-  const seg = `<div class="seg insseg">${[['month', 'Na ten miesiąc'], ['guide', 'Przewodnik']].map(([k, l]) => `<button data-im="${k}" aria-pressed="${S.insMode === k}">${l}</button>`).join('')}</div>`;
+  if (S.insZone === undefined) S.insZone = S.zone || '';
+  const seg = `<div class="seg insseg">${[['month', 'Na ten miesiąc'], ['guide', 'Przewodnik']].map(([k, l]) => `<button data-im="${k}" aria-pressed="${S.insMode === k}">${l}</button>`).join('')}</div>
+   <div class="pills">${[['', 'Wszędzie'], ['pl', 'Polska'], ['eu', 'Europa'], ['world', 'Poza Europą']].map(([k, l]) => `<button data-iz="${k}" class="${S.insZone === k ? 'on' : ''}">${l}</button>`).join('')}</div>`;
   if (S.insMode === 'guide') { guideList(seg); return; }
-  const L = S.dests.map((d) => [fitOf(d, m, S.ins), d]).filter(([, d]) => S.ins === 'city' ? d.tags.includes('city') : d.tags.includes(S.ins)).sort((a, b) => b[0] - a[0]).slice(0, 12).map(([, d]) => d);
+  const IP = S.insZone === 'pl' ? [['city', 'Miasta'], ['beach', 'Morze'], ['ski', 'Góry'], ['lake', 'Jeziora'], ['spa', 'Uzdrowiska'], ['nature', 'Przyroda']] : [['city', 'Zwiedzanie'], ['beach', 'Plaża'], ['ski', 'Narty'], ['nature', 'Przyroda'], ['food', 'Jedzenie']];
+  if (!IP.some(([k]) => k === S.ins)) S.ins = 'city';
+  const L = S.dests.filter((d) => !S.insZone || inZone(d.cc, S.insZone)).map((d) => [S.insZone === 'pl' ? (d.links || 0) / 1000 : fitOf(d, m, S.ins), d]).filter(([, d]) => S.ins === 'city' ? d.tags.includes('city') : d.tags.includes(S.ins)).sort((a, b) => b[0] - a[0]).slice(0, 12).map(([, d]) => d);
   app.innerHTML = `<section class="tabpage">${pageTop('Inspiracje', `Najlepsze miejsca na ${MONTHS[m - 1]}. Zdjęcia zmieniają się codziennie o 8:00.`)}${seg}
-   <div class="pills">${[['city', 'Zwiedzanie'], ['beach', 'Plaża'], ['ski', 'Narty'], ['nature', 'Przyroda'], ['food', 'Jedzenie']].map(([k, l]) => `<button data-i="${k}" class="${S.ins === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+   <div class="pills">${IP.map(([k, l]) => `<button data-i="${k}" class="${S.ins === k ? 'on' : ''}">${l}</button>`).join('')}</div>
    <div class="grid">${L.map((d) => destCard(d, m)).join('')}</div></section>${tabbar('insp')}`;
   $$('[data-i]').forEach((b) => { b.onclick = () => { S.ins = b.dataset.i; viewInspire(); }; });
   bindIns(); bindDest(); bindNav(); app.scrollTop = 0;
 }
-function bindIns() { $$('[data-im]').forEach((b) => { b.onclick = () => { S.insMode = b.dataset.im; viewInspire(); }; }); }
+function bindIns() { $$('[data-im]').forEach((b) => { b.onclick = () => { S.insMode = b.dataset.im; viewInspire(); }; }); $$('[data-iz]').forEach((b) => { b.onclick = () => { S.insZone = b.dataset.iz; viewInspire(); }; }); }
 async function countriesInfo() { return S.cinfo ||= await (await fetch('data/countries.json')).json().catch(() => ({})); }
 const normQ = (s) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l');
 async function guideList(seg) {
@@ -385,7 +436,7 @@ async function guideList(seg) {
   const cn = (cc) => C[cc]?.name || cc;
   const draw = () => {
     const q = normQ(S.gq || '');
-    const L = S.dests.filter((d) => !q || normQ(d.name).includes(q) || normQ(d.en || '').includes(q) || normQ(cn(d.cc)).includes(q));
+    const L = S.dests.filter((d) => !S.insZone || inZone(d.cc, S.insZone)).filter((d) => !q || normQ(d.name).includes(q) || normQ(d.en || '').includes(q) || normQ(cn(d.cc)).includes(q));
     const by = {}; L.forEach((d) => { (by[d.cc] ||= []).push(d); });
     const groups = Object.entries(by).sort((a, b) => cn(a[0]).localeCompare(cn(b[0]), 'pl'));
     $('#gl').innerHTML = groups.length ? groups.map(([cc, ds]) => `<h3 class="gh">${esc(cn(cc))}</h3><div class="glist">${ds.sort((a, b) => a.name.localeCompare(b.name, 'pl')).map((d) => { const p = photoOf(d.id, 240); const p2 = photoOf(d.id, 240, 1); return `<button class="gitem" data-g="${d.id}">${p ? IMG(p.src, '', '', p2 && p2.src !== p.src ? p2.src : '') : `<span class="gph">${I.pin}</span>`}<span><b>${esc(d.name)}</b><small>${d.tags.includes('beach') ? 'plaża' : ''}${d.tags.includes('city') ? `${d.tags.includes('beach') ? ', ' : ''}zwiedzanie` : ''}${d.tags.includes('ski') ? 'narty' : ''}</small></span></button>`; }).join('')}</div>`).join('') : '<p class="hint">Nic nie pasuje. Spróbuj inną nazwę.</p>';
@@ -438,12 +489,12 @@ async function viewGuide(id) {
   const fv = favs().includes(d.id);
   $('.page').innerHTML = `${p ? `<div class="ghero">${IMG(p.src, d.name)}</div>` : ''}
     <div class="wcard"><h3>${esc(d.name)}${ci ? `, ${esc(ci.name)}` : ''}</h3>${d.desc ? `<p>${esc(d.desc)}</p>` : ''}
-      <div class="linkset"><button class="btn small" id="gfl">${I.plane} Szukaj lotów tutaj</button><button class="btn line small" id="gto">Oferty biur</button><button class="btn line small" id="gtw">Wakacje z biurem</button><button class="btn line small" id="gfv">${I.heart} ${fv ? 'W ulubionych' : 'Do ulubionych'}</button></div></div>
+      <div class="linkset"><button class="btn small" id="gfl">${d.cc === 'PL' ? `${I.car} Zaplanuj wyjazd tutaj` : `${I.plane} Szukaj lotów tutaj`}</button><button class="btn line small" id="gto">Oferty biur</button><button class="btn line small" id="gtw">Wakacje z biurem</button><button class="btn line small" id="gfv">${I.heart} ${fv ? 'W ulubionych' : 'Do ulubionych'}</button></div></div>
     ${A.length ? `<div class="wcard"><h3>Atrakcje (${A.length})</h3><div class="dmap" id="gmap"></div><div id="ga"></div></div>` : '<div class="wcard"><p class="hint">Atrakcje dla tego miejsca jeszcze się zbierają.</p></div>'}
     ${R.length ? `<div class="wcard"><h3>Restauracje</h3>${R.map((r) => `<div class="kv"><span>${esc(r.n)}${r.c ? `<br><small>${esc(r.c.replace(/_/g, ' ').replace(/;/g, ', '))}</small>` : ''}</span><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${r.n}, ${d.en || d.name}`)}" target="_blank" rel="noopener">mapa</a></div>`).join('')}<p class="hint">Restauracje z OpenStreetMap. Godziny i opinie sprawdź w mapach.</p></div>` : ''}
     ${climate}${prac}`;
   if (A.length) { draw(); drawGuideMap($('#gmap'), A.slice(0, 60)); }
-  $('#gfl').onclick = () => { S.q.dest = { mode: 'city', ids: [d.id], countries: [], style: null }; save('prefs', S.q); viewHome(); };
+  $('#gfl').onclick = () => openDest(d.id);
   $('#gto').onclick = () => { S.tq = { ...(S.tq || {}), cc: d.cc }; save('tq', S.tq); S.tres = null; viewTours(); };
   $('#gtw').onclick = async () => { await data().catch(() => {}); LV.viewTour({ hq: '', hotel: null }); };
   $('#gfv').onclick = () => { toggleFav(d.id); viewGuide(id); };
@@ -499,7 +550,7 @@ function backdropForStep() {
 function viewWizard() {
   backdropForStep();
   app.innerHTML = `<section class="wiz">${wizTop()}<div class="sheet" id="sheet"></div></section>`;
-  $('#back').onclick = () => { if (S.step > 0) { S.step--; viewWizard(); } else viewHome(); };
+  $('#back').onclick = () => { if (S.step > 0) { S.step--; viewWizard(); } else goForm(); };
   STEPS[S.step]($('#sheet'));
   app.scrollTop = 0;
 }
@@ -511,10 +562,10 @@ function stepFrom(el) {
   const draw = () => {
     const near = q.origin ? S.airports.filter((a) => !['BY', 'RU', 'UA'].includes(a.cc)).map((a) => ({ ...a, d: km(q.origin.lat, q.origin.lon, a.lat, a.lon) }))
       .filter((a) => (a.cc === 'PL' && a.d < Math.max(q.radius, 700)) || (a.d < q.radius && a.large)).sort((a, b) => a.d - b.d).slice(0, 16) : [];
-    el.innerHTML = `<h1>Skąd startujesz?</h1><p class="sub">Porównamy wszystkie lotniska w zasięgu, razem z dojazdem i parkingiem.</p>
+    el.innerHTML = `<h1>Skąd startujesz?</h1><p class="sub">${isPL() ? 'Od tego miejsca policzymy trasę autem, pociąg i najbliższe lotniska.' : 'Porównamy wszystkie lotniska w zasięgu, razem z dojazdem i parkingiem.'}</p>
     <div class="field"><button class="btn line" id="gps">Użyj mojej lokalizacji</button></div>
     <div class="field"><label for="city">albo wpisz miasto</label><input id="city" type="search" autocomplete="off" placeholder="np. Lublin" value="${esc(q.origin?.label || '')}"><div class="list" id="hits"></div></div>
-    ${q.origin ? `<div class="field"><span class="lab">Zasięg lotnisk</span><div class="seg" id="rad">${[[300, '300 km'], [450, '450 km'], [700, '700 km']].map(([v, l]) => `<button data-v="${v}" aria-pressed="${q.radius === v}">${l}</button>`).join('')}</div>
+    ${q.origin && !isPL() ? `<div class="field"><span class="lab">Zasięg lotnisk</span><div class="seg" id="rad">${[[300, '300 km'], [450, '450 km'], [700, '700 km']].map(([v, l]) => `<button data-v="${v}" aria-pressed="${q.radius === v}">${l}</button>`).join('')}</div>
     <p class="hint">Znalezione lotniska: ${near.map((a) => a.iata).join(', ')}</p></div>` : ''}
     ${navBtns('Dalej', !!q.origin)}`;
     $('#gps').onclick = gps;
@@ -557,34 +608,38 @@ function stepFrom(el) {
   draw();
 }
 
+const STYLES_PL = [['beach', 'Morze'], ['ski', 'Góry i narty'], ['lake', 'Jeziora'], ['spa', 'Uzdrowisko i spa'], ['city', 'Miasto'], ['nature', 'Przyroda'], ['romance', 'We dwoje'], ['family', 'Z rodziną']];
 function stepWhere(el) {
   const t = S.q.dest;
-  const countries = [...new Map(S.dests.map((d) => [d.cc, d])).keys()];
+  const countries = [...new Map(ZD().map((d) => [d.cc, d])).keys()];
   const CN = { IT: 'Włochy', ES: 'Hiszpania', PT: 'Portugalia', FR: 'Francja', GB: 'Wielka Brytania', IE: 'Irlandia', IS: 'Islandia', NL: 'Holandia', BE: 'Belgia', DE: 'Niemcy', CH: 'Szwajcaria', AT: 'Austria', CZ: 'Czechy', HU: 'Węgry', SK: 'Słowacja', SI: 'Słowenia', HR: 'Chorwacja', ME: 'Czarnogóra', BA: 'Bośnia', RS: 'Serbia', AL: 'Albania', MK: 'Macedonia', GR: 'Grecja', CY: 'Cypr', MT: 'Malta', TR: 'Turcja', BG: 'Bułgaria', RO: 'Rumunia', MD: 'Mołdawia', NO: 'Norwegia', SE: 'Szwecja', DK: 'Dania', FI: 'Finlandia', EE: 'Estonia', LV: 'Łotwa', LT: 'Litwa', PL: 'Polska', GE: 'Gruzja', MA: 'Maroko', EG: 'Egipt', TN: 'Tunezja', AE: 'Emiraty Arabskie', JO: 'Jordania', CV: 'Zielony Przylądek' };
   const TP = { beach: 'split', city: 'rzym', ski: 'zermatt', nature: 'madera-funchal', party: 'ibiza', family: 'palma-de-mallorca', food: 'bolonia', romance: 'wenecja' };
-  const tiles = () => `<div class="tiles">${STYLES.map(([k, l]) => { return `<button class="tile" data-style="${k}" aria-pressed="${t.style === k}">${IMG(`art/style/${k}.jpg`, '')}<b>${l}</b></button>`; }).join('')}</div>`;
+  const tiles = () => `<div class="tiles">${(isPL() ? STYLES_PL : STYLES).map(([k, l]) => { return `<button class="tile" data-style="${k}" aria-pressed="${t.style === k}">${IMG(`art/style/${k}.jpg`, '')}<b>${l}</b></button>`; }).join('')}</div>`;
   const draw = () => {
     let body = '';
-    if (t.mode === 'city') body = `<div class="field"><label for="p">Miejsce</label><input id="p" type="search" autocomplete="off" placeholder="np. Barcelona"><div class="list" id="hits"></div><div class="chips" id="sel" style="margin-top:10px">${t.ids.map((i) => `<button class="chip" aria-pressed="true" data-rm="${i}">${esc(S.dests.find((d) => d.id === i)?.name)} ×</button>`).join('')}</div><p class="hint">Możesz dodać kilka miejsc i porównać.</p></div>`;
+    if (t.mode === 'city') body = `<div class="field"><label for="p">Miejsce</label><input id="p" type="search" autocomplete="off" placeholder="${isPL() ? 'np. Sopot' : 'np. Barcelona'}"><div class="list" id="hits"></div><div class="chips" id="sel" style="margin-top:10px">${t.ids.map((i) => `<button class="chip" aria-pressed="true" data-rm="${i}">${esc(S.dests.find((d) => d.id === i)?.name)} ×</button>`).join('')}</div><p class="hint">Możesz dodać kilka miejsc i porównać.</p></div>`;
     if (t.mode === 'country') body = `<div class="field"><span class="lab">Kraj</span><div class="chips">${countries.map((c) => `<button class="chip" data-c="${c}" aria-pressed="${t.countries.includes(c)}">${CN[c] || c}</button>`).join('')}</div></div><div class="field"><span class="lab">Po co jedziesz? (opcjonalnie)</span>${tiles()}</div>`;
     if (t.mode === 'style') body = `<div class="field">${tiles()}</div>`;
-    if (t.mode === 'anywhere') body = `<div class="field"><p>Sprawdzimy kilkanaście najlepszych miejsc na ten termin i pokażemy, gdzie polecisz najtaniej.</p></div><div class="field"><span class="lab">Klimat wyjazdu (opcjonalnie)</span>${tiles()}</div>`;
-    el.innerHTML = `<h1>Dokąd?</h1><p class="sub">Znasz cel albo tylko wiesz, na co masz ochotę.</p>
-      <div class="field seg" id="md">${[['city', 'Miejsce'], ['country', 'Kraj'], ['style', 'Styl'], ['anywhere', 'Gdziekolwiek']].map(([k, l]) => `<button data-m="${k}" aria-pressed="${t.mode === k}">${l}</button>`).join('')}</div>${body}
+    if (t.mode === 'anywhere') body = isPL() ? `<div class="field"><p>Sprawdzimy najciekawsze miejsca w Polsce w Twoim zasięgu i porównamy koszt dojazdu i noclegu.</p></div><div class="field"><span class="lab">Klimat wyjazdu (opcjonalnie)</span>${tiles()}</div>` : `<div class="field"><p>Sprawdzimy kilkanaście najlepszych miejsc na ten termin i pokażemy, gdzie polecisz najtaniej.</p></div><div class="field"><span class="lab">Klimat wyjazdu (opcjonalnie)</span>${tiles()}</div>`;
+    const hrs = isPL() && t.mode !== 'city' ? `<div class="field"><span class="lab">Ile najwyżej jazdy autem w jedną stronę?</span><div class="seg" id="mh">${[[2, '2 h'], [3, '3 h'], [4, '4 h'], [6, '6 h'], [0, 'Bez limitu']].map(([v, l]) => `<button data-h="${v}" aria-pressed="${(S.q.maxHours || 0) === v}">${l}</button>`).join('')}</div></div>` : '';
+    el.innerHTML = `<h1>Dokąd?</h1><p class="sub">${isPL() ? 'Znasz cel albo tylko wiesz, czego szukasz.' : 'Znasz cel albo tylko wiesz, na co masz ochotę.'}</p>
+      <div class="field seg" id="md">${(isPL() ? [['city', 'Miejsce'], ['style', 'Styl'], ['anywhere', 'Cała Polska']] : [['city', 'Miejsce'], ['country', 'Kraj'], ['style', 'Styl'], ['anywhere', 'Gdziekolwiek']]).map(([k, l]) => `<button data-m="${k}" aria-pressed="${t.mode === k}">${l}</button>`).join('')}</div>${body}${hrs}
       ${navBtns('Dalej', valid())}`;
     $$('#md button').forEach((b) => { b.onclick = () => { t.mode = b.dataset.m; if (t.mode === 'city') t.style = t.style || null; draw(); }; });
     $$('[data-style]').forEach((b) => { b.onclick = () => { t.style = t.style === b.dataset.style && t.mode !== 'style' ? null : b.dataset.style; backdropForStep(); draw(); }; });
     $$('[data-c]').forEach((b) => { b.onclick = () => { const c = b.dataset.c; t.countries = t.countries.includes(c) ? t.countries.filter((x) => x !== c) : [...t.countries, c].slice(-3); draw(); }; });
     $$('[data-rm]').forEach((b) => { b.onclick = () => { t.ids = t.ids.filter((i) => i !== b.dataset.rm); draw(); }; });
+    $$('#mh button').forEach((b) => { b.onclick = () => { S.q.maxHours = +b.dataset.h; draw(); }; });
     const p = $('#p');
     if (p) p.oninput = () => {
       const v = p.value.trim().toLowerCase();
-      const hits = v.length < 2 ? [] : S.dests.filter((d) => d.name.toLowerCase().includes(v) || d.en.toLowerCase().includes(v)).slice(0, 6);
-      $('#hits').innerHTML = hits.map((d) => `<button class="row" data-add="${d.id}"><span>${esc(d.name)}<small>${esc(d.air.join(', '))}</small></span></button>`).join('') || (v.length > 1 ? '<p class="hint">Tego miejsca nie ma jeszcze w bazie. Wybierz najbliższe większe miasto.</p>' : '');
+      const hits = v.length < 2 ? [] : ZD().filter((d) => normQ(d.name).includes(normQ(v)) || normQ(d.en).includes(normQ(v))).slice(0, 6);
+      $('#hits').innerHTML = hits.map((d) => `<button class="row" data-add="${d.id}"><span>${esc(d.name)}<small>${esc(isPL() ? (d.desc || '') : d.air.join(', '))}</small></span></button>`).join('') || (v.length > 1 ? '<p class="hint">Tego miejsca nie ma jeszcze w bazie. Wybierz najbliższe większe miasto.</p>' : '');
       $$('[data-add]').forEach((b) => { b.onclick = () => { if (!t.ids.includes(b.dataset.add)) t.ids = [...t.ids, b.dataset.add].slice(-6); draw(); }; });
     };
     $('#next').onclick = next;
   };
+  if (isPL() && t.mode === 'country') t.mode = 'style';
   const valid = () => (t.mode === 'city' ? t.ids.length > 0 : t.mode === 'country' ? t.countries.length > 0 : t.mode === 'style' ? !!t.style : true);
   draw();
 }
@@ -631,6 +686,11 @@ function stepWho(el) {
   const p = S.q.pax; const b = S.q.bags;
   const draw = () => {
     const stp = (k, l, min, max, o) => `<div class="stepper"><span>${l}</span><div><button data-k="${k}" data-d="-1" aria-label="Mniej" ${o[k] <= min ? 'disabled' : ''}>−</button><output>${o[k]}</output><button data-k="${k}" data-d="1" aria-label="Więcej" ${o[k] >= max ? 'disabled' : ''}>+</button></div></div>`;
+    if (isPL()) {
+      el.innerHTML = `<h1>Kto jedzie?</h1><p class="sub">Nocleg, bilety i koszty liczymy dla całej grupy.</p><div class="field">${stp('adults', 'Dorośli', 1, 8, p)}${stp('children', 'Dzieci (2–11 lat)', 0, 6, p)}</div>${navBtns()}`;
+      $$('[data-k]').forEach((x) => { x.onclick = () => { p[x.dataset.k] += +x.dataset.d; draw(); }; });
+      $('#next').onclick = next; return;
+    }
     el.innerHTML = `<h1>Kto leci?</h1><p class="sub">Ceny liczymy dla całej grupy.</p>
     <div class="field">${stp('adults', 'Dorośli', 1, 8, p)}${stp('children', 'Dzieci (2–11 lat)', 0, 6, p)}</div>
     <div class="field"><span class="lab">Bagaż na osobę</span>
@@ -652,6 +712,14 @@ function stepWho(el) {
 
 function stepAccess(el) {
   const t = S.q.transport;
+  if (isPL()) {
+    el.innerHTML = `<h1>Twoje auto</h1><p class="sub">Koszt jazdy liczymy z Twojego spalania i ceny paliwa. Pociąg i samolot porównamy obok.</p>
+    <div class="field grid2"><div><label class="lab" for="l">Spalanie l/100 km</label><input id="l" type="number" inputmode="decimal" step="0.1" min="2" max="30" value="${t.consumption}"></div><div><label class="lab" for="fp">Paliwo zł/l</label><input id="fp" type="number" inputmode="decimal" step="0.01" min="1" max="15" value="${t.fuelPrice}"></div></div>
+    <p class="hint">Cenę paliwa wpisz taką, jaką płacisz teraz na stacji. Opłaty za płatne odcinki A1, A2 i A4 doliczamy sami.</p>${navBtns()}`;
+    ['l', 'fp'].forEach((id) => { const x = $('#' + id); const [k, mn, mx] = id === 'l' ? ['consumption', 2, 30] : ['fuelPrice', 1, 15]; x.onchange = () => { const v = parseFloat(x.value.replace(',', '.')); if (Number.isFinite(v) && v >= mn && v <= mx) t[k] = v; else { toast('Wpisz wartość od ' + mn + ' do ' + mx); x.value = t[k]; } }; });
+    $('#next').onclick = next;
+    return;
+  }
   const draw = () => {
     el.innerHTML = `<h1>Jak na lotnisko?</h1><p class="sub">Dojazd liczymy do ceny, bo tańszy lot daleko od domu bywa droższy w sumie.</p>
     <div class="field seg" id="md">${[['car', 'Autem'], ['dropoff', 'Podwiezie mnie'], ['public', 'Komunikacją']].map(([k, l]) => `<button data-m="${k}" aria-pressed="${t.mode === k}">${l}</button>`).join('')}</div>
@@ -717,24 +785,25 @@ async function viewSearch(resumeId) {
   $('#ed').onclick = () => quit(() => { S.step = 0; viewWizard(); });
   const rows = [flapRow(W), flapRow(W), flapRow(W), flapRow(W)];
   rows.forEach((r) => $('#bd').append(r.el));
-  const names = S.dests.filter((d) => matches(d)).sort(() => Math.random() - 0.5).map((d) => d.name.toUpperCase());
-  if (names.length < 5) names.push('NAJTAŃSZE DATY', 'WSZYSTKIE LOTNISKA', 'NOCLEGI', 'DOJAZD');
+  const names = ZD().filter((d) => matches(d)).sort(() => Math.random() - 0.5).map((d) => d.name.toUpperCase());
+  if (names.length < 5) names.push(...(isPL() ? ['TRASA AUTEM', 'POCIĄGI', 'LOTY KRAJOWE', 'NOCLEGI'] : ['NAJTAŃSZE DATY', 'WSZYSTKIE LOTNISKA', 'NOCLEGI', 'DOJAZD']));
   const t = () => rows.forEach((r, i) => r.set((names[(i + Math.floor(Date.now() / 3200)) % Math.max(1, names.length)] || 'EUROPA').replace(/\(.*/, '').trim()));
   t(); ticker = setInterval(t, 3200);
   function stop() { clearInterval(ticker); }
   try {
-    const id = resumeId || (await api('/api/search', S.q)).id;
+    const pl = isPL(); S.q.dest.zone = S.zone;
+    const id = resumeId || (await api(pl ? '/api/pl/search' : '/api/search', { ...S.q, maxHours: pl ? S.q.maxHours || 0 : undefined })).id;
     if (off) return;
-    save('job', { id, q: S.q, t: Date.now() });
+    save('job', { id, q: S.q, t: Date.now(), zone: S.zone });
     for (;;) {
       await new Promise((r) => setTimeout(r, 1300));
       if (off) return;
-      const j = await api('/api/job?id=' + id);
+      const j = await api((isPL() ? '/api/pl/job?id=' : '/api/job?id=') + id);
       if (off) return;
       const bar = $('#pr'); const lb = $('#lb');
       if (!bar) { stop(); return; }
       bar.style.width = j.progress * 100 + '%'; lb.textContent = j.label;
-      if (j.state === 'done') { stop(); S.result = j.result; S.resultAt = Date.now(); save('job', null); save('last', { result: j.result, q: S.q, t: Date.now() }); return viewResults(); }
+      if (j.state === 'done') { stop(); S.result = j.result; S.resultAt = Date.now(); save('job', null); save('last', { result: j.result, q: S.q, t: Date.now(), zone: S.zone }); return viewResults(); }
       if (j.state === 'error') { save('job', null); throw new Error(j.error); }
     }
   } catch (e) {
@@ -746,6 +815,7 @@ async function viewSearch(resumeId) {
 }
 function matches(d) {
   const t = S.q.dest;
+  if (!t) return false;
   if (t.mode === 'city') return t.ids.includes(d.id);
   if (t.mode === 'country') return t.countries.includes(d.cc);
   return !t.style || d.tags.includes(t.style);
@@ -758,6 +828,7 @@ function posterOf(o, h = '') {
 }
 function viewResults() {
   const R = S.result;
+  if (R.kind === 'pl') return viewPLResults();
   const opts = (R.options || []).filter((o) => o.insight !== undefined || o.compare || true);
   const best = new Map();
   opts.forEach((o) => { if (!best.has(o.dest.id)) best.set(o.dest.id, o); });
@@ -779,6 +850,56 @@ function viewResults() {
   $$('[data-o]').forEach((b) => { b.onclick = () => { S.option = opts.find((o) => o.id === b.dataset.o); viewOption(); }; });
   $$('[data-ym]').forEach((b) => { b.onclick = () => openMonth(b.dataset.ym); });
   $$('[data-alt]').forEach((b) => { b.onclick = () => { S.q.dest = { mode: 'city', ids: [b.dataset.alt], countries: [], style: 'beach' }; viewSearch(); }; });
+  app.scrollTop = 0;
+}
+/* ---------- Wyniki w Polsce ---------- */
+const MODE_L = { car: 'Autem', train: 'Pociągiem', plane: 'Samolotem' };
+function plLines(o, full) {
+  const c = o.car; const t = o.train; const p = o.plane; const n = o.pax.adults + o.pax.children;
+  const best = (m) => (o.best === m ? ' <span class="sure fact">najtaniej</span>' : '');
+  const rows = [`<div class="kv"><span>${I.car} Autem${best('car')}<br><small>${c.km.toLocaleString('pl-PL')} km, około ${dur(c.min)} z postojami</small></span><b>${zl(c.total)}</b></div>`];
+  if (full) rows.push(`<p class="hint">Paliwo tam i z powrotem ${zl(c.fuel)}${c.tolls ? `, autostrady ${zl(c.tolls)} (${c.tollItems.map((x) => esc(x.label)).join(', ')}, w obie strony)` : ', bez płatnych autostrad'}.${c.note ? ' ' + esc(c.note) : ''}</p>`);
+  if (t) rows.push(`<div class="kv"><span>${I.train} Pociągiem${best('train')}<br><small>około ${dur(t.min)}, ${t.transfers ? `${t.transfers} ${t.transfers === 1 ? 'przesiadka' : 'przesiadki'}` : 'bez przesiadek'}${t.sample ? ', rozkład z podobnego dnia' : ''}</small></span><b>około ${zl(t.total)} <span class="sure est">szacunek</span></b></div>`);
+  if (p) rows.push(`<div class="kv"><span>${I.plane} Samolotem ${esc(p.from)} → ${esc(p.to)}${best('plane')}<br><small>${dateL(p.dep)} ${timeL(p.dep)}, ${p.stops ? `${p.stops} ${p.stops === 1 ? 'przesiadka' : 'przesiadki'}` : 'bez przesiadek'}, od drzwi do drzwi około ${dur(p.min)}</small></span><b>${zl(p.total)}</b></div>`);
+  if (full && p) rows.push(`<p class="hint">Bilety ${zl(p.tickets)} <span class="sure fact">sprawdzone</span> dla ${n} ${osob(n)}, do tego dojazd na lotnisko i parking ${zl(p.access.total)} oraz z lotniska do celu około ${zl(p.transfer.pln)} (${p.transfer.km} km).</p>`);
+  return rows.join('');
+}
+function viewPLResults() {
+  const R = S.result; const L = R.options || [];
+  setBackdrop({ photo: heroNow()?.src, dim: true, strong: true });
+  app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>${L.length ? 'Najlepsze miejsca' : 'Brak wyników'}</h2></div>
+  <section class="page">
+  ${(R.notes || []).map((n) => `<div class="note"><b>${esc(n.text)}</b></div>`).join('')}
+  ${L.map((o) => { const n = o.pax.adults + o.pax.children; return `<article class="card"><button data-o="${o.id}" style="display:block;width:100%;text-align:left">${posterOf(o, `<span class="pr">${zl(o.total)}<small style="font:600 12px var(--body)"> razem${o.hotelEst ? ' z noclegiem' : ''}</small></span>`)}
+    <div class="in"><p><b>${dateL(o.dep)} – ${dateL(o.ret)}</b>, ${nightsL(o.nights)}, ${n} ${osob(n)}</p>
+    ${plLines(o, false)}
+    <p>${o.hotelEst ? `Nocleg około ${zl(o.hotelEst.total)} <span class="sure est">szacunek</span>` : '<span class="sure check">nocleg: nie pobrano cen</span>'}</p></div></button></article>`; }).join('')}
+  <p class="foot">${esc(R.tollSrc || '')} Ceny paliwa i noclegów to szacunki, bilety lotnicze sprawdzone dziś.</p></section>`;
+  $('#b').onclick = () => { S.step = STEPS.length - 1; viewWizard(); };
+  $$('[data-o]').forEach((b) => { b.onclick = () => { S.option = L.find((o) => o.id === b.dataset.o); viewPLOption(); }; });
+  app.scrollTop = 0;
+}
+function viewPLOption() {
+  const o = S.option; const n = o.pax.adults + o.pax.children; const m = o.climate?.month;
+  setBackdrop({ photo: heroNow()?.src, dim: true, strong: true });
+  const pick = (k, sub) => `<button class="btn ${o.best === k ? '' : 'line'}" data-mode="${k}">${MODE_L[k]}${sub ? ` · ${sub}` : ''}</button>`;
+  const p = o.plane; const t = o.train;
+  app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>${esc(o.dest.name)}</h2></div>
+  <section class="page"><article class="card">${posterOf(o)}
+   <div class="in"><p class="big">${zl(o.total)}</p><p class="mute">${dateL(o.dep)} – ${dateL(o.ret)}, ${nightsL(o.nights)}, ${n} ${osob(n)}. Najtańszy dojazd i nocleg, bez jedzenia na miejscu.</p>
+   ${o.dest.desc ? `<p class="hint">${esc(o.dest.desc)}</p>` : ''}
+   <h3 class="big" style="font-size:26px;margin-top:14px">Jak dojechać</h3>${plLines(o, true)}
+   ${p ? `${passHtml(p.flight.out, 'Tam')}${passHtml(p.flight.back, 'Z powrotem')}` : ''}
+   <p class="hint">${o.hotelEst ? `Nocleg: około ${zl(o.hotelEst.total)} za ${nightsL(o.nights)}, ${o.hotelEst.rooms} ${o.hotelEst.rooms > 1 ? 'pokoje' : 'pokój'}. Dokładne ceny hoteli zobaczysz w następnym kroku.` : 'Ceny noclegów sprawdzimy w następnym kroku.'}</p>
+   ${m?.tmax != null ? `<p class="hint">Średnio w tym miesiącu: ${Math.round(m.tmin)}–${Math.round(m.tmax)}°C${m.rain != null ? `, opady ${Math.round(m.rain)} mm` : ''}.</p>` : ''}
+   <h3 class="big" style="font-size:26px;margin-top:14px">Wybierz dojazd i nocleg</h3>
+   <div class="acts">${pick('car', zl(o.car.total))}${t ? pick('train', 'około ' + zl(t.total)) : ''}${p ? pick('plane', zl(p.total)) : ''}</div>
+   <div class="linkset" style="margin-top:12px"><a class="btn line small" href="${url(o.car.map)}" target="_blank" rel="noopener">Trasa w Google Maps</a>${t ? t.links.map((l) => `<a class="btn line small" href="${url(l.url)}" target="_blank" rel="noopener">${esc(l.site)}</a>`).join('') : ''}${p ? `<a class="btn line small" href="${url(p.url)}" target="_blank" rel="noopener">Lot w Google Flights</a>` : ''}</div>
+   ${!t ? '<p class="hint">Nie znaleźliśmy rozkładu pociągów dla tej trasy. Sprawdź w Koleo albo PKP Intercity.</p>' : ''}
+   ${!p && o.car.min >= 240 ? '<p class="hint">Lotu krajowego na te daty nie znaleźliśmy.</p>' : ''}
+   </div></article></section>`;
+  $('#b').onclick = viewPLResults;
+  $$('[data-mode]').forEach((b) => { b.onclick = () => { o.plMode = b.dataset.mode; viewHotels(); }; });
   app.scrollTop = 0;
 }
 function heat(v, lo, hi) {
@@ -926,7 +1047,7 @@ async function recheck(dep, ret) {
 async function viewHotels() {
   const o = S.option; const s = S.q.stay;
   app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Noclegi: ${esc(o.dest.name)}</h2></div><section class="page"><div class="card"><div class="in"><p>Zbieram hotele z dwóch źródeł i porównuję ceny. To potrwa około pół minuty.</p><div class="spin"></div></div></div></section>`;
-  $('#b').onclick = S.option?.manual ? viewPlan : viewOption;
+  $('#b').onclick = S.option?.manual ? viewPlan : S.option?.plMode ? viewPLOption : viewOption;
   const P = new URLSearchParams({ dest: o.dest.id, in: o.dep, out: o.ret, adults: o.pax.adults, children: o.pax.children, pref: s.pref, minRating: s.minRating, breakfast: s.breakfast ? 1 : 0 });
   if (s.budget) P.set('budget', s.budget);
   try {
@@ -976,7 +1097,7 @@ async function viewHotels() {
       ${v.length > f.limit ? '<button class="btn ghost" id="more">Pokaż więcej hoteli</button>' : ''}
       ${L.length && !v.length ? '<div class="note"><b>Żaden hotel nie spełnia tych filtrów.</b></div>' : ''}
       ${L.length ? `<p class="foot">${r.rooms} ${r.rooms > 1 ? 'pokoje' : 'pokój'}, ${r.nights} nocy. ${esc(r.note || '')} Źródła: ${esc((r.sources || []).join(', '))}.</p>` : ''}</section>`;
-      $('#b').onclick = S.option?.manual ? viewPlan : viewOption;
+      $('#b').onclick = S.option?.manual ? viewPlan : S.option?.plMode ? viewPLOption : viewOption;
       $$('[data-f]').forEach((b) => { b.onclick = () => { f[b.dataset.f] = !f[b.dataset.f]; f.limit = 12; draw(); }; });
       $$('[data-st]').forEach((b) => { b.onclick = () => { const n = +b.dataset.st; f.stars = f.stars === n ? 0 : n; f.limit = 12; draw(); }; });
       $$('[data-so]').forEach((b) => { b.onclick = () => { f.sort = b.dataset.so; f.limit = 12; draw(); }; });
@@ -996,7 +1117,7 @@ async function viewHotels() {
     app.scrollTop = 0;
   } catch (e) {
     app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>Noclegi</h2></div><section class="page"><div class="note"><b>${esc(e.message)}</b><div class="acts"><button class="btn" id="r">Spróbuj ponownie</button></div></div></section>`;
-    $('#b').onclick = S.option?.manual ? viewPlan : viewOption; $('#r').onclick = viewHotels;
+    $('#b').onclick = S.option?.manual ? viewPlan : S.option?.plMode ? viewPLOption : viewOption; $('#r').onclick = viewHotels;
   }
 }
 
@@ -1005,7 +1126,8 @@ async function buildPlan(hotel) {
   if (S.option.manual) { S.plan.hotel = hotel; LV.put('meta', 'hotel', { hotel }); LV.applyDays(S.plan); LV.savePlan(S.plan); LV.ownToVault(S.plan); S.tab = 'noc'; return viewPlan(); }
   app.innerHTML = `<section class="board-wrap"><h1 class="board-title">Układam plan</h1><div class="bar"><i style="width:60%"></i></div><p class="board-label">Liczę godziny, dojazdy i dni na miejscu</p></section>`;
   try {
-    S.plan = await api('/api/plan', { option: S.option, hotel, home: S.q.origin, prefs: S.q.plan || {} });
+    S.plan = S.option.plMode ? await api('/api/pl/plan', { option: S.option, mode: S.option.plMode, hotel, home: S.q.origin, transport: S.q.transport, prefs: S.q.plan || {} })
+      : await api('/api/plan', { option: S.option, hotel, home: S.q.origin, prefs: S.q.plan || {} });
     if (S.q.tripBudget) LV.L(S.plan).s.meta.limit = { v: S.q.tripBudget, u: Date.now() };
     LV.ownToVault(S.plan); LV.savePlan(S.plan); LV.ensureRemote(S.plan).catch(() => {});
     S.tab = 'sum'; viewPlan();
@@ -1018,8 +1140,8 @@ const evHtml = (e) => `<div class="ev"><time>${timeL(e.at)}</time> <span class="
 const shortD = (iso) => { const d = new Date(iso.slice(0, 10) + 'T12:00'); return `${d.getDate()}.${String(d.getMonth() + 1).padStart(2, '0')} (${['ND', 'PN', 'WT', 'ŚR', 'CZ', 'PT', 'SB'][d.getDay()]})`; };
 const dayStops = (d) => d.stops.filter((s) => !s.meal);
 const stopSrc = (s, w) => (s.img ? commons(s.img, w) : artOf(s.kind));
-const dayTitle = (d, i, p) => { const st = dayStops(d); if (d.kind === 'departure' && !st.length) return 'Powrót do domu'; if (d.kind === 'arrival' && !st.length) return `Przylot do ${p.dest.name.replace(/\s*\(.*/, '')}`; return st.length ? st[0].name : d.kind === 'rest' ? 'Odpoczynek' : 'Dzień wolny'; };
-const daySub = (d, p) => { const st = dayStops(d).slice(0, 3).map((s) => s.name); if (st.length) return st.join(', '); return d.kind === 'departure' ? 'Wymeldowanie i droga na lotnisko' : d.kind === 'arrival' ? 'Zakwaterowanie i odpoczynek' : d.kind === 'rest' ? 'Plaża, basen i hotel' : 'Plaża, spacer albo wycieczka'; };
+const dayTitle = (d, i, p) => { const st = dayStops(d); if (d.kind === 'departure' && !st.length) return 'Powrót do domu'; if (d.kind === 'arrival' && !st.length) return `${p.option?.manual && p.option.mode !== 'plane' ? 'Przyjazd' : 'Przylot'} do ${p.dest.name.replace(/\s*\(.*/, '')}`; return st.length ? st[0].name : d.kind === 'rest' ? 'Odpoczynek' : 'Dzień wolny'; };
+const daySub = (d, p) => { const st = dayStops(d).slice(0, 3).map((s) => s.name); if (st.length) return st.join(', '); return d.kind === 'departure' ? (p.option?.manual && p.option.mode !== 'plane' ? 'Wymeldowanie i droga do domu' : 'Wymeldowanie i droga na lotnisko') : d.kind === 'arrival' ? 'Zakwaterowanie i odpoczynek' : d.kind === 'rest' ? ((p.dest.tags || []).includes('beach') && [5, 6, 7, 8, 9].includes(+d.date.slice(5, 7)) ? 'Plaża, basen i hotel' : 'Odpoczynek, spacer albo hotel') : 'Spacer albo wycieczka'; };
 function tipFor(d, p) {
   const k = new Set(dayStops(d).map((s) => s.kind));
   if (d.weather && (d.weather.rain ?? 0) >= 50) return 'Prognoza mówi o deszczu. Weź kurtkę i zacznij od miejsc pod dachem.';
@@ -1231,7 +1353,7 @@ const LV = initLive({ S, app, $, $$, esc, url, zl, toast, api, load, save, I, IM
   if (lk) { history.replaceState(null, '', location.pathname); if (await LV.openLink(lk)) { viewPlan(); startUpdates(); return; } }
   LV.linkPush();
   const job = load('job', null);
-  if (job && Date.now() - job.t < 3e6) { S.q = job.q; viewSearch(job.id); }
+  if (job && Date.now() - job.t < 3e6) { S.q = job.q; if (job.zone) S.zone = job.zone; viewSearch(job.id); }
   startUpdates();
   window.__gt = { S, viewHotels, viewResults, viewOption, viewPlan, viewDay, viewTrips, viewInspire, viewProfile, viewHome, VERSION };
 })();

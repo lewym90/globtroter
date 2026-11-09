@@ -1,21 +1,82 @@
-Hurghada	Hurghada	EG	HRG	beach,family,nature
-Makadi Bay	Makadi Bay	EG	HRG	beach,family
-Marsa Alam	Marsa Alam	EG	RMF	beach,nature
-Szarm el-Szejk	Sharm El Sheikh	EG	SSH	beach,nature,family
-Dżerba	Djerba	TN	DJE	beach,family,culture
-Sousse i Monastir	Sousse	TN	MIR,NBE	beach,family,culture
-Hammamet	Hammamet	TN	NBE,TUN	beach,family
-Mahdia	Mahdia	TN	MIR,NBE	beach,family
-Side	Side	TR	AYT,GZP	beach,family,culture
-Alanya	Alanya	TR	GZP,AYT	beach,family,party
-Belek	Belek	TR	AYT	beach,family
-Marmaris	Marmaris	TR	DLM	beach,party,nature
-Chalkidiki	Halkidiki	GR	SKG	beach,nature,family
-Lloret de Mar	Lloret de Mar	ES	GRO,BCN	beach,party
-Salou	Salou	ES	REU,BCN	beach,family
-Benidorm	Benidorm	ES	ALC	beach,party,family
-Słoneczny Brzeg	Sunny Beach	BG	BOJ,VAR	beach,party,family
-Dubaj	Dubai	AE	DXB,DWC	city,beach,shopping
-Akaba	Aqaba	JO	AQJ	beach,nature,culture
-Sal	Sal (Cape Verde)	CV	SID	beach,nature
-Boa Vista	Boa Vista (Cape Verde)	CV	BVC	beach,nature
+Świnoujście	Świnoujście	PL	SZZ	beach,spa,family
+Międzyzdroje	Międzyzdroje	PL	SZZ	beach,nature,family
+Rewal	Rewal	PL	SZZ	beach,family
+Dziwnów	Dziwnów	PL	SZZ	beach,family
+Kołobrzeg	Kołobrzeg	PL	SZZ	beach,spa,family,romance
+Mielno	Mielno	PL	SZZ	beach,party,family
+Darłowo	Darłowo	PL	GDN,SZZ	beach,family
+Ustka	Ustka	PL	GDN	beach,family
+Łeba	Łeba	PL	GDN	beach,nature,family
+Władysławowo	Władysławowo	PL	GDN	beach,family
+Jastarnia	Jastarnia	PL	GDN	beach,nature
+Hel	Hel	PL	GDN	beach,nature
+Sopot	Sopot	PL	GDN	beach,city,party,romance
+Gdynia	Gdynia	PL	GDN	city,beach
+Krynica Morska	Krynica Morska	PL	GDN,SZY	beach,nature
+Karpacz	Karpacz	PL	WRO	ski,nature,family
+Szklarska Poręba	Szklarska Poręba	PL	WRO,IEG	ski,nature
+Świeradów-Zdrój	Świeradów-Zdrój	PL	WRO,IEG	ski,spa,nature
+Szczyrk	Szczyrk	PL	KRK,KTW	ski,nature
+Wisła	Wisła	PL	KRK,KTW	ski,nature,family
+Ustroń	Ustroń	PL	KRK,KTW	spa,nature,family
+Krynica-Zdrój	Krynica-Zdrój	PL	RZE,KRK	ski,spa,nature,romance
+Szczawnica	Szczawnica	PL	KRK,RZE	nature,spa
+Białka Tatrzańska	Białka Tatrzańska	PL	KRK,KTW	ski,spa,family
+Bukowina Tatrzańska	Bukowina Tatrzańska	PL	KRK,KTW	ski,spa,romance
+Rabka-Zdrój	Rabka-Zdrój	PL	KRK,KTW	spa,family
+Muszyna	Muszyna	PL	KRK,RZE	spa,nature
+Polańczyk	Polańczyk	PL	RZE	lake,nature
+Wetlina	Wetlina	PL	RZE	nature
+Ustrzyki Dolne	Ustrzyki Dolne	PL	RZE	ski,nature
+Kudowa-Zdrój	Kudowa-Zdrój	PL	WRO	spa,nature
+Polanica-Zdrój	Polanica-Zdrój	PL	WRO	spa,romance
+Duszniki-Zdrój	Duszniki-Zdrój	PL	WRO	ski,spa
+Lądek-Zdrój	Lądek-Zdrój	PL	WRO	spa,nature
+Mikołajki	Mikołajki	PL	SZY	lake,nature,party
+Giżycko	Giżycko	PL	SZY	lake,nature
+Mrągowo	Mrągowo	PL	SZY	lake,family
+Ruciane-Nida	Ruciane-Nida	PL	SZY,WMI	lake,nature
+Węgorzewo	Węgorzewo	PL	SZY	lake,nature
+Augustów	Augustów	PL	SZY	lake,nature,family
+Ełk	Ełk	PL	SZY	lake
+Olsztyn	Olsztyn	PL	SZY,GDN	city,lake
+Kartuzy	Kartuzy	PL	GDN,BZG	lake,nature
+Charzykowy	Charzykowy	PL	BZG,GDN	lake,nature
+Czaplinek	Czaplinek	PL	SZZ,BZG	lake,nature
+Łagów	Łagów	PL	IEG,POZ	lake,nature
+Sława	Sława	PL	IEG,POZ	lake,family
+Suwałki	Suwałki	PL	SZY	lake,nature
+Warszawa	Warsaw	PL	WAW,WMI	city,culture,food,party
+Poznań	Poznań	PL	POZ,IEG	city,culture,food
+Łódź	Łódź	PL	LCJ,WMI	city,culture
+Toruń	Toruń	PL	BZG,POZ	city,culture,romance
+Lublin	Lublin	PL	LUZ,RDO	city,culture
+Kazimierz Dolny	Kazimierz Dolny	PL	RDO,LUZ	city,culture,romance
+Sandomierz	Sandomierz	PL	RZE,RDO	city,culture,romance
+Zamość	Zamość	PL	LUZ,RZE	city,culture
+Szczecin	Szczecin	PL	SZZ	city,culture
+Katowice	Katowice	PL	KTW,KRK	city,culture
+Bydgoszcz	Bydgoszcz	PL	BZG,POZ	city,culture
+Białystok	Białystok	PL	SZY	city,culture
+Rzeszów	Rzeszów	PL	RZE,LUZ	city
+Przemyśl	Przemyśl	PL	RZE	city,culture
+Malbork	Malbork	PL	GDN,BZG	city,culture,family
+Jelenia Góra	Jelenia Góra	PL	WRO,IEG	city,nature
+Opole	Opole	PL	KTW,WRO	city
+Częstochowa	Częstochowa	PL	KTW,KRK	city,culture
+Kielce	Kielce	PL	RDO,KRK	city
+Tarnów	Tarnów	PL	RZE,KRK	city,culture
+Płock	Płock	PL	WMI,LCJ	city,culture
+Gniezno	Gniezno	PL	POZ,BZG	city,culture
+Wieliczka	Wieliczka	PL	KRK,KTW	culture,family
+Frombork	Frombork	PL	GDN,SZY	culture,nature
+Ciechocinek	Ciechocinek	PL	BZG,WMI	spa
+Nałęczów	Nałęczów	PL	LUZ,RDO	spa,romance
+Busko-Zdrój	Busko-Zdrój	PL	KRK,RZE	spa
+Solec-Zdrój	Solec-Zdrój	PL	KRK,RZE	spa
+Iwonicz-Zdrój	Iwonicz-Zdrój	PL	RZE	spa,nature
+Rymanów-Zdrój	Rymanów-Zdrój	PL	RZE	spa,nature
+Inowrocław	Inowrocław	PL	BZG,POZ	spa
+Białowieża	Białowieża	PL	LUZ	nature
+Ojców	Ojców	PL	KRK,KTW	nature,family
+Zwierzyniec	Zwierzyniec	PL	LUZ,RZE	nature

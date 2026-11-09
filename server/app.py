@@ -4,8 +4,8 @@ import json,logging,os,sys,threading,time
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import parse_qs,urlsplit
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
-import ai,flights,geo,hotels,net,plan,push,ryanair,search,store,tours,trips
-VERSION='1.10.0'
+import ai,domestic,flights,geo,hotels,net,plan,push,ryanair,search,store,tours,trips
+VERSION='1.11.0'
 _hits={}
 def limited(ip,kind,n,win):
     """Prosty limit zapytan na adres, zeby nikt nie zapchal bazy ani darmowego limitu AI."""
@@ -37,6 +37,7 @@ class H(BaseHTTPRequestHandler):
                 if not j: return self.out(404,{'error':'Wyszukiwanie wygasło. Uruchom je jeszcze raz.'})
                 return self.out(200,j)
             if p=='/api/tours/meta': return self.out(200,tours.meta())
+            if p=='/api/pl/job': return self.out(200,domestic.status(q.get('id','')))
             if p=='/api/tours/compare':
                 from tours import compare
                 if q.get('id','') not in compare.JOBS: return self.out(404,{'error':'Porównanie wygasło. Uruchom je jeszcze raz.'})
@@ -104,6 +105,8 @@ class H(BaseHTTPRequestHandler):
             if p=='/api/route': return self.out(200,plan.route(b))
             if p=='/api/plan/manual': return self.out(200,plan.manual(b))
             if p=='/api/plan/tour': return self.out(200,plan.tour(b))
+            if p=='/api/pl/search': return self.out(200,{'id':domestic.start(b)})
+            if p=='/api/pl/plan': return self.out(200,domestic.plan_trip(b))
             if p=='/api/car':
                 return self.out(200,plan.car_route(float(b['lat']),float(b['lon']),float(b['la']),float(b['lo']),b.get('transport')))
             if p=='/api/watch/add': return self.out(200,{'id':push.watch_add(b.get('device',''),b['from'],b['to'],b['ym'],b['nights'],b.get('name',''),b['price'])})

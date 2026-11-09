@@ -43,6 +43,10 @@ TA={'Hurghada':297549,'Makadi Bay':297550,'Marsa Alam':311425,'Szarm el-Szejk':2
     'Mahdia':297947,'Side':297968,'Alanya':297961,'Belek':312725,'Marmaris':298033,'Chalkidiki':189466,'Lloret de Mar':494960,'Salou':562814,
     'Benidorm':187525,'Słoneczny Brzeg':499086,'Dubaj':295424,'Akaba':298101,'Sal':482848,'Boa Vista':482843}
 ISON={'EG':818,'TN':788,'AE':784,'JO':400,'CV':132}
+# Miejsca z gotowym elementem Wikidata i wspolrzednymi (P625), np. polskie miejscowosci: EXTRA=plik.json {nazwa: {q, lat, lon}}
+EXTRA=json.load(open(os.environ['EXTRA'],encoding='utf8')) if os.environ.get('EXTRA') else {}
+for _n,_v in EXTRA.items():
+    if _v: QID[_n]=_v['q']
 REPORT={}
 def note(i,k,v): REPORT.setdefault(i,{})[k]=v
 
@@ -93,7 +97,9 @@ def record(d,idx,cities,wd):
     if not air: print('BRAK LOTNISK, pomijam',d['name']);note(d['id'],'pominiety','brak uzywalnego lotniska');return None
     r={'id':d['id'],'name':d['name'],'en':d['en'],'cc':d['cc'],'air':air,'tags':d['tags']}
     a0=idx[air[0]]
-    if d['name'] in WDCOORD:
+    if EXTRA.get(d['name']):
+        r['lat'],r['lon']=EXTRA[d['name']]['lat'],EXTRA[d['name']]['lon'];note(d['id'],'wspolrzedne','Wikidata '+EXTRA[d['name']]['q'])
+    elif d['name'] in WDCOORD:
         cs=sorted(wd.get(WDCOORD[d['name']],{}).get('coords') or [])
         if cs: r['lat'],r['lon']=cs[0];note(d['id'],'wspolrzedne','Wikidata '+WDCOORD[d['name']]+(' (kilka wartosci, wzieta pierwsza)' if len(cs)>1 else ''))
     else:
@@ -229,7 +235,7 @@ def main():
         if nf: note(d['id'],'nieznane fli',nf)
     idx={a['iata']:a for a in aps}
     cp=os.environ.get('CITIES')
-    cities=json.load(open(cp,encoding='utf8')) if cp else json.loads(get('https://raw.githubusercontent.com/lutangar/cities.json/master/cities.json',timeout=180))
+    cities=[] if EXTRA and all(EXTRA.get(d['name']) for d in new) else json.load(open(cp,encoding='utf8')) if cp else json.loads(get('https://raw.githubusercontent.com/lutangar/cities.json/master/cities.json',timeout=180))
     wd=wd_items(sorted(set(QID.values())|set(WDCOORD.values())))
     ds=[r for r in (record(d,idx,cities,wd) for d in new) if r]
     print('rekordy',len(ds),flush=True)
