@@ -3,7 +3,7 @@ import { flapRow } from './flap.js';
 import { initLive, swapDay, artOf } from './live.js';
 
 const API = ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://127.0.0.1:8796' : 'https://188-68-247-201.sslip.io/globtroter';
-const VERSION = '3.1.0';
+const VERSION = '3.2.0';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
@@ -364,14 +364,97 @@ function bindDest() {
 }
 function viewInspire() {
   const m = S.q.when.mode === 'month' ? S.q.when.month : new Date().getMonth() + 1;
-  S.ins = S.ins || 'city';
-  const L = S.dests.map((d) => [fitOf(d, m, S.ins), d]).filter(([, d]) => S.ins === 'city' ? d.tags.includes('city') : d.tags.includes(S.ins)).sort((a, b) => b[0] - a[0]).slice(0, 12).map(([, d]) => d);
+  S.ins = S.ins || 'city'; S.insMode = S.insMode || 'month';
   setBackdrop({ photo: heroNow()?.src, dim: true, strong: true });
-  app.innerHTML = `<section class="tabpage">${pageTop('Inspiracje', `Najlepsze miejsca na ${MONTHS[m - 1]}. Zdjęcia zmieniają się codziennie o 8:00.`)}
+  const seg = `<div class="seg insseg">${[['month', 'Na ten miesiąc'], ['guide', 'Przewodnik']].map(([k, l]) => `<button data-im="${k}" aria-pressed="${S.insMode === k}">${l}</button>`).join('')}</div>`;
+  if (S.insMode === 'guide') { guideList(seg); return; }
+  const L = S.dests.map((d) => [fitOf(d, m, S.ins), d]).filter(([, d]) => S.ins === 'city' ? d.tags.includes('city') : d.tags.includes(S.ins)).sort((a, b) => b[0] - a[0]).slice(0, 12).map(([, d]) => d);
+  app.innerHTML = `<section class="tabpage">${pageTop('Inspiracje', `Najlepsze miejsca na ${MONTHS[m - 1]}. Zdjęcia zmieniają się codziennie o 8:00.`)}${seg}
    <div class="pills">${[['city', 'Zwiedzanie'], ['beach', 'Plaża'], ['ski', 'Narty'], ['nature', 'Przyroda'], ['food', 'Jedzenie']].map(([k, l]) => `<button data-i="${k}" class="${S.ins === k ? 'on' : ''}">${l}</button>`).join('')}</div>
    <div class="grid">${L.map((d) => destCard(d, m)).join('')}</div></section>${tabbar('insp')}`;
   $$('[data-i]').forEach((b) => { b.onclick = () => { S.ins = b.dataset.i; viewInspire(); }; });
-  bindDest(); bindNav(); app.scrollTop = 0;
+  bindIns(); bindDest(); bindNav(); app.scrollTop = 0;
+}
+function bindIns() { $$('[data-im]').forEach((b) => { b.onclick = () => { S.insMode = b.dataset.im; viewInspire(); }; }); }
+async function countriesInfo() { return S.cinfo ||= await (await fetch('data/countries.json')).json().catch(() => ({})); }
+const normQ = (s) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l');
+async function guideList(seg) {
+  const C = await countriesInfo().catch(() => ({}));
+  const cn = (cc) => C[cc]?.name || cc;
+  const draw = () => {
+    const q = normQ(S.gq || '');
+    const L = S.dests.filter((d) => !q || normQ(d.name).includes(q) || normQ(d.en || '').includes(q) || normQ(cn(d.cc)).includes(q));
+    const by = {}; L.forEach((d) => { (by[d.cc] ||= []).push(d); });
+    const groups = Object.entries(by).sort((a, b) => cn(a[0]).localeCompare(cn(b[0]), 'pl'));
+    $('#gl').innerHTML = groups.length ? groups.map(([cc, ds]) => `<h3 class="gh">${esc(cn(cc))}</h3><div class="glist">${ds.sort((a, b) => a.name.localeCompare(b.name, 'pl')).map((d) => { const p = photoOf(d.id, 240); return `<button class="gitem" data-g="${d.id}">${p ? IMG(p.src, '') : `<span class="gph">${I.pin}</span>`}<span><b>${esc(d.name)}</b><small>${d.tags.includes('beach') ? 'plaża' : ''}${d.tags.includes('city') ? `${d.tags.includes('beach') ? ', ' : ''}zwiedzanie` : ''}${d.tags.includes('ski') ? 'narty' : ''}</small></span></button>`; }).join('')}</div>`).join('') : '<p class="hint">Nic nie pasuje. Spróbuj inną nazwę.</p>';
+    $$('[data-g]').forEach((b) => { b.onclick = () => viewGuide(b.dataset.g); });
+  };
+  app.innerHTML = `<section class="tabpage">${pageTop('Inspiracje', `Przewodnik po ${S.dests.length} miejscach. Wybierz miejsce, aby zobaczyć atrakcje, pogodę i informacje praktyczne.`)}${seg}
+    <div class="wcard"><input id="gq" type="search" placeholder="Szukaj miejsca albo kraju" value="${esc(S.gq || '')}" autocomplete="off"></div><div id="gl"></div></section>${tabbar('insp')}`;
+  $('#gq').oninput = (e) => { S.gq = e.target.value; draw(); };
+  draw(); bindIns(); bindNav(); app.scrollTop = S.gScroll || 0; S.gScroll = 0;
+}
+const GKIND = [['', 'Wszystko'], ['sight', 'Zabytki'], ['museum', 'Muzea'], ['church', 'Świątynie'], ['nature', 'Przyroda'], ['beach', 'Plaże'], ['park', 'Parki i ogrody']];
+const KLAB = { museum: 'Muzeum', church: 'Świątynia', palace: 'Pałac', castle: 'Zamek', monument: 'Pomnik', square: 'Plac', park: 'Park', sight: 'Zabytek', ruins: 'Ruiny', bridge: 'Most', beach: 'Plaża', zoo: 'Zoo', street: 'Ulica', nature: 'Przyroda', theatre: 'Teatr', food: 'Targ' };
+const kindGroup = (t) => ({ palace: 'sight', castle: 'sight', monument: 'sight', square: 'sight', ruins: 'sight', bridge: 'sight', street: 'sight', theatre: 'sight', food: 'sight', zoo: 'park' }[t] || t);
+async function viewGuide(id) {
+  const d = S.dests.find((x) => x.id === id); if (!d) return;
+  S.gScroll = app.scrollTop;
+  const back = () => { S.insMode = 'guide'; viewInspire(); };
+  const p = photoOf(d.id, 1000);
+  setBackdrop({ photo: p?.src || heroNow()?.src, dim: true, strong: true });
+  app.innerHTML = `<div class="topbar"><button class="round" id="b" aria-label="Wstecz">${ICON.back}</button><h2>${esc(d.name)}</h2></div><section class="page"><div class="wcard"><p class="hint"><span class="tspin"></span> Wczytuję przewodnik…</p></div></section>`;
+  $('#b').onclick = back;
+  let G = { a: [] }, F = null, C = {};
+  try { [G, F, C] = await Promise.all([fetch(`data/guide/${id}.json`).then((r) => r.json()), fetch(`data/food/${id}.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null), countriesInfo().catch(() => ({}))]); } catch { $('.page').innerHTML = '<div class="wcard"><p>Przewodnik wymaga internetu przy pierwszym otwarciu.</p></div>'; return; }
+  const ci = C[d.cc]; const c = d.climate; const A = G.a || []; const R = (F?.r || []).slice(0, 30);
+  S.gk = S.gk || ''; S.gshow = 30;
+  const mon = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'];
+  const climate = c ? `<div class="wcard"><h3>Pogoda w ciągu roku</h3><div class="clim">${mon.map((n, i) => `<div><small>${n}</small><b>${Math.round(c.tmax[i])}°</b><small>${Math.round(c.tmin[i])}°</small>${c.sea ? `<small class="sea">${Math.round(c.sea[i])}°</small>` : ''}</div>`).join('')}</div><p class="hint">Średnio w dzień i w nocy${c.sea ? ', niżej morze' : ''}. ${/NASA/.test(c.station || '') ? 'Dane: NASA POWER' : `Stacja pogodowa: ${esc(c.station || '')}`}.</p></div>` : '';
+  const air = (d.air || []).map((a) => S.airports.find((x) => x.iata === a)).filter(Boolean);
+  const prac = ci ? `<div class="wcard"><h3>Informacje praktyczne</h3>
+    <div class="kv"><span>Dokumenty</span><b>${esc(ci.docs)}</b></div>
+    <div class="kv"><span>Waluta</span><b>${esc(ci.currencyName)} (${esc(ci.currency)})</b></div>
+    <div class="kv"><span>Gniazdka</span><b>${esc(ci.plugs)}</b></div><p class="hint">${esc(ci.plugNote)}</p>
+    <div class="kv"><span>Język</span><b>${esc(ci.language)}</b></div>
+    <div class="kv"><span>Numer alarmowy</span><b>${esc(ci.emergency)}</b></div>
+    ${air.length ? `<div class="kv"><span>Lotniska</span><b>${air.map((a) => `${esc(a.city || a.name)} (${a.iata})`).join(', ')}</b></div>` : ''}
+    ${ci.ekuz ? '<p class="hint">Karta EKUZ działa w tym kraju.</p>' : ''}
+    <a class="btn line small" href="${url(ci.msz)}" target="_blank" rel="noopener">Ostrzeżenia i wjazd: strona MSZ</a></div>` : '';
+  const draw = () => {
+    const L = A.filter((x) => !S.gk || kindGroup(x.t) === S.gk);
+    const kinds = GKIND.filter(([k]) => !k || A.some((x) => kindGroup(x.t) === k));
+    const card = (x, i) => `<details class="gatt"><summary>${x.img ? IMG(commons(x.img, 200), '') : `<img src="${artOf(x.t)}" alt="" loading="lazy">`}<span><b>${esc(x.n)}</b><small>${esc(KLAB[x.t] || 'Zabytek')}${x.d ? '' : x.de ? ' · opis po angielsku' : ''}</small></span></summary>
+      <div class="gbody">${x.img ? IMG(commons(x.img, 800), x.n, 'gimg') : ''}${x.d ? `<p>${esc(x.d)}</p>` : x.de ? `<p class="mute">${esc(x.de)}</p><p class="hint">Opis po angielsku, polskiego jeszcze nie mamy.</p>` : '<p class="hint">Opisu jeszcze nie mamy.</p>'}
+      ${x.h ? `<p class="hint">Godziny otwarcia: ${esc(x.h)}. Sprawdź przed wizytą.</p>` : ''}
+      <div class="linkset"><a class="btn line small" href="https://www.google.com/maps/search/?api=1&query=${x.lat},${x.lon}" target="_blank" rel="noopener">Mapa i dojazd</a>${x.web ? `<a class="btn line small" href="${url(x.web)}" target="_blank" rel="noopener">Strona miejsca</a>` : ''}${x.src ? `<a class="btn line small" href="${url(x.src)}" target="_blank" rel="noopener">Źródło opisu</a>` : ''}</div></div></details>`;
+    $('#ga').innerHTML = `<div class="pills dark">${kinds.map(([k, l]) => `<button data-gk="${k}" class="${S.gk === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+      ${L.slice(0, S.gshow).map(card).join('')}${L.length > S.gshow ? `<button class="btn line small" id="gm">Pokaż kolejne (${L.length - S.gshow})</button>` : ''}`;
+    $$('[data-gk]').forEach((b) => { b.onclick = () => { S.gk = b.dataset.gk; S.gshow = 30; draw(); }; });
+    const gm = $('#gm'); if (gm) gm.onclick = () => { S.gshow += 30; draw(); };
+  };
+  const fv = favs().includes(d.id);
+  $('.page').innerHTML = `${p ? `<div class="ghero">${IMG(p.src, d.name)}</div>` : ''}
+    <div class="wcard"><h3>${esc(d.name)}${ci ? `, ${esc(ci.name)}` : ''}</h3>${d.desc ? `<p>${esc(d.desc)}</p>` : ''}
+      <div class="linkset"><button class="btn small" id="gfl">${I.plane} Szukaj lotów tutaj</button><button class="btn line small" id="gto">Oferty biur</button><button class="btn line small" id="gtw">Wakacje z biurem</button><button class="btn line small" id="gfv">${I.heart} ${fv ? 'W ulubionych' : 'Do ulubionych'}</button></div></div>
+    ${A.length ? `<div class="wcard"><h3>Atrakcje (${A.length})</h3><div class="dmap" id="gmap"></div><div id="ga"></div></div>` : '<div class="wcard"><p class="hint">Atrakcje dla tego miejsca jeszcze się zbierają.</p></div>'}
+    ${R.length ? `<div class="wcard"><h3>Restauracje</h3>${R.map((r) => `<div class="kv"><span>${esc(r.n)}${r.c ? `<br><small>${esc(r.c.replace(/_/g, ' ').replace(/;/g, ', '))}</small>` : ''}</span><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${r.n}, ${d.en || d.name}`)}" target="_blank" rel="noopener">mapa</a></div>`).join('')}<p class="hint">Restauracje z OpenStreetMap. Godziny i opinie sprawdź w mapach.</p></div>` : ''}
+    ${climate}${prac}`;
+  if (A.length) { draw(); drawGuideMap($('#gmap'), A.slice(0, 60)); }
+  $('#gfl').onclick = () => { S.q.dest = { mode: 'city', ids: [d.id], countries: [], style: null }; save('prefs', S.q); viewHome(); };
+  $('#gto').onclick = () => { S.tq = { ...(S.tq || {}), cc: d.cc }; save('tq', S.tq); S.tres = null; viewTours(); };
+  $('#gtw').onclick = async () => { await data().catch(() => {}); LV.viewTour({ hq: '', hotel: null }); };
+  $('#gfv').onclick = () => { toggleFav(d.id); viewGuide(id); };
+  app.scrollTop = 0;
+}
+async function drawGuideMap(el, pts) {
+  try { await leaflet(); } catch { el.remove(); return; }
+  if (!el.isConnected) return;
+  const L = window.L; const m = L.map(el, { zoomControl: true, scrollWheelZoom: false, tap: false });
+  m.attributionControl.setPrefix('');
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18, attribution: 'Esri' }).addTo(m);
+  pts.forEach((p) => L.circleMarker([p.lat, p.lon], { radius: 6, color: '#fff', weight: 2, fillColor: '#e3b24a', fillOpacity: 1 }).bindTooltip(p.n).addTo(m));
+  m.fitBounds(L.latLngBounds(pts.map((p) => [p.lat, p.lon])).pad(0.1), { maxZoom: 14 });
 }
 function viewFav() {
   const m = new Date().getMonth() + 1; const L = favs().map((i) => S.dests.find((d) => d.id === i)).filter(Boolean);
