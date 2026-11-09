@@ -23,12 +23,15 @@ for i in range(0,len(names),50):
 for k in PH: PH[k]=[x for x in PH[k] if x['f'] not in gone]
 print('usuniete',len(gone),sorted(gone)[:20])
 # 2. dobor dla miejsc z mala liczba zdjec
-BAD=re.compile(r'map|karte|carte|logo|flag|coat|wappen|plan|diagram|location|locator|\.svg|\.png|\.tif|stamp|sign|poster|panorama-small',re.I)
+AMB={'side':['Antalya','Turkey','Manavgat'],'burgas':['Bulgaria'],'sal':['Cape Verde'],'boa-vista':['Cape Verde']}  # nazwy wieloznaczne: szukamy z dopiskiem
+BAD=re.compile(r'hotel|resort|aéroport|airport|autoroute|summit|president|minister|meets|conference|map|karte|carte|logo|flag|coat|wappen|plan|diagram|location|locator|\.svg|\.png|\.tif|stamp|sign|poster|panorama-small',re.I)
 for d in D:
     have=PH.get(d['id'],[])
     if len(have)>=5: continue
     seen={x['f'] for x in have};add=[]
-    for nm in dict.fromkeys([d.get('en') or d['name'],d['name'].split(' (')[0]]):
+    base=(d.get('en') or d['name']).split(' (')[0]
+    Q2=[base+' '+X for X in AMB.get(d['id'],[])] if d['id'] in AMB else [d.get('en') or d['name'],d['name'].split(' (')[0]]
+    for nm in dict.fromkeys(Q2):
         j=get({'action':'query','generator':'search','gsrnamespace':6,'gsrlimit':40,'gsrsearch':f'intitle:"{nm}" filetype:bitmap','prop':'imageinfo','iiprop':'size|mime'})
         for p in sorted(j.get('query',{}).get('pages',[]),key=lambda p:p.get('index',0)):
             f=p['title'][5:];ii=(p.get('imageinfo') or [{}])[0]
