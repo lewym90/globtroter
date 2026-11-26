@@ -1,8 +1,6 @@
 name: Opisy atrakcji
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '47 22 * * *'
 concurrency:
   group: attr
   cancel-in-progress: false
